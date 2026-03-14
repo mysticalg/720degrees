@@ -124,6 +124,9 @@ function normalizeAngle(a) {
 /**
  * Build a tiny procedural sprite atlas so character animation stays smooth.
  * 16 direction slices × 6 movement frames.
+ *
+ * The skater now has clearer personality details (face, backwards cap, shorts,
+ * and shoes) so the rider is easier to read while moving and spinning.
  */
 function createSkaterSpriteAtlas() {
   const dirs = 16;
@@ -155,27 +158,54 @@ function createSkaterSpriteAtlas() {
       g.fillRect(-26, 14, 52, 7);
       g.restore();
 
-      // Wheels
+      // Wheels sit closer to board trucks so the deck reads centered correctly.
       g.fillStyle = '#ffe07a';
-      [[-22, 28], [-8, 31], [8, 31], [22, 28]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
+      [[-30, 28], [-20, 32], [20, 32], [30, 28]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
 
-      // Body
+      // Hoodie / shirt body.
       g.fillStyle = '#58d2ff';
-      g.fillRect(-16, -23, 32, 33);
-      g.fillStyle = '#2f3e6c';
-      g.fillRect(-13, 6, 10, 15 + leg * 0.2);
-      g.fillRect(3, 6, 10, 15 - leg * 0.2);
+      g.fillRect(-16, -23, 32, 26);
 
-      // Arms + head
+      // Shorts for a stronger skater silhouette.
+      g.fillStyle = '#315286';
+      g.fillRect(-15, 1, 30, 10);
+
+      // Longer legs with a slightly wider stance to center the rider over the deck.
+      g.fillStyle = '#f4c5a4';
+      g.fillRect(-15, 10, 8, 16 + leg * 0.3);
+      g.fillRect(7, 10, 8, 16 - leg * 0.3);
+
+      // Shoes with bright soles and toe accents.
+      g.fillStyle = '#ffffff';
+      g.fillRect(-18, 24 + leg * 0.3, 13, 5);
+      g.fillRect(5, 24 - leg * 0.3, 13, 5);
+      g.fillStyle = '#ff5757';
+      g.fillRect(-18, 27 + leg * 0.3, 13, 2);
+      g.fillRect(5, 27 - leg * 0.3, 13, 2);
+
+      // Longer arms (upper + lower sections) so the rider doesn't look blocky.
       g.fillStyle = '#afeeff';
-      g.fillRect(-30, -16 - arm * 0.14, 12, 7);
-      g.fillRect(18, -16 + arm * 0.14, 12, 7);
+      g.fillRect(-36, -17 - arm * 0.18, 16, 5);
+      g.fillRect(20, -17 + arm * 0.18, 16, 5);
+      g.fillRect(-43, -14 - arm * 0.12, 9, 4);
+      g.fillRect(34, -14 + arm * 0.12, 9, 4);
       g.fillStyle = '#ffd2b2';
       g.beginPath();
       g.arc(0, -33, 11, 0, Math.PI * 2);
       g.fill();
+
+      // Facial features make the rider look less like a placeholder.
+      g.fillStyle = '#2d1f1b';
+      g.fillRect(-5, -35, 2, 2);
+      g.fillRect(3, -35, 2, 2);
+      g.fillStyle = '#ab5340';
+      g.fillRect(-3, -30, 6, 2);
+
+      // Backwards cap with visible strap on the front.
       g.fillStyle = '#ff7272';
-      g.fillRect(-11, -41, 22, 8);
+      g.fillRect(-11, -43, 22, 7);
+      g.fillStyle = '#d54444';
+      g.fillRect(-4, -37, 8, 2);
 
       // Direction cue highlight
       g.fillStyle = '#ffffff88';
@@ -468,7 +498,9 @@ function drawSkater() {
   ctx.save();
   ctx.translate(p.x, p.y - 48 - jumpLift + bounce);
   if (state.player.z > 0.02 && Math.abs(state.player.spinVel) > 0.01) {
-    ctx.rotate(state.player.airSpin * 0.35);
+    // Rotate the rider+board together so tricks clearly read as body rotation,
+    // not just a deck-only visual flip.
+    ctx.rotate(state.player.airSpin);
   }
   ctx.drawImage(skaterSprites.atlas[dirIndex][frameIndex], -56, -56, 112, 112);
 
