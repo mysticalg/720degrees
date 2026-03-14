@@ -44,6 +44,10 @@
     </footer>
   </main>
 
-  <script type="module" src="src/game.js"></script>
+  <!--
+    Use a classic deferred script so the game boots from both file:// and http:// origins.
+    ES modules on file:// are blocked by browser CORS rules in many local setups.
+  -->
+  <script src="src/game.js" defer></script>
 </body>
 </html>
