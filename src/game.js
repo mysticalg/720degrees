@@ -154,24 +154,25 @@ function createSkaterSpriteAtlas() {
       g.save();
       g.rotate(angle);
 
-      // Deck base and edge shading for a cleaner polished board look.
+      // Deck is intentionally lower so shoes stay planted on top of the board
+      // across all frames, instead of the board crossing through the legs.
       g.fillStyle = '#c863ff';
-      g.fillRect(-34, 10, 68, 12);
+      g.fillRect(-34, 29, 68, 10);
       g.fillStyle = '#9e45da';
-      g.fillRect(-34, 10, 68, 3);
+      g.fillRect(-34, 29, 68, 2);
       g.fillStyle = '#2f1a3d';
-      g.fillRect(-28, 14, 56, 6);
+      g.fillRect(-28, 32, 56, 5);
 
       // Trucks under each side of the board.
       g.fillStyle = '#8ca1bf';
-      g.fillRect(-24, 22, 8, 3);
-      g.fillRect(16, 22, 8, 3);
+      g.fillRect(-24, 38, 8, 3);
+      g.fillRect(16, 38, 8, 3);
 
-      // Wheels are anchored to the trucks and no longer drift off board center.
+      // Wheels are locked below the trucks so board geometry stays believable.
       g.fillStyle = '#ffe07a';
-      [[-26, 24], [-18, 28], [18, 28], [26, 24]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
+      [[-26, 40], [-18, 44], [18, 44], [26, 40]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
       g.fillStyle = '#b88d2e';
-      [[-26, 29], [-18, 33], [18, 33], [26, 29]].forEach(([x, y]) => g.fillRect(x, y, 6, 2));
+      [[-26, 45], [-18, 49], [18, 49], [26, 45]].forEach(([x, y]) => g.fillRect(x, y, 6, 2));
 
       g.restore();
 
