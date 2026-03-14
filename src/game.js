@@ -149,18 +149,31 @@ function createSkaterSpriteAtlas() {
       const arm = stride * 5;
       const leg = stride * 4;
 
-      // Board body
-      g.fillStyle = '#c863ff';
+      // Board + wheels are drawn in the same rotated space so trucks, deck,
+      // and wheel positions stay aligned at every heading.
       g.save();
       g.rotate(angle);
-      g.fillRect(-32, 11, 64, 14);
-      g.fillStyle = '#2f1a3d';
-      g.fillRect(-26, 14, 52, 7);
-      g.restore();
 
-      // Wheels sit closer to board trucks so the deck reads centered correctly.
+      // Deck base and edge shading for a cleaner polished board look.
+      g.fillStyle = '#c863ff';
+      g.fillRect(-34, 10, 68, 12);
+      g.fillStyle = '#9e45da';
+      g.fillRect(-34, 10, 68, 3);
+      g.fillStyle = '#2f1a3d';
+      g.fillRect(-28, 14, 56, 6);
+
+      // Trucks under each side of the board.
+      g.fillStyle = '#8ca1bf';
+      g.fillRect(-24, 22, 8, 3);
+      g.fillRect(16, 22, 8, 3);
+
+      // Wheels are anchored to the trucks and no longer drift off board center.
       g.fillStyle = '#ffe07a';
-      [[-30, 28], [-20, 32], [20, 32], [30, 28]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
+      [[-26, 24], [-18, 28], [18, 28], [26, 24]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
+      g.fillStyle = '#b88d2e';
+      [[-26, 29], [-18, 33], [18, 33], [26, 29]].forEach(([x, y]) => g.fillRect(x, y, 6, 2));
+
+      g.restore();
 
       // Slimmer hoodie body with side shadows to increase definition.
       g.fillStyle = '#58d2ff';
