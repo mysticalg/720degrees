@@ -176,67 +176,63 @@ function createSkaterSpriteAtlas() {
 
       g.restore();
 
-      // Slimmer hoodie body with side shadows to increase definition.
-      g.fillStyle = '#58d2ff';
-      g.fillRect(-12, -23, 24, 25);
-      g.fillStyle = '#39b8e8';
-      g.fillRect(-12, -23, 4, 25);
-      g.fillRect(8, -23, 4, 25);
-      g.fillStyle = '#a8ecff';
-      g.fillRect(-4, -21, 8, 5);
+      // Shirt styling inspired by the reference: green base with red/yellow accents.
+      g.fillStyle = '#2fb556';
+      g.fillRect(-12, -22, 24, 24);
+      g.fillStyle = '#e53d2f';
+      g.fillRect(-11, -20, 3, 20);
+      g.fillRect(8, -18, 3, 18);
+      g.fillStyle = '#f2d14a';
+      g.fillRect(-1, -21, 2, 22);
 
-      // Slim shorts with a center seam for depth.
-      g.fillStyle = '#315286';
-      g.fillRect(-11, 1, 22, 9);
-      g.fillStyle = '#263f66';
-      g.fillRect(-1, 1, 2, 9);
-
-      // Longer, narrower legs with a slight gap for a cleaner stance.
-      g.fillStyle = '#f4c5a4';
-      g.fillRect(-11, 10, 6, 18 + leg * 0.34);
-      g.fillRect(5, 10, 6, 18 - leg * 0.34);
-      g.fillStyle = '#dfad89';
-      g.fillRect(-11, 10, 2, 18 + leg * 0.34);
-      g.fillRect(9, 10, 2, 18 - leg * 0.34);
-
-      // Shoes with layered sole shading to avoid flat block shapes.
+      // Striped pants to match the red/white look from the screenshot.
       g.fillStyle = '#ffffff';
-      g.fillRect(-15, 26 + leg * 0.34, 11, 4);
-      g.fillRect(4, 26 - leg * 0.34, 11, 4);
-      g.fillStyle = '#ff5757';
-      g.fillRect(-15, 29 + leg * 0.34, 11, 2);
-      g.fillRect(4, 29 - leg * 0.34, 11, 2);
-      g.fillStyle = '#b73f3f';
-      g.fillRect(-15, 30 + leg * 0.34, 11, 1);
-      g.fillRect(4, 30 - leg * 0.34, 11, 1);
+      g.fillRect(-11, 2, 22, 9);
+      g.fillStyle = '#df3434';
+      for (let px = -11; px <= 9; px += 4) {
+        g.fillRect(px, 2, 2, 9);
+      }
 
-      // Longer and slimmer arms with hand tips for improved anatomy definition.
-      g.fillStyle = '#afeeff';
-      g.fillRect(-34, -18 - arm * 0.2, 14, 4);
-      g.fillRect(20, -18 + arm * 0.2, 14, 4);
-      g.fillRect(-42, -15 - arm * 0.13, 8, 3);
-      g.fillRect(34, -15 + arm * 0.13, 8, 3);
-      g.fillStyle = '#ffd2b2';
-      g.fillRect(-43, -15 - arm * 0.13, 2, 3);
-      g.fillRect(40, -15 + arm * 0.13, 2, 3);
+      // Legs keep a mild stride motion, with stripe accents on each pant leg.
+      const leftLegY = 11 + leg * 0.34;
+      const rightLegY = 11 - leg * 0.34;
+      g.fillStyle = '#ffffff';
+      g.fillRect(-11, leftLegY, 6, 17);
+      g.fillRect(5, rightLegY, 6, 17);
+      g.fillStyle = '#df3434';
+      [-10, -7].forEach((x) => g.fillRect(x, leftLegY, 1, 17));
+      [6, 9].forEach((x) => g.fillRect(x, rightLegY, 1, 17));
+
+      // Chunky red/yellow shoes from reference for stronger readability.
+      g.fillStyle = '#d92f2f';
+      g.fillRect(-16, 26 + leg * 0.34, 12, 4);
+      g.fillRect(4, 26 - leg * 0.34, 12, 4);
+      g.fillStyle = '#f1b33a';
+      g.fillRect(-16, 30 + leg * 0.34, 12, 2);
+      g.fillRect(4, 30 - leg * 0.34, 12, 2);
+
+      // Arms are simple but longer, with light skin-toned hands.
+      g.fillStyle = '#f4d1b4';
+      g.fillRect(-33, -16 - arm * 0.2, 13, 4);
+      g.fillRect(20, -16 + arm * 0.2, 13, 4);
+      g.fillRect(-39, -14 - arm * 0.12, 6, 3);
+      g.fillRect(33, -14 + arm * 0.12, 6, 3);
+
+      // Blonde head + tiny facial features.
+      g.fillStyle = '#f2d1a8';
       g.beginPath();
       g.arc(0, -33, 10, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#e6b491';
-      g.fillRect(-8, -30, 16, 3);
-
-      // Facial features make the rider look less like a placeholder.
+      g.fillStyle = '#d49e55';
+      g.fillRect(-8, -38, 16, 6);
       g.fillStyle = '#2d1f1b';
-      g.fillRect(-5, -35, 2, 2);
-      g.fillRect(3, -35, 2, 2);
-      g.fillStyle = '#ab5340';
-      g.fillRect(-3, -30, 6, 2);
+      g.fillRect(-4, -34, 2, 2);
+      g.fillRect(2, -34, 2, 2);
 
-      // Backwards cap with visible strap on the front.
-      g.fillStyle = '#ff7272';
-      g.fillRect(-11, -43, 22, 7);
-      g.fillStyle = '#d54444';
-      g.fillRect(-4, -37, 8, 2);
+      // Red cap with a short backwards tail, similar to the reference silhouette.
+      g.fillStyle = '#e02525';
+      g.fillRect(-9, -45, 18, 6);
+      g.fillRect(6, -43, 4, 4);
 
       // Direction cue highlight
       g.fillStyle = '#ffffff88';
