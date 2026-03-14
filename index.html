@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skate 720: Park Circuit</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app-shell" aria-live="polite">
+    <header class="top-bar">
+      <h1>🛹 Skate 720: Park Circuit</h1>
+      <p class="subtitle">Original HTML5 tribute with isometric flow, tickets, shops, and four courses.</p>
+    </header>
+
+    <section class="screen-frame">
+      <canvas id="gameCanvas" width="1280" height="720" aria-label="Isometric skate park gameplay"></canvas>
+
+      <aside class="hud" id="hudPanel">
+        <h2>HUD</h2>
+        <ul>
+          <li><span class="icon">🎫</span>Tickets: <strong id="hudTickets">0</strong></li>
+          <li><span class="icon">⭐</span>Score: <strong id="hudScore">0</strong></li>
+          <li><span class="icon">⛸️</span>Course: <strong id="hudCourse">A</strong></li>
+          <li><span class="icon">⏱️</span>Time: <strong id="hudTime">0</strong></li>
+          <li><span class="icon">🎚️</span>Difficulty: <strong id="hudDifficulty">Normal</strong></li>
+        </ul>
+        <div class="tooltip-box" title="Tips and controls">
+          <h3>Controls</h3>
+          <p>Move: Arrow Keys / WASD</p>
+          <p>Ollie: Space</p>
+          <p>Air Spin: Space (while airborne)</p>
+          <p>Pause: P</p>
+          <p>Menu Back: Esc</p>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="bottom-help">
+      <p>
+        <span class="icon">💡</span>
+        Tooltips are enabled throughout the interface. Hover items in menus for details.
+      </p>
+    </footer>
+  </main>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>
