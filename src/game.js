@@ -162,37 +162,54 @@ function createSkaterSpriteAtlas() {
       g.fillStyle = '#ffe07a';
       [[-30, 28], [-20, 32], [20, 32], [30, 28]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
 
-      // Hoodie / shirt body.
+      // Slimmer hoodie body with side shadows to increase definition.
       g.fillStyle = '#58d2ff';
-      g.fillRect(-16, -23, 32, 26);
+      g.fillRect(-12, -23, 24, 25);
+      g.fillStyle = '#39b8e8';
+      g.fillRect(-12, -23, 4, 25);
+      g.fillRect(8, -23, 4, 25);
+      g.fillStyle = '#a8ecff';
+      g.fillRect(-4, -21, 8, 5);
 
-      // Shorts for a stronger skater silhouette.
+      // Slim shorts with a center seam for depth.
       g.fillStyle = '#315286';
-      g.fillRect(-15, 1, 30, 10);
+      g.fillRect(-11, 1, 22, 9);
+      g.fillStyle = '#263f66';
+      g.fillRect(-1, 1, 2, 9);
 
-      // Longer legs with a slightly wider stance to center the rider over the deck.
+      // Longer, narrower legs with a slight gap for a cleaner stance.
       g.fillStyle = '#f4c5a4';
-      g.fillRect(-15, 10, 8, 16 + leg * 0.3);
-      g.fillRect(7, 10, 8, 16 - leg * 0.3);
+      g.fillRect(-11, 10, 6, 18 + leg * 0.34);
+      g.fillRect(5, 10, 6, 18 - leg * 0.34);
+      g.fillStyle = '#dfad89';
+      g.fillRect(-11, 10, 2, 18 + leg * 0.34);
+      g.fillRect(9, 10, 2, 18 - leg * 0.34);
 
-      // Shoes with bright soles and toe accents.
+      // Shoes with layered sole shading to avoid flat block shapes.
       g.fillStyle = '#ffffff';
-      g.fillRect(-18, 24 + leg * 0.3, 13, 5);
-      g.fillRect(5, 24 - leg * 0.3, 13, 5);
+      g.fillRect(-15, 26 + leg * 0.34, 11, 4);
+      g.fillRect(4, 26 - leg * 0.34, 11, 4);
       g.fillStyle = '#ff5757';
-      g.fillRect(-18, 27 + leg * 0.3, 13, 2);
-      g.fillRect(5, 27 - leg * 0.3, 13, 2);
+      g.fillRect(-15, 29 + leg * 0.34, 11, 2);
+      g.fillRect(4, 29 - leg * 0.34, 11, 2);
+      g.fillStyle = '#b73f3f';
+      g.fillRect(-15, 30 + leg * 0.34, 11, 1);
+      g.fillRect(4, 30 - leg * 0.34, 11, 1);
 
-      // Longer arms (upper + lower sections) so the rider doesn't look blocky.
+      // Longer and slimmer arms with hand tips for improved anatomy definition.
       g.fillStyle = '#afeeff';
-      g.fillRect(-36, -17 - arm * 0.18, 16, 5);
-      g.fillRect(20, -17 + arm * 0.18, 16, 5);
-      g.fillRect(-43, -14 - arm * 0.12, 9, 4);
-      g.fillRect(34, -14 + arm * 0.12, 9, 4);
+      g.fillRect(-34, -18 - arm * 0.2, 14, 4);
+      g.fillRect(20, -18 + arm * 0.2, 14, 4);
+      g.fillRect(-42, -15 - arm * 0.13, 8, 3);
+      g.fillRect(34, -15 + arm * 0.13, 8, 3);
       g.fillStyle = '#ffd2b2';
+      g.fillRect(-43, -15 - arm * 0.13, 2, 3);
+      g.fillRect(40, -15 + arm * 0.13, 2, 3);
       g.beginPath();
-      g.arc(0, -33, 11, 0, Math.PI * 2);
+      g.arc(0, -33, 10, 0, Math.PI * 2);
       g.fill();
+      g.fillStyle = '#e6b491';
+      g.fillRect(-8, -30, 16, 3);
 
       // Facial features make the rider look less like a placeholder.
       g.fillStyle = '#2d1f1b';
