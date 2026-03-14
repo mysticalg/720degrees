@@ -149,90 +149,77 @@ function createSkaterSpriteAtlas() {
       const arm = stride * 5;
       const leg = stride * 4;
 
-      // Board + wheels are drawn in the same rotated space so trucks, deck,
-      // and wheel positions stay aligned at every heading.
+      // Board styling tuned to match the reference look: warm orange deck,
+      // subtle underside, and very low-contrast wheels.
       g.save();
       g.rotate(angle);
-
-      // Deck is intentionally lower so shoes stay planted on top of the board
-      // across all frames, instead of the board crossing through the legs.
-      g.fillStyle = '#c863ff';
-      g.fillRect(-34, 29, 68, 10);
-      g.fillStyle = '#9e45da';
-      g.fillRect(-34, 29, 68, 2);
-      g.fillStyle = '#2f1a3d';
-      g.fillRect(-28, 32, 56, 5);
-
-      // Trucks under each side of the board.
-      g.fillStyle = '#8ca1bf';
-      g.fillRect(-24, 38, 8, 3);
-      g.fillRect(16, 38, 8, 3);
-
-      // Wheels are locked below the trucks so board geometry stays believable.
-      g.fillStyle = '#ffe07a';
-      [[-26, 40], [-18, 44], [18, 44], [26, 40]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
-      g.fillStyle = '#b88d2e';
-      [[-26, 45], [-18, 49], [18, 49], [26, 45]].forEach(([x, y]) => g.fillRect(x, y, 6, 2));
-
+      g.fillStyle = '#d2872a';
+      g.fillRect(-31, 31, 62, 8);
+      g.fillStyle = '#b46c18';
+      g.fillRect(-31, 37, 62, 3);
+      g.fillStyle = '#6a3d0f';
+      g.fillRect(-22, 40, 44, 2);
+      g.fillStyle = '#46301a';
+      [[-21, 42], [-13, 44], [13, 44], [21, 42]].forEach(([x, y]) => g.fillRect(x, y, 5, 3));
       g.restore();
 
-      // Shirt styling inspired by the reference: green base with red/yellow accents.
-      g.fillStyle = '#2fb556';
-      g.fillRect(-12, -22, 24, 24);
-      g.fillStyle = '#e53d2f';
-      g.fillRect(-11, -20, 3, 20);
-      g.fillRect(8, -18, 3, 18);
-      g.fillStyle = '#f2d14a';
-      g.fillRect(-1, -21, 2, 22);
+      // Shirt mirrors the sample: green body with yellow center and red side accents.
+      g.fillStyle = '#2eaf50';
+      g.fillRect(-11, -22, 22, 23);
+      g.fillStyle = '#f2cc40';
+      g.fillRect(-1, -21, 3, 21);
+      g.fillStyle = '#e2342f';
+      g.fillRect(-10, -19, 3, 17);
+      g.fillRect(7, -17, 3, 15);
+      g.fillStyle = '#1e8b3f';
+      g.fillRect(-11, -22, 2, 23);
+      g.fillRect(9, -22, 2, 23);
 
-      // Striped pants to match the red/white look from the screenshot.
+      // Red/white striped shorts and legs like the screenshot outfit.
       g.fillStyle = '#ffffff';
-      g.fillRect(-11, 2, 22, 9);
-      g.fillStyle = '#df3434';
-      for (let px = -11; px <= 9; px += 4) {
-        g.fillRect(px, 2, 2, 9);
-      }
+      g.fillRect(-10, 1, 20, 9);
+      g.fillStyle = '#db3434';
+      for (let px = -10; px <= 8; px += 4) g.fillRect(px, 1, 2, 9);
 
-      // Legs keep a mild stride motion, with stripe accents on each pant leg.
-      const leftLegY = 11 + leg * 0.34;
-      const rightLegY = 11 - leg * 0.34;
+      const leftLegY = 10 + leg * 0.34;
+      const rightLegY = 10 - leg * 0.34;
       g.fillStyle = '#ffffff';
-      g.fillRect(-11, leftLegY, 6, 17);
-      g.fillRect(5, rightLegY, 6, 17);
-      g.fillStyle = '#df3434';
-      [-10, -7].forEach((x) => g.fillRect(x, leftLegY, 1, 17));
-      [6, 9].forEach((x) => g.fillRect(x, rightLegY, 1, 17));
+      g.fillRect(-10, leftLegY, 6, 17);
+      g.fillRect(4, rightLegY, 6, 17);
+      g.fillStyle = '#db3434';
+      [-9, -6].forEach((x) => g.fillRect(x, leftLegY, 1, 17));
+      [5, 8].forEach((x) => g.fillRect(x, rightLegY, 1, 17));
 
-      // Chunky red/yellow shoes from reference for stronger readability.
+      // Chunky red shoes with bright yellow soles to match the sample silhouette.
       g.fillStyle = '#d92f2f';
-      g.fillRect(-16, 26 + leg * 0.34, 12, 4);
-      g.fillRect(4, 26 - leg * 0.34, 12, 4);
-      g.fillStyle = '#f1b33a';
-      g.fillRect(-16, 30 + leg * 0.34, 12, 2);
-      g.fillRect(4, 30 - leg * 0.34, 12, 2);
+      g.fillRect(-15, 26 + leg * 0.34, 11, 4);
+      g.fillRect(4, 26 - leg * 0.34, 11, 4);
+      g.fillStyle = '#f0ba3f';
+      g.fillRect(-15, 30 + leg * 0.34, 11, 2);
+      g.fillRect(4, 30 - leg * 0.34, 11, 2);
 
-      // Arms are simple but longer, with light skin-toned hands.
-      g.fillStyle = '#f4d1b4';
-      g.fillRect(-33, -16 - arm * 0.2, 13, 4);
-      g.fillRect(20, -16 + arm * 0.2, 13, 4);
-      g.fillRect(-39, -14 - arm * 0.12, 6, 3);
-      g.fillRect(33, -14 + arm * 0.12, 6, 3);
+      // Thinner arms and small hands to preserve the retro sprite style.
+      g.fillStyle = '#f2cfb2';
+      g.fillRect(-31, -15 - arm * 0.18, 11, 3);
+      g.fillRect(20, -15 + arm * 0.18, 11, 3);
+      g.fillRect(-36, -13 - arm * 0.1, 5, 3);
+      g.fillRect(31, -13 + arm * 0.1, 5, 3);
 
-      // Blonde head + tiny facial features.
-      g.fillStyle = '#f2d1a8';
+      // Head/hair/cap combo tuned to the screenshot proportions.
+      g.fillStyle = '#f1cfab';
       g.beginPath();
-      g.arc(0, -33, 10, 0, Math.PI * 2);
+      g.arc(0, -33, 9, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#d49e55';
-      g.fillRect(-8, -38, 16, 6);
-      g.fillStyle = '#2d1f1b';
-      g.fillRect(-4, -34, 2, 2);
-      g.fillRect(2, -34, 2, 2);
+      g.fillStyle = '#d59a4d';
+      g.fillRect(-8, -38, 14, 6);
+      g.fillStyle = '#2f2116';
+      g.fillRect(-3, -33, 2, 2);
+      g.fillRect(2, -33, 2, 2);
 
-      // Red cap with a short backwards tail, similar to the reference silhouette.
-      g.fillStyle = '#e02525';
-      g.fillRect(-9, -45, 18, 6);
-      g.fillRect(6, -43, 4, 4);
+      // Bright red cap that leans back, matching the provided reference.
+      g.fillStyle = '#e02722';
+      g.fillRect(-8, -45, 16, 6);
+      g.fillRect(6, -43, 3, 4);
 
       // Direction cue highlight
       g.fillStyle = '#ffffff88';
