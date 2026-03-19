@@ -2,6 +2,8 @@
 
 An original HTML5 isometric skate-park arcade experience inspired by classic arcade flow design.
 
+Live page: [mysticalg.github.io/720degrees](https://mysticalg.github.io/720degrees/)
+
 ## Features
 - Splash screen and animated menu flow.
 - Large colorful skatepark map with zoomed-in, original-style scrolling camera tracking.
@@ -26,3 +28,8 @@ Open `index.html` in a browser.
 
 ## Notes
 All art, audio, and code in this project are generated original work for this remake project.
+
+## Support
+
+If you'd like to support this project, you can buy me a coffee:
+[buymeacoffee.com/dhooksterm](https://buymeacoffee.com/dhooksterm)
