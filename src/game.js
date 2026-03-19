@@ -124,6 +124,9 @@ function normalizeAngle(a) {
 /**
  * Build a tiny procedural sprite atlas so character animation stays smooth.
  * 16 direction slices × 6 movement frames.
+ *
+ * The skater now has clearer personality details (face, backwards cap, shorts,
+ * and shoes) so the rider is easier to read while moving and spinning.
  */
 function createSkaterSpriteAtlas() {
   const dirs = 16;
@@ -146,36 +149,77 @@ function createSkaterSpriteAtlas() {
       const arm = stride * 5;
       const leg = stride * 4;
 
-      // Board body
-      g.fillStyle = '#c863ff';
+      // Board styling tuned to match the reference look: warm orange deck,
+      // subtle underside, and very low-contrast wheels.
       g.save();
       g.rotate(angle);
-      g.fillRect(-32, 11, 64, 14);
-      g.fillStyle = '#2f1a3d';
-      g.fillRect(-26, 14, 52, 7);
+      g.fillStyle = '#d2872a';
+      g.fillRect(-31, 31, 62, 8);
+      g.fillStyle = '#b46c18';
+      g.fillRect(-31, 37, 62, 3);
+      g.fillStyle = '#6a3d0f';
+      g.fillRect(-22, 40, 44, 2);
+      g.fillStyle = '#46301a';
+      [[-21, 42], [-13, 44], [13, 44], [21, 42]].forEach(([x, y]) => g.fillRect(x, y, 5, 3));
       g.restore();
 
-      // Wheels
-      g.fillStyle = '#ffe07a';
-      [[-22, 28], [-8, 31], [8, 31], [22, 28]].forEach(([x, y]) => g.fillRect(x, y, 6, 6));
+      // Shirt mirrors the sample: green body with yellow center and red side accents.
+      g.fillStyle = '#2eaf50';
+      g.fillRect(-11, -22, 22, 23);
+      g.fillStyle = '#f2cc40';
+      g.fillRect(-1, -21, 3, 21);
+      g.fillStyle = '#e2342f';
+      g.fillRect(-10, -19, 3, 17);
+      g.fillRect(7, -17, 3, 15);
+      g.fillStyle = '#1e8b3f';
+      g.fillRect(-11, -22, 2, 23);
+      g.fillRect(9, -22, 2, 23);
 
-      // Body
-      g.fillStyle = '#58d2ff';
-      g.fillRect(-16, -23, 32, 33);
-      g.fillStyle = '#2f3e6c';
-      g.fillRect(-13, 6, 10, 15 + leg * 0.2);
-      g.fillRect(3, 6, 10, 15 - leg * 0.2);
+      // Red/white striped shorts and legs like the screenshot outfit.
+      g.fillStyle = '#ffffff';
+      g.fillRect(-10, 1, 20, 9);
+      g.fillStyle = '#db3434';
+      for (let px = -10; px <= 8; px += 4) g.fillRect(px, 1, 2, 9);
 
-      // Arms + head
-      g.fillStyle = '#afeeff';
-      g.fillRect(-30, -16 - arm * 0.14, 12, 7);
-      g.fillRect(18, -16 + arm * 0.14, 12, 7);
-      g.fillStyle = '#ffd2b2';
+      const leftLegY = 10 + leg * 0.34;
+      const rightLegY = 10 - leg * 0.34;
+      g.fillStyle = '#ffffff';
+      g.fillRect(-10, leftLegY, 6, 17);
+      g.fillRect(4, rightLegY, 6, 17);
+      g.fillStyle = '#db3434';
+      [-9, -6].forEach((x) => g.fillRect(x, leftLegY, 1, 17));
+      [5, 8].forEach((x) => g.fillRect(x, rightLegY, 1, 17));
+
+      // Chunky red shoes with bright yellow soles to match the sample silhouette.
+      g.fillStyle = '#d92f2f';
+      g.fillRect(-15, 26 + leg * 0.34, 11, 4);
+      g.fillRect(4, 26 - leg * 0.34, 11, 4);
+      g.fillStyle = '#f0ba3f';
+      g.fillRect(-15, 30 + leg * 0.34, 11, 2);
+      g.fillRect(4, 30 - leg * 0.34, 11, 2);
+
+      // Thinner arms and small hands to preserve the retro sprite style.
+      g.fillStyle = '#f2cfb2';
+      g.fillRect(-31, -15 - arm * 0.18, 11, 3);
+      g.fillRect(20, -15 + arm * 0.18, 11, 3);
+      g.fillRect(-36, -13 - arm * 0.1, 5, 3);
+      g.fillRect(31, -13 + arm * 0.1, 5, 3);
+
+      // Head/hair/cap combo tuned to the screenshot proportions.
+      g.fillStyle = '#f1cfab';
       g.beginPath();
-      g.arc(0, -33, 11, 0, Math.PI * 2);
+      g.arc(0, -33, 9, 0, Math.PI * 2);
       g.fill();
-      g.fillStyle = '#ff7272';
-      g.fillRect(-11, -41, 22, 8);
+      g.fillStyle = '#d59a4d';
+      g.fillRect(-8, -38, 14, 6);
+      g.fillStyle = '#2f2116';
+      g.fillRect(-3, -33, 2, 2);
+      g.fillRect(2, -33, 2, 2);
+
+      // Bright red cap that leans back, matching the provided reference.
+      g.fillStyle = '#e02722';
+      g.fillRect(-8, -45, 16, 6);
+      g.fillRect(6, -43, 3, 4);
 
       // Direction cue highlight
       g.fillStyle = '#ffffff88';
@@ -468,7 +512,9 @@ function drawSkater() {
   ctx.save();
   ctx.translate(p.x, p.y - 48 - jumpLift + bounce);
   if (state.player.z > 0.02 && Math.abs(state.player.spinVel) > 0.01) {
-    ctx.rotate(state.player.airSpin * 0.35);
+    // Rotate the rider+board together so tricks clearly read as body rotation,
+    // not just a deck-only visual flip.
+    ctx.rotate(state.player.airSpin);
   }
   ctx.drawImage(skaterSprites.atlas[dirIndex][frameIndex], -56, -56, 112, 112);
 
