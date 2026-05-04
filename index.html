@@ -37,7 +37,7 @@
   <script>
     (function () {
       const config = window.__FOOTER_ADSENSE__;
-      if (!config || !config.client || !config.slot || document.querySelector("script[data-footer-adsense-loader]")) {
+      if (!config || config.enabled !== true || !config.client || !config.slot || document.querySelector("script[data-footer-adsense-loader]")) {
         return;
       }
       if (!/^https?:$/.test(window.location.protocol) || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
@@ -99,7 +99,7 @@
         (function () {
           const wrapper = document.currentScript.previousElementSibling;
           const config = window.__FOOTER_ADSENSE__;
-          if (!wrapper || !config || !config.client || !config.slot) return;
+          if (!wrapper || !config || config.enabled !== true || !config.client || !config.slot) return;
           if (!/^https?:$/.test(window.location.protocol) || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) return;
 
           const unit = wrapper.querySelector(".adsbygoogle");
