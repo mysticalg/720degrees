@@ -1,0 +1,7 @@
+output/
+reference_frames/
+progress.md
+reference-board.html
+test-actions.json
+tools/__pycache__/
+*.pyc

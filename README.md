@@ -1,33 +1,32 @@
-# Skate 720: Park Circuit
+# Skate City 720
 
-An original HTML5 isometric skate-park arcade experience inspired by classic arcade flow design.
+An original HTML5 tribute to the 1986 isometric skateboarding arcade loop.
 
 Live page: [mysticalg.github.io/720degrees](https://mysticalg.github.io/720degrees/)
 
 ## Features
-- Splash screen and animated menu flow.
-- Large colorful skatepark map with zoomed-in, original-style scrolling camera tracking.
-- Four course progression gates (A/B/C/D).
-- Skate shops in all four park quadrants.
-- Collectible ticket system and adjustable ticket target.
-- Difficulty options (Easy/Normal/Hard).
+- Isometric Skate City hub with scrolling camera.
+- Score thresholds that award park tickets.
+- Four event gates: Ramp, Downhill, Slalom, and Jump.
+- City timer with late "SKATE OR DIE" warning and chase pressure.
+- Shops for board, shoes, pads, and helmet upgrades using event cash.
+- Street hazards, pickups, map icons, ramps, rails, and water.
 - Persistent high-score table via localStorage.
-- Skater with 16-direction animation frames, ollie jumps, and smooth in-air spin animation.
-- Keyboard controls + boost + pause.
-- Procedural retro sound effects (Web Audio API).
+- Deterministic `window.advanceTime(ms)` and `window.render_game_to_text()` hooks for testing.
 
 ## Run
 Open `index.html` in a browser.
 
 ## Controls
-- Move: Arrow keys or WASD
-- Ollie: Space
-- Air Spin: Space while airborne
+- Rotate: Left / Right arrows or A / D
+- Kick for speed: Z
+- Jump: X
+- Show map: M
 - Pause: P
 - Back/Menu: Escape
 
 ## Notes
-All art, audio, and code in this project are generated original work for this remake project.
+All art, audio, and code are original work for this remake project.
 
 ## Support
 

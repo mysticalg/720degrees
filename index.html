@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skate 720: Park Circuit</title>
+  <title>Skate City 720</title>
   <link rel="stylesheet" href="styles.css" />
-<!-- Footer AdSense -->
+  <!-- Footer AdSense -->
   <style data-footer-adsense-style>
     .footer-adsense {
       margin-top: 24px;
@@ -37,20 +37,16 @@
   <script>
     (function () {
       const config = window.__FOOTER_ADSENSE__;
-      if (
-        !config ||
-        !config.client ||
-        !config.slot ||
-        document.querySelector("script[data-footer-adsense-loader]")
-      ) {
+      if (!config || !config.client || !config.slot || document.querySelector("script[data-footer-adsense-loader]")) {
+        return;
+      }
+      if (!/^https?:$/.test(window.location.protocol) || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) {
         return;
       }
 
       const script = document.createElement("script");
       script.async = true;
-      script.src =
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" +
-        encodeURIComponent(config.client);
+      script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(config.client);
       script.crossOrigin = "anonymous";
       script.dataset.footerAdsenseLoader = "true";
       document.head.appendChild(script);
@@ -60,124 +56,93 @@
 <body>
   <main class="app-shell" aria-live="polite">
     <header class="top-bar">
-      <h1>🛹 Skate 720: Park Circuit</h1>
-      <p class="subtitle">Original HTML5 tribute with isometric flow, tickets, shops, and four courses.</p>
+      <h1>Skate City 720</h1>
+      <p class="subtitle">Isometric arcade skate loop: score, earn tickets, reach parks, survive Skate or Die.</p>
     </header>
 
     <section class="screen-frame">
-      <canvas id="gameCanvas" width="1280" height="720" aria-label="Isometric skate park gameplay"></canvas>
+      <canvas id="gameCanvas" width="1280" height="720" aria-label="Isometric skate city gameplay"></canvas>
 
       <aside class="hud" id="hudPanel">
         <h2>HUD</h2>
         <ul>
-          <li><span class="icon">🎫</span>Tickets: <strong id="hudTickets">0</strong></li>
-          <li><span class="icon">⭐</span>Score: <strong id="hudScore">0</strong></li>
-          <li><span class="icon">⛸️</span>Course: <strong id="hudCourse">A</strong></li>
-          <li><span class="icon">⏱️</span>Time: <strong id="hudTime">0</strong></li>
-          <li><span class="icon">🎚️</span>Difficulty: <strong id="hudDifficulty">Normal</strong></li>
+          <li>Tickets: <strong id="hudTickets">0</strong></li>
+          <li>Score: <strong id="hudScore">0</strong></li>
+          <li>Cash: <strong id="hudCash">$0</strong></li>
+          <li>Class: <strong id="hudCourse">1</strong></li>
+          <li>Timer: <strong id="hudTime">0</strong></li>
+          <li>Mode: <strong id="hudDifficulty">City</strong></li>
         </ul>
         <div class="tooltip-box" title="Tips and controls">
           <h3>Controls</h3>
-          <p>Move: Arrow Keys / WASD</p>
-          <p>Ollie: Space</p>
-          <p>Air Spin: Space (while airborne)</p>
+          <p>Rotate: Left / Right</p>
+          <p>Kick for speed: Z</p>
+          <p>Jump: X</p>
+          <p>Map: M</p>
           <p>Pause: P</p>
-          <p>Menu Back: Esc</p>
         </div>
       </aside>
     </section>
 
     <footer class="bottom-help">
-      <p>
-        <span class="icon">💡</span>
-        Tooltips are enabled throughout the interface. Hover items in menus for details.
-      </p>
-    <!-- Footer AdSense slot -->
-  <div class="footer-adsense" data-footer-adsense hidden>
-    <p class="footer-adsense__label">Advertisement</p>
-    <ins
-      class="adsbygoogle footer-adsense__unit"
-      style="display:block"
-      data-ad-format="auto"
-      data-full-width-responsive="true"
-    ></ins>
-  </div>
-  <script>
-    (function () {
-      const wrapper = document.currentScript.previousElementSibling;
-      const config = window.__FOOTER_ADSENSE__;
-      if (!wrapper || !config || !config.client || !config.slot) {
-        return;
-      }
+      <p>Earn score for tricks until a park ticket is awarded, then reach a park gate before the timer expires.</p>
+      <div class="footer-adsense" data-footer-adsense hidden>
+        <p class="footer-adsense__label">Advertisement</p>
+        <ins
+          class="adsbygoogle footer-adsense__unit"
+          style="display:block"
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        ></ins>
+      </div>
+      <script>
+        (function () {
+          const wrapper = document.currentScript.previousElementSibling;
+          const config = window.__FOOTER_ADSENSE__;
+          if (!wrapper || !config || !config.client || !config.slot) return;
+          if (!/^https?:$/.test(window.location.protocol) || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname)) return;
 
-      const unit = wrapper.querySelector(".adsbygoogle");
-      if (!unit) {
-        return;
-      }
+          const unit = wrapper.querySelector(".adsbygoogle");
+          if (!unit) return;
 
-      const showAd = function () {
-        wrapper.hidden = false;
-        wrapper.classList.remove("is-hidden");
-      };
+          const showAd = function () {
+            wrapper.hidden = false;
+            wrapper.classList.remove("is-hidden");
+          };
 
-      const hideAd = function () {
-        wrapper.hidden = true;
-        wrapper.classList.add("is-hidden");
-      };
+          const hideAd = function () {
+            wrapper.hidden = true;
+            wrapper.classList.add("is-hidden");
+          };
 
-      const syncVisibility = function () {
-        const status = unit.getAttribute("data-ad-status");
-        if (status === "filled") {
+          const syncVisibility = function () {
+            const status = unit.getAttribute("data-ad-status");
+            if (status === "filled") showAd();
+            if (status === "unfilled") hideAd();
+          };
+
+          unit.setAttribute("data-ad-client", config.client);
+          unit.setAttribute("data-ad-slot", config.slot);
+
+          const observer = new MutationObserver(syncVisibility);
+          observer.observe(unit, { attributes: true, attributeFilter: ["data-ad-status"] });
+
           showAd();
-          return;
-        }
-
-        if (status === "unfilled") {
-          hideAd();
-        }
-      };
-
-      unit.setAttribute("data-ad-client", config.client);
-      unit.setAttribute("data-ad-slot", config.slot);
-
-      const observer = new MutationObserver(syncVisibility);
-      observer.observe(unit, {
-        attributes: true,
-        attributeFilter: ["data-ad-status"],
-      });
-
-      showAd();
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        window.setTimeout(syncVisibility, 1500);
-        window.setTimeout(function () {
-          if (!unit.getAttribute("data-ad-status")) {
+          try {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+            window.setTimeout(syncVisibility, 1500);
+            window.setTimeout(function () {
+              if (!unit.getAttribute("data-ad-status")) hideAd();
+            }, 4000);
+          } catch (error) {
             hideAd();
+            console.error("Footer AdSense failed to render", error);
           }
-        }, 4000);
-      } catch (error) {
-        hideAd();
-        console.error("Footer AdSense failed to render", error);
-      }
-    })();
-  </script>
-</footer>
+        })();
+      </script>
+    </footer>
   </main>
 
-  <!--
-    Use a classic deferred script so the game boots from both file:// and http:// origins.
-    ES modules on file:// are blocked by browser CORS rules in many local setups.
-  -->
   <script src="src/game.js" defer></script>
-  <a
-    href="https://buymeacoffee.com/dhooksterm"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Support this project on Buy Me a Coffee"
-    title="Support this project"
-    style="position: fixed; right: 16px; bottom: 16px; z-index: 9999; display: inline-flex; align-items: center; justify-content: center; padding: 12px 16px; border-radius: 999px; background: rgba(17, 24, 39, 0.92); color: #ffffff; text-decoration: none; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);"
-  >
-    Support this project
-  </a>
 </body>
 </html>
