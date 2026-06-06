@@ -15,6 +15,16 @@ const referenceByScenario = {
   'event-downhill': 'reference_frames/motion/downhill_event.jpg',
   'event-slalom': 'output/source-video-check/more-scale/frame_000355.png',
   'event-jump': 'reference_frames/motion/ramp_event.jpg',
+  'ramp-flat': 'reference_frames/motion/ramp_event.jpg',
+  'ramp-grind': 'reference_frames/motion/ramp_event.jpg',
+  'ramp-air': 'reference_frames/motion/ramp_event.jpg',
+  'ramp-handplant': 'reference_frames/motion/ramp_event.jpg',
+  'ramp-rock': 'reference_frames/motion/ramp_event.jpg',
+  'downhill-duck': 'reference_frames/motion/downhill_event.jpg',
+  'downhill-turn': 'reference_frames/motion/downhill_event.jpg',
+  'jump-approach': 'reference_frames/motion/ramp_event.jpg',
+  'jump-launch': 'reference_frames/motion/ramp_event.jpg',
+  'jump-target': 'reference_frames/motion/ramp_event.jpg',
 };
 const scenarios = [
   'city',
@@ -27,6 +37,16 @@ const scenarios = [
   'event-downhill',
   'event-slalom',
   'event-jump',
+  'ramp-flat',
+  'ramp-grind',
+  'ramp-air',
+  'ramp-handplant',
+  'ramp-rock',
+  'downhill-duck',
+  'downhill-turn',
+  'jump-approach',
+  'jump-launch',
+  'jump-target',
 ];
 
 (async () => {

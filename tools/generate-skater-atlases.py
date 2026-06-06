@@ -9,6 +9,8 @@ CELL = 48
 TRANSPARENT = (0, 0, 0, 0)
 ROLL_OUTPUT_COLS = 8
 JUMP_OUTPUT_COLS = 8
+DUCK_OUTPUT_COLS = 4
+TRICK_OUTPUT_COLS = 6
 AI_SOURCE = Path("src/assets/skater-ai-compass-source.png")
 DIRECTION_LABELS = [
     "E",
@@ -42,10 +44,16 @@ COLORS = {
     "shirt_dark": (3, 72, 34, 255),
     "shirt_light": (47, 171, 65, 255),
     "stripe": (246, 215, 48, 255),
+    "shorts": (224, 34, 33, 255),
+    "shorts_dark": (112, 18, 30, 255),
     "pants": (239, 239, 214, 255),
     "pants_shadow": (172, 188, 177, 255),
     "shoe": (235, 26, 35, 255),
     "shoe_dark": (98, 19, 29, 255),
+    "shoe_lace": (255, 255, 230, 255),
+    "pad": (25, 68, 195, 255),
+    "pad_light": (60, 146, 255, 255),
+    "pad_dark": (14, 23, 95, 255),
     "board": (227, 115, 22, 255),
     "board_light": (255, 210, 77, 255),
     "board_dark": (111, 50, 13, 255),
@@ -65,8 +73,13 @@ def is_key_pixel(r, g, b, a):
         (r > 125 and b > 125 and g < 120 and r - g > 35 and b - g > 35)
         or (r > 80 and b > 90 and g < 75 and abs(r - b) < 85)
     )
+    deep_magenta_fringe = (
+        (r > 74 and b > 74 and g < 82 and min(r, b) - g > 24)
+        or (r > 58 and b > 58 and g < 44 and min(r, b) - g > 24)
+        or (r > 80 and b > 58 and g < 50 and r - g > 40 and b - g > 20)
+    )
     white_grid = r > 232 and g > 232 and b > 232
-    return magenta or pink_fringe or white_grid
+    return magenta or pink_fringe or deep_magenta_fringe or white_grid
 
 
 def chroma_to_alpha(img):
@@ -247,6 +260,14 @@ def shift_cell(cell, dx=0, dy=0):
     return out
 
 
+def squash_cell(cell, scale_y=0.86, dy=5):
+    scaled_h = max(1, round(CELL * scale_y))
+    scaled = cell.resize((CELL, scaled_h), Image.Resampling.NEAREST)
+    out = Image.new("RGBA", (CELL, CELL), TRANSPARENT)
+    out.alpha_composite(scaled, (0, dy))
+    return out
+
+
 def load_ai_direction_cells():
     sheet = Image.open(AI_SOURCE).convert("RGBA")
     cells = [None] * 16
@@ -273,6 +294,33 @@ def build_ai_jump(cells):
         for col, (dx, dy) in enumerate(frame_offsets):
             cell = shift_cell(base, dx, dy)
             draw_ai_stance(cell, row, col, dx, dy, airborne=True)
+            atlas.alpha_composite(cell, (col * CELL, row * CELL))
+    return atlas
+
+
+def build_ai_duck(cells):
+    atlas = Image.new("RGBA", (CELL * DUCK_OUTPUT_COLS, CELL * 16), TRANSPARENT)
+    frame_offsets = [(0, 3), (0, 4), (1, 3), (0, 4)]
+    for row, base in enumerate(cells):
+        for col, (dx, dy) in enumerate(frame_offsets):
+            cell = squash_cell(shift_cell(base, dx, dy), 0.84, 6)
+            draw_ai_stance(cell, row, col, dx, dy, pose="duck")
+            atlas.alpha_composite(cell, (col * CELL, row * CELL))
+    return atlas
+
+
+def build_ai_trick(cells):
+    atlas = Image.new("RGBA", (CELL * TRICK_OUTPUT_COLS, CELL * 16), TRANSPARENT)
+    poses = ["grind", "handplant", "rock", "air", "spin_a", "spin_b"]
+    for row, base in enumerate(cells):
+        for col, pose in enumerate(poses):
+            if pose == "handplant":
+                atlas.alpha_composite(draw_ai_handplant_cell(row), (col * CELL, row * CELL))
+                continue
+            dy = -2 if pose.startswith("air") or pose.startswith("spin") else 1
+            cell = shift_cell(base, 0, dy)
+            draw_ai_stance(cell, row, col, 0, dy, airborne=pose.startswith("air") or pose.startswith("spin"), pose=pose)
+            draw_trick_accent(cell, row, pose)
             atlas.alpha_composite(cell, (col * CELL, row * CELL))
     return atlas
 
@@ -344,18 +392,37 @@ def thick_segment(draw, a, b, thickness, color, outline=True):
     polygon(draw, pts, color, outline)
 
 
-def draw_ai_stance(img, row, frame, body_dx=0, body_dy=0, airborne=False):
+def draw_pad(draw, x, y, w=4.8, h=3.8):
+    rect(draw, x, y, w, h, COLORS["pad_dark"], outline=True)
+    rect(draw, x + 0.3, y - 0.2, max(2.0, w - 2.0), max(1.4, h - 1.8), COLORS["pad_light"], outline=False)
+
+
+def draw_shorts(draw, right_hip, left_hip, front_knee, back_knee):
+    front_short = ((right_hip[0] + front_knee[0]) * 0.54, (right_hip[1] + front_knee[1]) * 0.54 - 0.2)
+    back_short = ((left_hip[0] + back_knee[0]) * 0.54, (left_hip[1] + back_knee[1]) * 0.54 - 0.1)
+    thick_segment(draw, right_hip, front_short, 6.3, COLORS["shorts"], outline=True)
+    thick_segment(draw, left_hip, back_short, 6.0, COLORS["shorts_dark"], outline=True)
+    line(draw, (right_hip[0] - 1.5, right_hip[1] + 0.5), (front_short[0] + 1.2, front_short[1] + 0.6), COLORS["shoe_lace"], width=1, outline=False)
+    line(draw, (left_hip[0] + 1.4, left_hip[1] + 0.5), (back_short[0] - 1.2, back_short[1] + 0.8), COLORS["shoe_lace"], width=1, outline=False)
+
+
+def draw_ai_stance(img, row, frame, body_dx=0, body_dy=0, airborne=False, pose="roll"):
     draw = ImageDraw.Draw(img)
     ux, uy = direction_vector(row)
     right_x, right_y = -uy, ux
     phase = frame * pi * 2 / (JUMP_OUTPUT_COLS if airborne else ROLL_OUTPUT_COLS)
     stride = sin(phase) * (0.7 if not airborne else 0.35)
     tuck = [1.6, 0.8, -0.4, -1.0, -1.2, -0.8, 0.2, 1.0][frame] if airborne else 0
+    crouch = 2.8 if pose == "duck" else 1.8 if pose in ("grind", "rock") else 0
+    if pose == "handplant":
+        crouch = 3.8
+    if pose.startswith("spin"):
+        tuck -= 1.4
 
     board_cx = 24
     board_cy = 39.3 + (tuck * 0.35 if airborne else 0)
     hip_cx = 24 + body_dx * 0.9 - ux * 0.7
-    hip_cy = 30.7 + body_dy * 0.65 + max(0, tuck) * 0.6
+    hip_cy = 30.7 + body_dy * 0.65 + max(0, tuck) * 0.6 + crouch
 
     right_hip = (hip_cx + right_x * 3.2, hip_cy + right_y * 0.8)
     left_hip = (hip_cx - right_x * 3.2, hip_cy - right_y * 0.8)
@@ -363,13 +430,19 @@ def draw_ai_stance(img, row, frame, body_dx=0, body_dy=0, airborne=False):
     # Goofy stance by request: right/front foot on the board nose, left/back foot
     # on the tail.  These points stay ordered along the board axis for every row.
     front_foot = (
-        board_cx + ux * (7.4 + stride) + right_x * 0.7,
-        board_cy + uy * (7.4 + stride) + right_y * 0.7 - 1.0,
+        board_cx + ux * (7.4 + stride) + right_x * (0.7 if pose != "duck" else 0.2),
+        board_cy + uy * (7.4 + stride) + right_y * (0.7 if pose != "duck" else 0.2) - 1.0 + crouch * 0.25,
     )
     back_foot = (
-        board_cx - ux * (6.8 - stride * 0.55) - right_x * 0.7,
-        board_cy - uy * (6.8 - stride * 0.55) - right_y * 0.7 - 1.0,
+        board_cx - ux * (6.8 - stride * 0.55) - right_x * (0.7 if pose != "duck" else 0.2),
+        board_cy - uy * (6.8 - stride * 0.55) - right_y * (0.7 if pose != "duck" else 0.2) - 1.0 + crouch * 0.25,
     )
+    if pose == "grind":
+        front_foot = (front_foot[0] + right_x * 1.2, front_foot[1] + right_y * 1.2)
+        back_foot = (back_foot[0] + right_x * 1.0, back_foot[1] + right_y * 1.0)
+    if pose == "rock":
+        front_foot = (front_foot[0] + ux * 1.2, front_foot[1] + uy * 1.2 - 0.5)
+        back_foot = (back_foot[0] - ux * 1.4, back_foot[1] - uy * 1.4 + 0.6)
     if airborne:
         front_foot = (front_foot[0] - right_x * 0.45, front_foot[1] - 0.9)
         back_foot = (back_foot[0] + right_x * 0.45, back_foot[1] - 0.5)
@@ -389,8 +462,13 @@ def draw_ai_stance(img, row, frame, body_dx=0, body_dy=0, airborne=False):
     thick_segment(draw, front_knee, front_foot, 4.5, COLORS["pants"], outline=True)
     line(draw, right_hip, front_knee, (255, 255, 238, 255), width=1, outline=False)
     line(draw, left_hip, back_knee, (203, 213, 199, 255), width=1, outline=False)
+    draw_shorts(draw, right_hip, left_hip, front_knee, back_knee)
+    draw_pad(draw, front_knee[0] + right_x * 0.7, front_knee[1] - 0.2, 4.8 if pose != "duck" else 4.2, 3.5)
+    draw_pad(draw, back_knee[0] - right_x * 0.7, back_knee[1] + 0.1, 4.6 if pose != "duck" else 4.0, 3.4)
+    draw_pad(draw, hip_cx + right_x * 8.2 + ux * 1.4, hip_cy - 8.0 + right_y * 0.9, 4.0, 3.1)
+    draw_pad(draw, hip_cx - right_x * 7.6 - ux * 0.9, hip_cy - 7.3 - right_y * 0.7, 3.7, 3.0)
 
-    shoe_len = 5.9 if not airborne else 5.5
+    shoe_len = 5.4 if pose == "duck" else 5.9 if not airborne else 5.5
     back_a = (back_foot[0] - ux * shoe_len * 0.54, back_foot[1] - uy * shoe_len * 0.54)
     back_b = (back_foot[0] + ux * shoe_len * 0.46, back_foot[1] + uy * shoe_len * 0.46)
     front_a = (front_foot[0] - ux * shoe_len * 0.46, front_foot[1] - uy * shoe_len * 0.46)
@@ -399,6 +477,70 @@ def draw_ai_stance(img, row, frame, body_dx=0, body_dy=0, airborne=False):
     thick_segment(draw, back_a, back_b, 2.7, COLORS["shoe"], outline=False)
     thick_segment(draw, front_a, front_b, 4.4, COLORS["shoe_dark"], outline=True)
     thick_segment(draw, front_a, front_b, 2.9, COLORS["shoe"], outline=False)
+    line(draw, (back_foot[0] - right_x * 1.8, back_foot[1] - right_y * 1.8), (back_foot[0] + right_x * 1.8, back_foot[1] + right_y * 1.8), COLORS["shoe_lace"], width=1, outline=False)
+    line(draw, (front_foot[0] - right_x * 1.9, front_foot[1] - right_y * 1.9), (front_foot[0] + right_x * 1.9, front_foot[1] + right_y * 1.9), COLORS["shoe_lace"], width=1, outline=False)
+
+
+def draw_trick_accent(img, row, pose):
+    draw = ImageDraw.Draw(img)
+    ux, uy = direction_vector(row)
+    right_x, right_y = -uy, ux
+    if pose == "handplant":
+        shoulder = (24 + right_x * 5.2, 28 + right_y * 1.8)
+        hand = (24 + right_x * 12.2, 39 + right_y * 2.0)
+        thick_segment(draw, shoulder, hand, 4.2, COLORS["skin"], outline=True)
+        rect(draw, hand[0], hand[1], 4, 4, COLORS["skin"], outline=False)
+    elif pose == "grind":
+        line(draw, (12, 42), (36, 42), COLORS["board_light"], width=2, outline=False)
+    elif pose == "rock":
+        nose = (24 + ux * 13.0, 39 + uy * 13.0)
+        rect(draw, nose[0], nose[1], 5, 4, COLORS["brim"], outline=False)
+    elif pose.startswith("spin"):
+        line(draw, (15, 28), (33, 20 if pose == "spin_a" else 34), COLORS["brim"], width=2, outline=False)
+
+
+def draw_ai_handplant_cell(row):
+    img = Image.new("RGBA", (CELL, CELL), TRANSPARENT)
+    draw = ImageDraw.Draw(img)
+    ux, uy = direction_vector(row)
+    bx, by = board_vector(ux, uy)
+    px, py = perp_vector(ux, uy)
+
+    hand = (24 - px * 7.0, 42.0)
+    shoulder = (24 - px * 2.8, 34.2)
+    other_shoulder = (24 + px * 5.0, 34.8)
+    head = (24 + px * 1.0 - ux * 1.4, 38.0)
+    hip = (24 + ux * 1.0, 28.4)
+    front_foot = (24 + bx * 8.6 + px * 1.2, 24.0 + by * 8.6)
+    back_foot = (24 - bx * 7.8 - px * 1.0, 24.5 - by * 7.8)
+    front_knee = ((hip[0] + front_foot[0]) * 0.55 + px * 2.2, (hip[1] + front_foot[1]) * 0.55 + 1.2)
+    back_knee = ((hip[0] + back_foot[0]) * 0.55 - px * 2.0, (hip[1] + back_foot[1]) * 0.55 + 1.6)
+
+    ellipse(draw, 24, 43, 10, 2.5, COLORS["shadow"], outline=False)
+    thick_segment(draw, shoulder, hand, 4.8, COLORS["skin"], outline=True)
+    rect(draw, hand[0], hand[1], 5, 5, COLORS["skin"], outline=False)
+    draw_pad(draw, shoulder[0] - px * 0.5, shoulder[1] + 2.5, 4.4, 3.3)
+    thick_segment(draw, other_shoulder, (other_shoulder[0] + px * 8.0 - ux * 2.0, other_shoulder[1] + 1.2), 4.2, COLORS["skin_shadow"], outline=True)
+    thick_segment(draw, shoulder, hip, 10.0, COLORS["shirt"], outline=True)
+    line(draw, (shoulder[0] + px * 1.5, shoulder[1] - 1.5), (hip[0] + px * 1.8, hip[1] + 1.2), COLORS["stripe"], width=3, outline=False)
+    ellipse(draw, head[0], head[1], 4.8, 5.0, COLORS["skin"], outline=True)
+    rect(draw, head[0] + ux * 1.0, head[1] - 4.2, 8, 4, COLORS["cap"], outline=True)
+    rect(draw, head[0] + ux * 5.0, head[1] - 3.1 + uy * 0.8, 5, 3, COLORS["brim"], outline=False)
+
+    thick_segment(draw, hip, back_knee, 4.8, COLORS["pants_shadow"], outline=True)
+    thick_segment(draw, back_knee, back_foot, 4.2, COLORS["pants_shadow"], outline=True)
+    thick_segment(draw, hip, front_knee, 5.0, COLORS["pants"], outline=True)
+    thick_segment(draw, front_knee, front_foot, 4.4, COLORS["pants"], outline=True)
+    draw_shorts(draw, hip, hip, front_knee, back_knee)
+    draw_pad(draw, front_knee[0], front_knee[1], 4.7, 3.5)
+    draw_pad(draw, back_knee[0], back_knee[1], 4.5, 3.4)
+    thick_segment(draw, (back_foot[0] - bx * 3.0, back_foot[1] - by * 3.0), (back_foot[0] + bx * 3.0, back_foot[1] + by * 3.0), 4.3, COLORS["shoe_dark"], outline=True)
+    thick_segment(draw, (back_foot[0] - bx * 2.4, back_foot[1] - by * 2.4), (back_foot[0] + bx * 2.7, back_foot[1] + by * 2.7), 2.8, COLORS["shoe"], outline=False)
+    thick_segment(draw, (front_foot[0] - bx * 2.7, front_foot[1] - by * 2.7), (front_foot[0] + bx * 3.2, front_foot[1] + by * 3.2), 4.5, COLORS["shoe_dark"], outline=True)
+    thick_segment(draw, (front_foot[0] - bx * 2.2, front_foot[1] - by * 2.2), (front_foot[0] + bx * 2.9, front_foot[1] + by * 2.9), 3.0, COLORS["shoe"], outline=False)
+    line(draw, (back_foot[0] - px * 1.8, back_foot[1] - py * 1.8), (back_foot[0] + px * 1.8, back_foot[1] + py * 1.8), COLORS["shoe_lace"], width=1, outline=False)
+    line(draw, (front_foot[0] - px * 1.9, front_foot[1] - py * 1.9), (front_foot[0] + px * 1.9, front_foot[1] + py * 1.9), COLORS["shoe_lace"], width=1, outline=False)
+    return img
 
 
 def draw_board(draw, cx, cy, ux, uy, length=24):
@@ -566,6 +708,23 @@ def build_jump():
     return atlas
 
 
+def build_duck():
+    atlas = Image.new("RGBA", (CELL * DUCK_OUTPUT_COLS, CELL * 16), TRANSPARENT)
+    for row in range(16):
+        for col in range(DUCK_OUTPUT_COLS):
+            atlas.alpha_composite(draw_roll_cell(row, col), (col * CELL, row * CELL))
+    return atlas
+
+
+def build_trick():
+    atlas = Image.new("RGBA", (CELL * TRICK_OUTPUT_COLS, CELL * 16), TRANSPARENT)
+    for row in range(16):
+        for col in range(TRICK_OUTPUT_COLS):
+            cell = draw_ai_handplant_cell(row) if col == 1 else draw_jump_cell(row, min(col, JUMP_OUTPUT_COLS - 1))
+            atlas.alpha_composite(cell, (col * CELL, row * CELL))
+    return atlas
+
+
 def build_bail():
     atlas = Image.new("RGBA", (CELL * 3, CELL), TRANSPARENT)
     for col in range(3):
@@ -580,9 +739,13 @@ def main():
         ai_cells = load_ai_direction_cells()
         build_ai_roll(ai_cells).save(out_dir / "skater-roll-atlas.png")
         build_ai_jump(ai_cells).save(out_dir / "skater-jump-atlas.png")
+        build_ai_duck(ai_cells).save(out_dir / "skater-duck-atlas.png")
+        build_ai_trick(ai_cells).save(out_dir / "skater-trick-atlas.png")
     else:
         build_roll().save(out_dir / "skater-roll-atlas.png")
         build_jump().save(out_dir / "skater-jump-atlas.png")
+        build_duck().save(out_dir / "skater-duck-atlas.png")
+        build_trick().save(out_dir / "skater-trick-atlas.png")
     build_bail().save(out_dir / "skater-bail-atlas.png")
     print("wrote compass-correct skater atlases")
 

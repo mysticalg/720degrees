@@ -10,6 +10,7 @@ ctx.imageSmoothingEnabled = false;
 const VIEW = { x: 160, y: 0, w: 960, h: 720 };
 const LOW_SCALE_X = LOW_RES.w / VIEW.w;
 const LOW_SCALE_Y = LOW_RES.h / VIEW.h;
+const PLAYER_IMAGE_SCALE = 2.25;
 
 const hud = {
   tickets: document.getElementById('hudTickets'),
@@ -40,15 +41,15 @@ const REFERENCE_CALIBRATION = {
     maxCameraStep: 0.09,
     cameraEase: 0.22,
     playerSpriteScale: 3,
-    playerImageScale: 1.45,
+    playerImageScale: PLAYER_IMAGE_SCALE,
     boardLength: 50,
     note: 'Measured against city_scroll: broad offscreen streets/sidewalks with the player below center.',
   },
   events: {
-    RAMP: { tileW: 178, tileH: 89, anchorX: 0.53, anchorY: 0.58, deadZone: 0.03, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: 1.45 },
-    DOWNHILL: { tileW: 170, tileH: 85, anchorX: 0.51, anchorY: 0.60, deadZone: 0.035, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: 1.45 },
-    SLALOM: { tileW: 174, tileH: 87, anchorX: 0.52, anchorY: 0.60, deadZone: 0.035, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: 1.45 },
-    JUMP: { tileW: 172, tileH: 86, anchorX: 0.52, anchorY: 0.60, deadZone: 0.035, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: 1.45 },
+    RAMP: { tileW: 150, tileH: 56, anchorX: 0.53, anchorY: 0.60, deadZone: 0.03, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: PLAYER_IMAGE_SCALE },
+    DOWNHILL: { tileW: 170, tileH: 85, anchorX: 0.51, anchorY: 0.60, deadZone: 0.035, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: PLAYER_IMAGE_SCALE },
+    SLALOM: { tileW: 174, tileH: 87, anchorX: 0.52, anchorY: 0.60, deadZone: 0.035, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: PLAYER_IMAGE_SCALE },
+    JUMP: { tileW: 172, tileH: 86, anchorX: 0.52, anchorY: 0.60, deadZone: 0.035, follow: 0.24, maxCameraStep: 0.095, cameraEase: 0.24, playerSpriteScale: 3, playerImageScale: PLAYER_IMAGE_SCALE },
   },
 };
 const TILE_W = REFERENCE_CALIBRATION.city.tileW;
@@ -80,13 +81,41 @@ const events = [
 ];
 
 const EVENT_COURSES = {
+  RAMP: {
+    length: 38,
+    startY: 20.4,
+    finishY: 20.4,
+    minX: 4.4,
+    maxX: 31.6,
+    minY: 6.4,
+    maxY: 33.6,
+    halfpipe: {
+      xMin: 5.2,
+      xMax: 30.8,
+      centerY: 20.4,
+      flatHalf: 2.25,
+      lipHalf: 6.9,
+      copingTopY: 13.5,
+      copingBottomY: 27.3,
+    },
+  },
   DOWNHILL: {
     length: 72,
     startY: 4.5,
     finishY: 67,
     minX: 5.5,
     maxX: 30.5,
-    autoSpeed: 2.35,
+    autoSpeed: 3.25,
+    minSpeed: 2.6,
+    maxSpeed: 7.6,
+    duckSpeed: 5.55,
+    slopeBands: [
+      { y0: 4, y1: 15, grade: 1.65, label: 'DROP' },
+      { y0: 15, y1: 27, grade: 0.74, label: 'TURN' },
+      { y0: 27, y1: 45, grade: 1.45, label: 'CHUTE' },
+      { y0: 45, y1: 58, grade: 0.82, label: 'BANK' },
+      { y0: 58, y1: 69, grade: 1.85, label: 'FINISH' },
+    ],
     checkpoints: [
       { y: 11, points: 120 },
       { y: 21, points: 160 },
@@ -107,7 +136,19 @@ const EVENT_COURSES = {
     finishY: 71,
     minX: 4.5,
     maxX: 31.5,
-    autoSpeed: 2.12,
+    autoSpeed: 3.05,
+    minSpeed: 2.4,
+    maxSpeed: 7.2,
+    slopeBands: [
+      { y0: 4, y1: 13.8, grade: 1.55, label: 'APPROACH' },
+      { y0: 13.8, y1: 20.5, grade: 0.52, label: 'DROP' },
+      { y0: 20.5, y1: 28.2, grade: 1.48, label: 'APPROACH' },
+      { y0: 28.2, y1: 36.0, grade: 0.50, label: 'DROP' },
+      { y0: 36.0, y1: 43.9, grade: 1.62, label: 'APPROACH' },
+      { y0: 43.9, y1: 52.2, grade: 0.48, label: 'DROP' },
+      { y0: 52.2, y1: 60.2, grade: 1.72, label: 'APPROACH' },
+      { y0: 60.2, y1: 71.0, grade: 0.55, label: 'LANDING' },
+    ],
     checkpoints: [
       { y: 14, points: 150 },
       { y: 28, points: 180 },
@@ -115,10 +156,10 @@ const EVENT_COURSES = {
       { y: 58, points: 280 },
     ],
     ramps: [
-      { x: 18.5, y: 13.2, w: 6.5, h: 2.2, points: 220 },
-      { x: 13.6, y: 27.4, w: 6.2, h: 2.2, points: 260 },
-      { x: 22.0, y: 43.2, w: 6.6, h: 2.2, points: 320 },
-      { x: 16.5, y: 59.4, w: 7.0, h: 2.4, points: 420 },
+      { x: 18.5, y: 13.2, w: 6.8, h: 2.6, approach: 7.8, landingY: 18.0, points: 220 },
+      { x: 13.6, y: 27.4, w: 6.4, h: 2.7, approach: 7.0, landingY: 32.4, points: 260 },
+      { x: 22.0, y: 43.2, w: 7.0, h: 2.8, approach: 7.4, landingY: 48.1, points: 320 },
+      { x: 16.5, y: 59.4, w: 7.4, h: 3.0, approach: 8.0, landingY: 65.0, points: 420 },
     ],
     targets: [
       { x: 18.2, y: 18.0, r: 1.5, points: 350 },
@@ -179,11 +220,14 @@ const water = [
 const SPRITE_SCALE = REFERENCE_CALIBRATION.city.playerSpriteScale;
 const SKATER_ROLL_FRAMES = 8;
 const SKATER_JUMP_FRAMES = 8;
+const SKATER_DUCK_FRAMES = 4;
+const SKATER_TRICK_FRAMES = 6;
 const DIRECTION_LABELS = ['E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW', 'N', 'NNE', 'NE', 'ENE'];
 const SKATER_SPRITES = createSkaterSprites();
 const SKATER_ATLAS = createSkaterAtlas();
 const TEXTURES = createTextureCache();
 const ATLAS = createPixelAtlas();
+const GENERATED_ENV = createGeneratedEnvironmentAtlas();
 
 const state = {
   screen: 'splash',
@@ -360,6 +404,68 @@ function createTextureCache() {
 
 function drawTextureRect(texture, x, y, w, h) {
   ctx.drawImage(texture, x, y, w, h);
+}
+
+function createGeneratedEnvironmentAtlas() {
+  const img = new Image();
+  const atlas = {
+    img,
+    ready: false,
+    error: false,
+    crops: {
+      asphalt: [38, 56, 115, 104],
+      sidewalk: [38, 183, 130, 78],
+      shopCanopy: [444, 56, 170, 106],
+      shopWide: [628, 56, 225, 116],
+      shopFront: [629, 188, 225, 118],
+      payPadGrid: [48, 407, 104, 85],
+      payPadPlain: [172, 407, 106, 104],
+      deckCrate: [450, 338, 168, 116],
+      deckTile: [628, 348, 138, 82],
+      rampLeft: [348, 461, 174, 148],
+      rampRight: [544, 461, 174, 150],
+      railStraight: [714, 480, 263, 58],
+      railCurve: [724, 554, 258, 83],
+      waterCurve: [42, 534, 152, 91],
+      waterRect: [214, 533, 121, 92],
+      waterPool: [42, 662, 262, 99],
+      arrowRight: [318, 643, 101, 72],
+      arrowLeft: [568, 643, 156, 72],
+      targetRound: [636, 742, 110, 84],
+      targetSmall: [746, 652, 87, 76],
+      cone: [900, 63, 66, 95],
+      barrelCrate: [840, 166, 126, 155],
+      spike: [842, 779, 116, 86],
+    },
+  };
+  img.onload = () => { atlas.ready = true; };
+  img.onerror = () => {
+    atlas.error = true;
+    console.error('Failed to load generated environment atlas');
+  };
+  img.src = 'src/assets/generated-environment-atlas.png';
+  return atlas;
+}
+
+function drawGeneratedEnvAsset(name, x, y, w, h, alpha = 1) {
+  if (!GENERATED_ENV.ready) return false;
+  const crop = GENERATED_ENV.crops[name];
+  if (!crop) return false;
+  const [sx, sy, sw, sh] = crop;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(GENERATED_ENV.img, sx, sy, sw, sh, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  ctx.restore();
+  return true;
+}
+
+function drawGeneratedWaterPatch(cx, cy, w, h, name = 'waterPool', alpha = 0.72) {
+  const projection = activeProjection();
+  const p = worldToScreen(cx, cy);
+  const screenW = w * projection.tileW * 0.34;
+  const screenH = h * projection.tileH * 0.54;
+  return drawGeneratedEnvAsset(name, p.x - screenW * 0.5, p.y - screenH * 0.58, screenW, screenH, alpha);
 }
 
 function createPixelAtlas() {
@@ -550,7 +656,7 @@ function createAudio() {
 function makeEventRun(eventId) {
   const course = EVENT_COURSES[eventId];
   if (!course) return null;
-  return {
+  const run = {
     id: eventId,
     progress: 0,
     checkpoints: new Set(),
@@ -558,7 +664,34 @@ function makeEventRun(eventId) {
     ramps: new Set(),
     targets: new Set(),
     wasAirborne: false,
+    courseSpeed: course.autoSpeed || 0,
+    pose: 'roll',
+    trick: null,
+    trickTimer: 0,
+    ducking: false,
+    sectionIndex: 0,
+    landingStatus: '',
   };
+  if (eventId === 'RAMP') {
+    run.courseSpeed = 0;
+    run.ramp = {
+      along: CENTER.x,
+      cross: course.halfpipe.centerY,
+      alongVel: 0,
+      crossVel: 3.2,
+      airZ: 0,
+      airVz: 0,
+      surface: 0,
+      lip: null,
+      lastLip: null,
+      grindSide: null,
+      grindAward: 0,
+      pumpCooldown: 0,
+      launchSide: null,
+      landedClean: true,
+    };
+  }
+  return run;
 }
 
 function getEventCourse() {
@@ -587,8 +720,8 @@ function activeWorldBounds() {
     return {
       minX: course.minX,
       maxX: course.maxX,
-      minY: 1.5,
-      maxY: course.length - 1.5,
+      minY: course.minY ?? 1.5,
+      maxY: course.maxY ?? course.length - 1.5,
     };
   }
   return { minX: 1.5, maxX: WORLD_W - 1.5, minY: 1.5, maxY: WORLD_H - 1.5 };
@@ -759,6 +892,8 @@ function createSkaterAtlas() {
     anchorY: 43,
     roll: makeSheet('src/assets/skater-roll-atlas.png', SKATER_ROLL_FRAMES, 16),
     jump: makeSheet('src/assets/skater-jump-atlas.png', SKATER_JUMP_FRAMES, 16),
+    duck: makeSheet('src/assets/skater-duck-atlas.png', SKATER_DUCK_FRAMES, 16),
+    trick: makeSheet('src/assets/skater-trick-atlas.png', SKATER_TRICK_FRAMES, 16),
     bail: makeSheet('src/assets/skater-bail-atlas.png', 3, 1),
   };
 }
@@ -869,7 +1004,11 @@ function boundsForPoints(points) {
 }
 
 function skaterAtlasReady() {
-  return SKATER_ATLAS.roll.ready && SKATER_ATLAS.jump.ready && SKATER_ATLAS.bail.ready;
+  return SKATER_ATLAS.roll.ready
+    && SKATER_ATLAS.jump.ready
+    && SKATER_ATLAS.duck.ready
+    && SKATER_ATLAS.trick.ready
+    && SKATER_ATLAS.bail.ready;
 }
 
 function offsetCommands(commands, dx, dy) {
@@ -932,10 +1071,10 @@ function enterEvent(eventDef) {
   state.eventRun = makeEventRun(eventDef.id);
   state.eventTimer = eventDef.seconds;
   state.cityTimer = CITY_TIME + state.classLevel * 4;
-  state.player.x = CENTER.x;
-  state.player.y = state.eventRun ? EVENT_COURSES[eventDef.id].startY : CENTER.y + 4;
+  state.player.x = state.eventRun?.ramp ? state.eventRun.ramp.along : CENTER.x;
+  state.player.y = state.eventRun?.ramp ? state.eventRun.ramp.cross : state.eventRun ? EVENT_COURSES[eventDef.id].startY : CENTER.y + 4;
   state.player.vx = 0;
-  state.player.vy = state.eventRun ? 0.12 : -0.18;
+  state.player.vy = state.eventRun?.ramp ? 0 : state.eventRun ? 0.12 : -0.18;
   state.player.facing = state.eventRun ? Math.PI / 2 : -Math.PI / 2;
   state.player.z = 0;
   state.player.vz = 0;
@@ -957,6 +1096,10 @@ function finishEvent() {
   state.player.y = CENTER.y;
   state.player.vx = 0;
   state.player.vy = 0;
+  state.player.z = 0;
+  state.player.vz = 0;
+  state.player.spin = 0;
+  state.player.spinScore = 0;
   postMessage(`CASH $${e.cash} - CLASS ${state.classLevel}`, 2.5);
 }
 
@@ -984,6 +1127,16 @@ function updatePlayer(dt) {
     p.vy *= 0.92;
     p.x += p.vx;
     p.y += p.vy;
+    return;
+  }
+
+  const eventCourse = getEventCourse();
+  if (state.mode === 'event' && state.event?.id === 'RAMP' && eventCourse) {
+    updateRampPlayer(dt, eventCourse);
+    return;
+  }
+  if (state.mode === 'event' && eventCourse && (state.event?.id === 'DOWNHILL' || state.event?.id === 'JUMP')) {
+    updateEventCoursePlayer(dt);
     return;
   }
 
@@ -1067,6 +1220,243 @@ function updatePlayer(dt) {
   }
 }
 
+function inputTurn() {
+  const left = state.keys.has('arrowleft') || state.keys.has('a');
+  const right = state.keys.has('arrowright') || state.keys.has('d');
+  return (left ? -1 : 0) + (right ? 1 : 0);
+}
+
+function updateEventCoursePlayer(dt) {
+  const p = state.player;
+  const run = state.eventRun;
+  const turn = inputTurn();
+  const airborne = p.z > 0.01;
+  if (p.pushTimer > 0) p.pushTimer = Math.max(0, p.pushTimer - dt);
+  if (turn !== 0 && airborne) {
+    p.spin += turn * dt * VISUAL_SPIN_RATE;
+    p.spinScore += Math.abs(turn) * dt * TRICK_SCORE_SPIN_RATE;
+  }
+  p.vz -= 18 * dt;
+  p.z = Math.max(0, p.z + p.vz * dt);
+  if (p.z <= 0) {
+    if (p.spinScore >= Math.PI * 3.7) awardScore(720, '720');
+    else if (p.spinScore >= Math.PI * 1.7) awardScore(360, '360');
+    p.z = 0;
+    p.vz = 0;
+    p.spin = 0;
+    p.spinScore = 0;
+  }
+  if (p.invuln > 0) p.invuln -= dt;
+  const courseSpeed = run?.courseSpeed || 0;
+  const ducking = state.event?.id === 'DOWNHILL' && p.z <= 0.02 && courseSpeed > (getEventCourse()?.duckSpeed || 5.4);
+  if (run) {
+    run.ducking = ducking;
+    run.pose = ducking ? 'duck' : p.z > 0.02 ? 'air' : 'roll';
+  }
+  p.anim += Math.max(0.08, courseSpeed * dt * 2.4);
+}
+
+function updateRampPlayer(dt, course) {
+  const p = state.player;
+  const run = state.eventRun || makeEventRun('RAMP');
+  state.eventRun = run;
+  const ramp = run.ramp;
+  const hp = course.halfpipe;
+  const turn = inputTurn();
+  const airborne = ramp.airZ > 0.01;
+
+  if (p.pushTimer > 0) p.pushTimer = Math.max(0, p.pushTimer - dt);
+  if (ramp.pumpCooldown > 0) ramp.pumpCooldown = Math.max(0, ramp.pumpCooldown - dt);
+  if (run.trickTimer > 0) run.trickTimer = Math.max(0, run.trickTimer - dt);
+
+  if (run.trick === 'handplant') {
+    ramp.crossVel += (hp.centerY - ramp.cross) * dt * 2.2;
+    ramp.cross += ramp.crossVel * dt;
+    ramp.along += ramp.alongVel * dt * 0.35;
+    if (run.trickTimer <= 0) {
+      run.trick = null;
+      run.pose = 'roll';
+      ramp.crossVel = Math.sign(hp.centerY - ramp.cross || 1) * 4.2;
+    }
+  } else if (run.trick === 'rock') {
+    ramp.crossVel += (hp.centerY - ramp.cross) * dt * 3.4;
+    ramp.cross += ramp.crossVel * dt;
+    ramp.along += ramp.alongVel * dt * 0.45;
+    if (run.trickTimer <= 0) {
+      run.trick = null;
+      run.pose = 'roll';
+      ramp.crossVel = Math.sign(hp.centerY - ramp.cross || 1) * 5.0;
+    }
+  } else if (run.trick === 'grind') {
+    ramp.alongVel += turn * dt * 5.2;
+    ramp.alongVel *= Math.pow(0.988, dt * 60);
+    ramp.alongVel = clamp(ramp.alongVel, -5.8, 5.8);
+    ramp.along += ramp.alongVel * dt;
+    ramp.cross = ramp.grindSide < 0 ? hp.copingTopY : hp.copingBottomY;
+    ramp.crossVel = 0;
+    ramp.grindAward += Math.abs(ramp.alongVel) * dt;
+    if (ramp.grindAward > 2.2) {
+      awardScore(320, 'COPING GRIND');
+      ramp.grindAward = 0;
+    }
+    if (Math.abs(turn) === 0 && Math.abs(ramp.alongVel) < 0.75) {
+      run.trick = null;
+      run.pose = 'roll';
+      ramp.crossVel = -ramp.grindSide * 3.4;
+    }
+  } else if (airborne) {
+    ramp.airVz -= 16.5 * dt;
+    ramp.airZ = Math.max(0, ramp.airZ + ramp.airVz * dt);
+    ramp.cross += ramp.crossVel * dt * 0.82;
+    ramp.along += ramp.alongVel * dt;
+    p.spin += turn * dt * VISUAL_SPIN_RATE;
+    p.spinScore += Math.abs(turn) * dt * TRICK_SCORE_SPIN_RATE;
+    run.pose = Math.abs(p.spin) > 0.7 ? 'air-spin' : 'air';
+    if (ramp.airZ <= 0) {
+      const surface = rampSurfaceAt(ramp.cross, course);
+      const offRamp = ramp.cross < hp.copingTopY - 1.2 || ramp.cross > hp.copingBottomY + 1.2;
+      if (offRamp || Math.abs(p.spin) > 1.1 && Math.abs(normalizeAngle(p.spin)) > 0.65) {
+        courseCrash('BAD LANDING', 180);
+        ramp.cross = hp.centerY;
+        ramp.crossVel = 2.6;
+      } else {
+        awardScore(p.spinScore >= Math.PI * 1.7 ? 360 : 180, 'CLEAN AIR');
+        ramp.crossVel *= 0.9;
+        ramp.cross = clamp(ramp.cross, hp.copingTopY + 0.25, hp.copingBottomY - 0.25);
+        run.landingStatus = 'clean';
+      }
+      ramp.airZ = 0;
+      ramp.airVz = 0;
+      p.spin = 0;
+      p.spinScore = 0;
+      run.pose = 'roll';
+      ramp.surface = surface.height;
+    }
+  } else {
+    const surface = rampSurfaceAt(ramp.cross, course);
+    const gravity = -Math.sign(surface.offset || 0) * surface.height * 9.6;
+    ramp.crossVel += gravity * dt;
+    ramp.crossVel *= Math.pow(surface.height > 0 ? 0.994 : 0.986, dt * 60);
+    ramp.alongVel += turn * dt * (surface.height > 0.65 ? 4.6 : 3.0);
+    ramp.alongVel *= Math.pow(0.982, dt * 60);
+    ramp.crossVel = clamp(ramp.crossVel, -8.6, 8.6);
+    ramp.alongVel = clamp(ramp.alongVel, -5.6, 5.6);
+    ramp.cross += ramp.crossVel * dt;
+    ramp.along += ramp.alongVel * dt;
+    ramp.surface = surface.height;
+    run.pose = 'roll';
+    const lipSide = rampLipSide(ramp.cross, course);
+    if (lipSide && Math.abs(ramp.alongVel) > 2.0 && Math.abs(ramp.crossVel) < 2.4) {
+      run.trick = 'grind';
+      run.pose = 'grind';
+      run.trickTimer = 0;
+      ramp.grindSide = lipSide;
+      ramp.cross = lipSide < 0 ? hp.copingTopY : hp.copingBottomY;
+      ramp.grindAward = 0;
+      awardScore(180, 'GRIND');
+    } else if (lipSide && Math.sign(ramp.crossVel) === lipSide && Math.abs(ramp.crossVel) > 6.2) {
+      ramp.airZ = 0.08;
+      ramp.airVz = 5.0 + Math.abs(ramp.crossVel) * 0.38;
+      ramp.launchSide = lipSide;
+      run.pose = 'air';
+      p.spinScore = 0;
+      awardScore(180, 'AIR');
+    }
+    if (ramp.cross < hp.copingTopY - 1.7 || ramp.cross > hp.copingBottomY + 1.7) {
+      courseCrash('OVER THE DECK', 180);
+      ramp.cross = hp.centerY;
+      ramp.crossVel = -Math.sign(ramp.cross - hp.centerY || 1) * 2.8;
+    }
+  }
+
+  ramp.along = clamp(ramp.along, hp.xMin + 0.8, hp.xMax - 0.8);
+  if (ramp.along <= hp.xMin + 0.85 || ramp.along >= hp.xMax - 0.85) ramp.alongVel *= -0.35;
+  p.x = ramp.along;
+  p.y = ramp.cross;
+  p.z = ramp.airZ;
+  p.vx = ramp.alongVel * dt;
+  p.vy = ramp.crossVel * dt;
+  if (Math.abs(ramp.alongVel) + Math.abs(ramp.crossVel) > 0.05) p.facing = Math.atan2(ramp.crossVel, ramp.alongVel || 0.001);
+  p.anim += Math.max(0.08, Math.hypot(ramp.alongVel, ramp.crossVel) * dt * 2.6);
+  run.courseSpeed = Math.hypot(ramp.alongVel, ramp.crossVel);
+  run.progress = clamp((state.event.seconds - state.eventTimer) / state.event.seconds, 0, 1);
+  if (p.invuln > 0) p.invuln -= dt;
+}
+
+function rampSurfaceAt(cross, course) {
+  const hp = course.halfpipe;
+  const offset = cross - hp.centerY;
+  const absOffset = Math.abs(offset);
+  const height = clamp((absOffset - hp.flatHalf) / (hp.lipHalf - hp.flatHalf), 0, 1);
+  return { offset, height };
+}
+
+function rampLipSide(cross, course) {
+  const hp = course.halfpipe;
+  if (cross <= hp.copingTopY + 0.55) return -1;
+  if (cross >= hp.copingBottomY - 0.55) return 1;
+  return 0;
+}
+
+function rampPump() {
+  const course = getEventCourse();
+  const run = state.eventRun;
+  const ramp = run?.ramp;
+  if (!course || !ramp || ramp.pumpCooldown > 0 || state.player.bail > 0) return;
+  const surface = rampSurfaceAt(ramp.cross, course);
+  const direction = Math.sign(ramp.crossVel) || Math.sign(ramp.cross - course.halfpipe.centerY) || 1;
+  const gain = surface.height > 0.22 ? 1.05 + surface.height * 0.72 : 0.34;
+  ramp.crossVel = clamp(ramp.crossVel + direction * gain, -8.8, 8.8);
+  ramp.pumpCooldown = 0.14;
+  state.player.pushTimer = 0.18;
+  state.player.anim += 0.7;
+}
+
+function rampContextAction(course) {
+  const p = state.player;
+  const run = state.eventRun;
+  const ramp = run?.ramp;
+  if (!ramp || run.trick) return;
+  const lipSide = rampLipSide(ramp.cross, course);
+  if (!lipSide) {
+    p.z = 0.02;
+    p.vz = 5.8;
+    ramp.airZ = p.z;
+    ramp.airVz = p.vz;
+    p.spinScore = 0;
+    run.pose = 'air';
+    audio.msg();
+    return;
+  }
+  const speed = Math.hypot(ramp.crossVel, ramp.alongVel);
+  if (speed > 5.2 && Math.sign(ramp.crossVel) === lipSide) {
+    ramp.airZ = 0.08;
+    ramp.airVz = 5.6 + Math.abs(ramp.crossVel) * 0.45;
+    ramp.crossVel *= 0.56;
+    p.z = ramp.airZ;
+    p.vz = ramp.airVz;
+    p.spinScore = 0;
+    run.pose = 'air';
+    run.trick = null;
+    awardScore(220, 'VERT AIR');
+  } else if (Math.sign(ramp.crossVel) === -lipSide && speed > 2.3) {
+    run.trick = 'rock';
+    run.pose = 'rock';
+    run.trickTimer = 0.58;
+    ramp.cross = lipSide < 0 ? course.halfpipe.copingTopY : course.halfpipe.copingBottomY;
+    ramp.crossVel = -lipSide * 1.2;
+    awardScore(300, 'ROCK ROLL');
+  } else {
+    run.trick = 'handplant';
+    run.pose = 'handplant';
+    run.trickTimer = 0.72;
+    ramp.cross = lipSide < 0 ? course.halfpipe.copingTopY : course.halfpipe.copingBottomY;
+    ramp.crossVel = 0;
+    awardScore(360, 'HANDPLANT');
+  }
+  audio.msg();
+}
+
 function distanceToSegment(px, py, x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -1136,6 +1526,10 @@ function updateEvent(dt) {
   state.eventTimer -= dt;
   const course = getEventCourse();
   if (course) {
+    if (state.event?.id === 'RAMP') {
+      if (state.eventTimer <= 0) finishEvent();
+      return;
+    }
     updateCourseRun(dt, course);
     if (state.player.y >= course.finishY || state.eventTimer <= 0) finishEvent();
     return;
@@ -1157,12 +1551,28 @@ function updateCourseRun(dt, course) {
   const p = state.player;
   const run = state.eventRun || makeEventRun(state.event.id);
   state.eventRun = run;
-  const id = course === EVENT_COURSES.DOWNHILL ? 'DOWNHILL' : 'JUMP';
-  const autoSpeed = course.autoSpeed + Math.min(0.35, state.classLevel * 0.025);
+  const id = state.event?.id === 'DOWNHILL' ? 'DOWNHILL' : 'JUMP';
+  const turn = inputTurn();
+  const band = eventSlopeBand(course, p.y);
+  const grade = band?.grade ?? 1;
+  const pump = run.pendingPump || 0;
+  run.pendingPump = 0;
+  const drag = id === 'DOWNHILL' ? 0.16 : 0.20;
+  const gradeAccel = id === 'DOWNHILL' ? 1.55 : 1.35;
+  run.courseSpeed = clamp(
+    (run.courseSpeed || course.autoSpeed) + (grade * gradeAccel - drag * (run.courseSpeed || course.autoSpeed)) * dt + pump,
+    course.minSpeed || 2,
+    course.maxSpeed || 7,
+  );
+  run.sectionIndex = Math.max(0, course.slopeBands?.indexOf(band) ?? 0);
 
   if (p.bail <= 0) {
-    p.y = Math.min(course.length - 1.5, p.y + autoSpeed * dt);
+    p.x += turn * dt * (2.0 + run.courseSpeed * 0.45);
+    p.y = Math.min(course.length - 1.5, p.y + run.courseSpeed * dt);
   }
+  p.vx = turn * dt * (2.0 + run.courseSpeed * 0.45);
+  p.vy = run.courseSpeed * dt;
+  p.facing = Math.atan2(run.courseSpeed, turn * (2.0 + run.courseSpeed * 0.45) || 0.001);
 
   const center = eventCourseCenter(id, p.y);
   const halfWidth = eventCourseHalfWidth(id, p.y);
@@ -1183,21 +1593,25 @@ function updateCourseRun(dt, course) {
 
   course.obstacles?.forEach((obstacle, index) => {
     if (run.obstacles.has(index)) return;
-    if (p.z < 0.35 && dist(p.x, p.y, obstacle.x, obstacle.y) < (obstacle.type === 'barrier' ? 1.1 : 0.75)) {
+    const duckBonus = run.ducking ? 0.75 : 1;
+    if (p.z < 0.35 && dist(p.x, p.y, obstacle.x, obstacle.y) < (obstacle.type === 'barrier' ? 1.1 : 0.75) * duckBonus) {
       run.obstacles.add(index);
-      p.vx *= -0.5;
-      p.vy *= -0.45;
+      run.courseSpeed *= 0.52;
       courseCrash('WIPEOUT', 140);
     }
   });
 
   course.ramps?.forEach((ramp, index) => {
     if (run.ramps.has(index)) return;
-    if (p.z <= 0.05 && pointInCourseRect(p.x, p.y, ramp)) {
+    const onApproach = p.y >= ramp.y - ramp.approach && p.y < ramp.y - ramp.h * 0.5 && Math.abs(p.x - ramp.x) < ramp.w * 0.72;
+    if (onApproach) run.sectionIndex = index;
+    if (p.z <= 0.05 && p.y >= ramp.y - ramp.h * 0.55 && p.y <= ramp.y + ramp.h * 0.75 && Math.abs(p.x - ramp.x) < ramp.w * 0.55) {
       run.ramps.add(index);
       p.z = 0.04;
-      p.vz = shops[1].bought ? 9.6 : 8.4;
+      p.vz = (shops[1].bought ? 5.2 : 4.5) + run.courseSpeed * 0.86;
       p.spinScore = 0;
+      run.launchIndex = index;
+      run.landingStatus = 'airborne';
       awardScore(ramp.points, 'LAUNCH');
     }
   });
@@ -1211,16 +1625,37 @@ function updateCourseRun(dt, course) {
   });
 
   if (run.wasAirborne && p.z <= 0.02) {
+    let hitTarget = false;
     course.targets?.forEach((target, index) => {
       if (run.targets.has(index)) return;
       if (dist(p.x, p.y, target.x, target.y) <= target.r) {
         run.targets.add(index);
+        hitTarget = true;
+        run.landingStatus = 'target';
         awardScore(target.points, 'TARGET');
       }
     });
+    if (id === 'JUMP' && !hitTarget) {
+      const inWater = course.water?.some((pool) => pointInCourseRect(p.x, p.y, pool));
+      const launch = Number.isFinite(run.launchIndex) ? course.ramps[run.launchIndex] : null;
+      const shortLanding = launch && p.y < launch.landingY - 1.4;
+      if (inWater || shortLanding) {
+        run.landingStatus = inWater ? 'splash' : 'short';
+        p.x = launch ? launch.x : eventCourseCenter(id, p.y);
+        p.y = launch ? launch.landingY - 0.6 : p.y;
+        courseCrash(inWater ? 'SPLASH' : 'SHORT LANDING', 180);
+      } else {
+        run.landingStatus = 'deck';
+        awardScore(90, 'LANDING');
+      }
+    }
   }
   run.wasAirborne = p.z > 0.02;
   run.progress = clamp((p.y - course.startY) / (course.finishY - course.startY), 0, 1);
+}
+
+function eventSlopeBand(course, y) {
+  return course.slopeBands?.find((band) => y >= band.y0 && y < band.y1) || course.slopeBands?.[course.slopeBands.length - 1] || null;
 }
 
 function pointInCourseRect(x, y, rect) {
@@ -1236,6 +1671,15 @@ function courseCrash(label, penalty) {
   p.bail = shops[2].bought ? 0.25 : 0.45;
   p.z = 0;
   p.vz = 0;
+  if (state.eventRun) {
+    state.eventRun.pose = 'bail';
+    state.eventRun.trick = null;
+    state.eventRun.landingStatus = label.toLowerCase();
+    if (state.eventRun.ramp) {
+      state.eventRun.ramp.airZ = 0;
+      state.eventRun.ramp.airVz = 0;
+    }
+  }
   state.score = Math.max(0, state.score - penalty);
   state.shake = 0.18;
   postMessage(label, 0.75);
@@ -1395,6 +1839,34 @@ function drawIsoTexturedRect(x, y, w, h, texture, tint, stroke = null, lineWidth
   }
 }
 
+function drawIsoDither(x, y, w, h, color, count, z = 0, seed = 1) {
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const n = (i * 1664525 + seed * 1013904223 + Math.round(x * 73 + y * 137)) >>> 0;
+    const px = x + ((n >>> 7) % 1000) / 1000 * w;
+    const py = y + ((n >>> 19) % 1000) / 1000 * h;
+    const p = isoPoint(px, py, z);
+    const size = (n & 3) === 0 ? 2 : 1;
+    ctx.fillRect(p.x, p.y, size, size);
+  }
+  ctx.restore();
+}
+
+function drawIsoHatch(x, y, w, h, color, step = 1.2, z = 0) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  for (let t = -h; t < w; t += step) {
+    const x1 = x + clamp(t, 0, w);
+    const y1 = y + clamp(-t, 0, h);
+    const x2 = x + clamp(t + h, 0, w);
+    const y2 = y + clamp(h - t, 0, h);
+    drawIsoLineZ(x1, y1, z, x2, y2, z);
+  }
+  ctx.restore();
+}
+
 function drawIsoWall(x, y, w, h, height, top, sideA, sideB) {
   drawIsoRect(x, y, w, h, top, '#6e6c77', 2);
   drawIsoPoly([[x, y + h], [x + w, y + h], [x + w, y + h, height], [x, y + h, height]], sideA, '#5c3f42', 2);
@@ -1499,8 +1971,20 @@ function drawSpeckles(px, py, x, y, type) {
 }
 
 function drawCityFloor() {
-  drawIsoTexturedRect(0, 0, WORLD_W, WORLD_H, TEXTURES.concrete, '#ffffff10', '#8f9298', 2);
-  drawConcreteSeams(0, 0, WORLD_W, WORLD_H, 5.6, '#9ca0a866');
+  drawIsoTexturedRect(0, 0, WORLD_W, WORLD_H, TEXTURES.asphalt, '#181d2a66', '#252a35', 1);
+  drawIsoDither(0, 0, WORLD_W, WORLD_H, '#aab0bc66', 780, 0, 41);
+  drawIsoDither(0, 0, WORLD_W, WORLD_H, '#070b12aa', 520, 0, 42);
+
+  drawSourceSidewalkIsland(-1.8, -0.9, 13.2, 8.0);
+  drawSourceSidewalkIsland(22.3, -1.2, 15.8, 8.8);
+  drawSourceSidewalkIsland(-1.6, 27.8, 12.8, 10.2);
+  drawSourceSidewalkIsland(24.2, 24.5, 14.0, 12.4);
+  drawSourceSidewalkIsland(10.6, 10.8, 14.7, 3.7);
+  drawSourceSidewalkIsland(10.9, 21.9, 14.1, 3.4);
+  drawSourceTealRetainer(1.5, 2.2, 8.8, 4.2);
+  drawSourceTealRetainer(25.0, 3.0, 8.0, 4.4);
+  drawSourceTealRetainer(2.0, 28.8, 8.6, 4.0);
+  drawSourceTealRetainer(25.0, 27.1, 8.2, 4.2);
 
   drawIsoTexturedRect(0, 15.45, WORLD_W, 5.1, TEXTURES.asphalt, '#00000018', '#0f141d', 2);
   drawIsoTexturedRect(15.45, 0, 5.1, WORLD_H, TEXTURES.asphalt, '#00000022', '#0f141d', 2);
@@ -1510,11 +1994,13 @@ function drawCityFloor() {
   drawIsoTexturedRect(25.1, 0, 2.35, WORLD_H, TEXTURES.asphalt, '#00000016', '#151923', 2);
   drawRoadCurbs();
   drawRoadDashes();
+  drawIsoHatch(0, 15.45, WORLD_W, 5.1, '#30374455', 1.35);
+  drawIsoHatch(15.45, 0, 5.1, WORLD_H, '#30374444', 1.35);
 
-  drawIsoRect(0, 0, 5.8, 9.8, '#07520c', '#032807', 2);
-  drawIsoRect(30.1, 0, 5.9, 9.8, '#07520c', '#032807', 2);
-  drawIsoRect(0, 27.2, 8.2, 8.8, '#07520c', '#032807', 2);
-  drawIsoRect(27.2, 27.1, 8.8, 8.9, '#07520c', '#032807', 2);
+  drawIsoRect(0, 0, 5.8, 9.8, '#07520cdd', '#032807', 2);
+  drawIsoRect(30.1, 0, 5.9, 9.8, '#07520cdd', '#032807', 2);
+  drawIsoRect(0, 27.2, 8.2, 8.8, '#07520cdd', '#032807', 2);
+  drawIsoRect(27.2, 27.1, 8.8, 8.9, '#07520cdd', '#032807', 2);
 
   drawIsoTexturedRect(3.2, 3.4, 7.7, 5.4, TEXTURES.tan, '#d9313122', '#6f2230', 2);
   drawIsoTexturedRect(24.1, 3.8, 7.8, 5.2, TEXTURES.water, '#0ad6e744', '#056f80', 2);
@@ -1532,6 +2018,35 @@ function drawCityFloor() {
   drawSidewalkCurb(22.6, 18.0, 1.25, 5.6);
   drawIsoWall(12.9, 5.6, 6.8, 2.5, 74, '#60657a', '#484e62', '#343a4c');
   drawIsoWall(21.7, 11.1, 5.6, 2.2, 62, '#5a6076', '#43485d', '#303548');
+  drawIsoDither(12.9, 5.6, 6.8, 2.5, '#c3c9d355', 80, 0, 44);
+  drawIsoDither(21.7, 11.1, 5.6, 2.2, '#c3c9d355', 60, 0, 45);
+}
+
+function drawSourceSidewalkIsland(x, y, w, h) {
+  drawIsoTexturedRect(x, y, w, h, TEXTURES.concrete, '#d9dce5cc', '#858b96', 2);
+  drawIsoRect(x + 0.22, y + 0.22, Math.max(0.4, w - 0.44), Math.max(0.4, h - 0.44), '#c4c9d3aa', '#a2a7b2', 1);
+  drawIsoDither(x + 0.18, y + 0.18, Math.max(0.4, w - 0.36), Math.max(0.4, h - 0.36), '#6f778566', Math.round(w * h * 3.5), 0, 57);
+  ctx.save();
+  ctx.strokeStyle = '#eef2f8aa';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < Math.max(2, Math.floor(w)); i += 2) drawIsoLine(x + i, y + 0.3, x + i, y + h - 0.3);
+  for (let i = 1; i < Math.max(2, Math.floor(h)); i += 2) drawIsoLine(x + 0.3, y + i, x + w - 0.3, y + i);
+  ctx.restore();
+  drawIsoRect(x, y + h - 0.28, w, 0.28, '#8d939bcc', '#676d75', 1);
+  drawIsoRect(x + w - 0.28, y, 0.28, h, '#9aa0aacc', '#676d75', 1);
+}
+
+function drawSourceTealRetainer(x, y, w, h) {
+  drawIsoTexturedRect(x, y, w, h, TEXTURES.water, '#0fcfd444', '#086875', 2);
+  drawIsoWall(x + 0.35, y + 0.35, w - 0.7, h - 0.7, 56, '#12d8d9', '#07909a', '#05616f');
+  drawIsoDither(x + 0.35, y + 0.35, w - 0.7, h - 0.7, '#063f4888', Math.round(w * h * 4.5), 0, 63);
+  ctx.save();
+  ctx.strokeStyle = '#075b63';
+  ctx.lineWidth = 2;
+  for (let i = -2; i < w + h; i += 1.25) {
+    drawIsoLine(x + clamp(i, 0, w), y + clamp(i - w, 0, h), x + clamp(i - h, 0, w), y + clamp(i, 0, h));
+  }
+  ctx.restore();
 }
 
 function drawConcreteSeams(x, y, w, h, step, color) {
@@ -1634,13 +2149,28 @@ function drawIsoLine(x1, y1, x2, y2) {
   ctx.stroke();
 }
 
+function drawIsoLineZ(x1, y1, z1, x2, y2, z2) {
+  const a = isoPoint(x1, y1, z1);
+  const b = isoPoint(x2, y2, z2);
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+}
+
 function drawReferenceCityDetails() {
+  drawSourceLogoPad(3.6, 4.2, 5.8, 2.6, ['DOWNHILL', 'PARK'], '#711724', '#ffd942');
+  drawSourceLogoPad(26.1, 4.7, 4.9, 2.1, ['RAMP', 'PARK'], '#711724', '#ffd942');
+  drawSourceLogoPad(4.4, 27.0, 5.1, 2.3, ['JUMP', 'PARK'], '#1934a8', '#f4f7ff');
+  drawSourceLogoPad(25.6, 26.2, 5.4, 2.4, ['SLALOM', 'PARK'], '#711724', '#ffd942');
   drawSidewalkCurb(13.2, 13.2, 3.7, 1.1);
   drawSidewalkCurb(19.6, 21.7, 4.2, 1.1);
   drawSidewalkCurb(12.3, 19.4, 1.1, 4.2);
   drawSidewalkCurb(22.7, 12.2, 1.1, 4.5);
   drawIsoTexturedRect(5.6, 18.7, 3.1, 2.1, TEXTURES.water, '#0ad6e744', '#056f80', 2);
   drawIsoTexturedRect(27.0, 13.8, 3.3, 2.2, TEXTURES.water, '#0ad6e744', '#056f80', 2);
+  drawGeneratedWaterPatch(7.15, 19.75, 3.1, 2.1, 'waterRect', 0.62);
+  drawGeneratedWaterPatch(28.65, 14.9, 3.3, 2.2, 'waterRect', 0.62);
   drawCyanBowl(8.6, 27.4, 2.4, 1.55);
   drawCyanBowl(28.0, 8.4, 2.8, 1.75);
   drawArcadeSign(14.2, 20.3, ['SKATE', 'OR DIE!']);
@@ -1649,10 +2179,20 @@ function drawReferenceCityDetails() {
   drawPayHerePad(6.2, 29.4, 'PAY HERE');
 }
 
+function drawSourceLogoPad(x, y, w, h, lines, fill, textColor) {
+  drawIsoTexturedRect(x, y, w, h, TEXTURES.sign, '#ffffff10', '#172034', 2);
+  drawIsoRect(x + 0.15, y + 0.15, w - 0.3, h - 0.3, fill + 'dd', '#f6d34a', 1);
+  const p = worldToScreen(x + w * 0.5, y + h * 0.52);
+  lines.forEach((line, index) => {
+    drawBitmapTextShadow(line, p.x, p.y - 20 + index * 18, line.length > 7 ? 3 : 4, textColor, 'center');
+  });
+}
+
 function drawCyanBowl(x, y, rw, rh) {
   const p = worldToScreen(x, y);
   const projection = activeProjection();
-  drawFacetedPool(p.x, p.y - 10, rw * projection.tileW * 0.36, rh * projection.tileH * 0.62);
+  const drawn = drawGeneratedWaterPatch(x, y, rw, rh, rw > 2.6 ? 'waterPool' : 'waterCurve', 0.88);
+  if (!drawn) drawFacetedPool(p.x, p.y - 10, rw * projection.tileW * 0.36, rh * projection.tileH * 0.62);
 }
 
 function drawFacetedPool(cx, cy, rx, ry) {
@@ -1720,7 +2260,9 @@ function drawPayHerePad(x, y, label) {
   const p = worldToScreen(x, y);
   const flash = Math.floor(state.animTime * 6 + x) % 2 === 0;
   drawIsoRect(x - 1.5, y - 0.55, 3, 1.1, '#5dff2f', '#178918', 2);
-  ctx.drawImage(ATLAS.payPad, p.x - 54, p.y - 72, 108, 34);
+  if (!drawGeneratedEnvAsset('payPadPlain', p.x - 58, p.y - 84, 116, 58)) {
+    ctx.drawImage(ATLAS.payPad, p.x - 54, p.y - 72, 108, 34);
+  }
   if (!flash) {
     ctx.fillStyle = '#00000022';
     ctx.fillRect(p.x - 54, p.y - 72, 108, 34);
@@ -1732,7 +2274,9 @@ function drawShopPad(x, y, label) {
   const p = worldToScreen(x, y);
   drawIsoRect(x - 1.65, y - 0.55, 3.3, 1.1, '#4aff24', '#187b18', 2);
   drawIsoRect(x - 1.25, y - 0.35, 2.5, 0.7, '#7dff42', '#2a9a22', 1);
-  ctx.drawImage(ATLAS.payPad, p.x - 50, p.y - 20, 100, 32);
+  if (!drawGeneratedEnvAsset('payPadGrid', p.x - 50, p.y - 34, 100, 48)) {
+    ctx.drawImage(ATLAS.payPad, p.x - 50, p.y - 20, 100, 32);
+  }
   drawBitmapTextShadow(label, p.x, p.y - 7, label.length > 8 ? 3 : 4, '#174ecb', 'center');
 }
 
@@ -1768,42 +2312,227 @@ function drawEventArena() {
 }
 
 function drawRampArena() {
-  drawIsoTexturedRect(1.5, 0, 33.5, 36, TEXTURES.ramp, '#d8934a18', '#9c6f55', 2);
-  drawConcreteSeams(1.5, 0, 33.5, 36, 3.2, '#ac806a88');
-  drawSpeckleField(2, 0, 32, 36, '#755e5866', 170);
+  const hp = EVENT_COURSES.RAMP.halfpipe;
+  drawIsoTexturedRect(0, 0, 36, 38, TEXTURES.wall, '#9ea0ba66', null, 0);
+  drawIsoRect(0, 0, 36, 38, '#0a3b0e55', null, 0);
+  drawRampBackWall(hp, hp.copingTopY - 0.45, 132, true);
+  drawRampBackWall(hp, hp.copingBottomY + 0.62, 112, false);
+  drawRampBrickLip(hp.xMin - 1.25, hp.copingTopY - 0.85, hp.xMax - hp.xMin + 2.5, 92, true);
 
-  drawIsoWall(1.6, 3.2, 9.2, 6.9, 156, '#b93734', '#8e2528', '#641923');
-  drawBrickFace(1.6, 10.1, 9.2, 156);
-  drawIsoWall(21.3, 3.8, 10.6, 5.4, 118, '#b93734', '#8e2528', '#641923');
-  drawBrickFace(21.3, 9.2, 10.6, 118);
+  drawIsoTexturedRect(hp.xMin - 1.35, hp.copingTopY - 0.95, hp.xMax - hp.xMin + 2.7, hp.copingBottomY - hp.copingTopY + 1.9, TEXTURES.tan, '#b5622e22', '#7b3e2f', 2);
+  drawIsoRect(hp.xMin - 1.1, hp.copingTopY - 0.7, hp.xMax - hp.xMin + 2.2, hp.copingBottomY - hp.copingTopY + 1.4, '#d4925c88', '#763525', 2);
+  drawCurvedHalfpipeScreen(hp);
+  drawHalfpipeDeckFace(hp.xMin - 0.95, hp.copingTopY - 0.75, hp.xMax - hp.xMin + 1.9, 1.55, '#f4cf70', '#8a372b');
+  drawHalfpipeDeckFace(hp.xMin - 0.95, hp.copingBottomY - 0.95, hp.xMax - hp.xMin + 1.9, 1.75, '#d37a38', '#66222a');
+  drawRampBrickLip(hp.xMin - 1.25, hp.copingBottomY + 0.65, hp.xMax - hp.xMin + 2.5, 76, false);
 
-  drawIsoTexturedRect(5.1, 8.4, 26.4, 24.8, TEXTURES.tan, '#9c542d22', '#7e4d35', 2);
-  drawIsoTexturedRect(6.5, 9.7, 23.4, 22.2, TEXTURES.ramp, '#f3cf9d30', '#a9775d', 2);
-  drawIsoTexturedRect(9.4, 12.3, 17.8, 16.6, TEXTURES.ramp, '#ffe1b533', '#c89170', 2);
+  drawRampLattice(hp.xMin - 0.95, hp.copingTopY - 0.45, hp.xMax + 0.95, hp.copingTopY - 0.45, 96);
+  drawRampLattice(hp.xMin - 0.95, hp.copingBottomY + 0.45, hp.xMax + 0.95, hp.copingBottomY + 0.45, -96);
+  drawWoodRail(hp.xMin - 0.5, hp.copingTopY - 0.45, hp.xMax + 0.5, hp.copingTopY - 0.45);
+  drawWoodRail(hp.xMin - 0.5, hp.copingBottomY + 0.45, hp.xMax + 0.5, hp.copingBottomY + 0.45);
+  drawVerticalRampEndWall(hp.xMin - 0.9, hp.copingTopY + 0.2, hp.copingBottomY - hp.copingTopY - 0.4, 78);
+  drawVerticalRampEndWall(hp.xMax + 0.9, hp.copingTopY + 0.2, hp.copingBottomY - hp.copingTopY - 0.4, 78);
+  drawRampArrow(7.5, hp.centerY, false);
+  drawRampArrow(28.8, hp.centerY, true);
+  drawBitmapTextShadow('RAMP', worldToScreen(18, hp.centerY).x, worldToScreen(18, hp.centerY).y - 88, 5, '#ffe15c', 'center');
+}
 
-  drawRampTransitionBand(7.2, 9.4, 22.6, false);
-  drawRampTransitionBand(7.2, 31.0, 22.6, true);
-  drawIsoRect(7.0, 9.1, 23.0, 1.0, '#f3b118', '#8e5b14', 2);
-  drawIsoRect(7.0, 31.1, 23.0, 1.0, '#f3b118', '#8e5b14', 2);
-  for (let i = 0; i < 9; i++) {
-    const y = 12.2 + i * 1.85;
-    drawIsoLine(9.2, y, 27.1, y);
+function drawHalfpipeStrip(x, y, w, h, fill, stroke) {
+  drawIsoTexturedRect(x, y, w, h, TEXTURES.ramp, '#ffd18c22', stroke, 1);
+  drawIsoRect(x, y, w, h, fill + 'bb', stroke, 1);
+}
+
+function drawRampBackWall(hp, y, height, above) {
+  const wallY = y + (above ? -2.0 : 0.4);
+  const wallH = above ? 2.1 : 2.4;
+  drawIsoWall(hp.xMin - 1.4, wallY, hp.xMax - hp.xMin + 2.8, wallH, height, '#bb3b32', '#8f272b', '#5c1724');
+  drawBrickFace(hp.xMin - 1.4, wallY + wallH, hp.xMax - hp.xMin + 2.8, height);
+  const p1 = worldToScreen(hp.xMin + 1.2, wallY + wallH * 0.5);
+  const p2 = worldToScreen(hp.xMin + 6.0, wallY + wallH * 0.5);
+  const baseY = Math.min(p1.y, p2.y) - height * 0.55;
+  ctx.save();
+  ctx.fillStyle = '#8b9099';
+  ctx.strokeStyle = '#5e6470';
+  ctx.lineWidth = 3;
+  for (let i = 0; i < 3; i++) {
+    const x = p1.x + i * 72;
+    ctx.fillRect(x, baseY, 48, 58);
+    ctx.strokeRect(x, baseY, 48, 58);
+    ctx.strokeStyle = '#dde4ef';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 10, baseY + 43);
+    ctx.lineTo(x + 25, baseY + 16);
+    ctx.moveTo(x + 25, baseY + 43);
+    ctx.lineTo(x + 41, baseY + 18);
+    ctx.stroke();
+    ctx.strokeStyle = '#5e6470';
+    ctx.lineWidth = 3;
   }
+  ctx.restore();
+}
 
-  drawRampLattice(4.2, 8.8, 31.2, 8.8, 62);
-  drawRampLattice(4.2, 32.2, 31.2, 32.2, -62);
-  drawWoodRail(4.2, 8.4, 31.2, 8.4);
-  drawWoodRail(4.2, 32.5, 31.2, 32.5);
-  drawIsoTexturedRect(5.4, 19.2, 26.2, 4.0, TEXTURES.tan, '#c36a2d28', '#8f5435', 2);
-  drawIsoTexturedRect(7.0, 23.0, 22.8, 7.2, TEXTURES.ramp, '#ffe0ac38', '#bc876a', 2);
-  drawIsoRect(7.2, 22.1, 22.8, 0.95, '#f2b218', '#865717', 2);
-  drawIsoRect(7.2, 30.1, 22.8, 0.95, '#f2b218', '#865717', 2);
-  drawRampLattice(4.8, 21.9, 31.0, 21.9, 50);
-  drawRampLattice(4.8, 30.8, 31.0, 30.8, -50);
-  drawWoodRail(4.8, 21.6, 31.0, 21.6);
-  drawWoodRail(4.8, 31.0, 31.0, 31.0);
-  drawRampArrow(17.8, 25.6, false);
-  drawEventDeckPatch(18, 20.5, '#f0a04a');
+function drawCurvedHalfpipeScreen(hp) {
+  const yStart = hp.copingTopY;
+  const yEnd = hp.copingBottomY;
+  const steps = 18;
+  const colors = ['#f1ca70', '#e7b466', '#d89155', '#c77a42', '#d89155', '#e7b466', '#f1ca70'];
+  ctx.save();
+  for (let i = 0; i < steps; i++) {
+    const t0 = i / steps;
+    const t1 = (i + 1) / steps;
+    const y0 = yStart + (yEnd - yStart) * t0;
+    const y1 = yStart + (yEnd - yStart) * t1;
+    const z0 = rampSurfaceDrawHeight(y0, hp);
+    const z1 = rampSurfaceDrawHeight(y1, hp);
+    const curve = Math.max(z0, z1) / 74;
+    const shade = Math.min(colors.length - 1, Math.floor(t0 * colors.length));
+    const fill = curve < 0.08 ? '#c9773f' : colors[shade];
+    drawIsoPoly([
+      [hp.xMin + 0.25, y0, z0],
+      [hp.xMax - 0.25, y0, z0],
+      [hp.xMax - 0.25, y1, z1],
+      [hp.xMin + 0.25, y1, z1],
+    ], fill, '#895031', i % 3 === 0 ? 2 : 1);
+    drawHalfpipeBandDither(hp, y0, y1, z0, z1, curve > 0.18 ? '#fff0c766' : '#3d1e1644', 44, i + 7);
+    if (i % 2 === 0) {
+      ctx.strokeStyle = curve > 0.22 ? '#f8dda0aa' : '#70402a66';
+      ctx.lineWidth = 1;
+      drawIsoLineZ(hp.xMin + 0.7, y0, z0 + 1, hp.xMax - 0.7, y0, z0 + 1);
+    }
+  }
+  ctx.strokeStyle = '#f8e0a2';
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= 7; i++) {
+    const t = i / 7;
+    const x1 = hp.xMin + 1.2 + (hp.xMax - hp.xMin - 2.4) * t;
+    drawIsoLineZ(
+      x1,
+      hp.copingTopY + 0.7,
+      rampSurfaceDrawHeight(hp.copingTopY + 0.7, hp) + 1,
+      x1 + 0.38,
+      hp.copingBottomY - 0.7,
+      rampSurfaceDrawHeight(hp.copingBottomY - 0.7, hp) + 1,
+    );
+  }
+  drawIsoRect(hp.xMin + 0.25, hp.centerY - hp.flatHalf * 0.46, hp.xMax - hp.xMin - 0.5, hp.flatHalf * 0.92, '#bd6d3ecc', '#653225', 2);
+  drawHalfpipeContours(hp);
+  ctx.restore();
+}
+
+function drawHalfpipeBandDither(hp, y0, y1, z0, z1, color, count, seed) {
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const n = (i * 1664525 + seed * 1013904223) >>> 0;
+    const tx = ((n >>> 8) % 1000) / 1000;
+    const ty = ((n >>> 20) % 1000) / 1000;
+    const x = hp.xMin + 0.7 + (hp.xMax - hp.xMin - 1.4) * tx;
+    const y = y0 + (y1 - y0) * ty;
+    const z = z0 + (z1 - z0) * ty;
+    const p = isoPoint(x, y, z + 1);
+    ctx.fillRect(p.x, p.y, (n & 3) === 0 ? 2 : 1, 1);
+  }
+  ctx.restore();
+}
+
+function rampSurfaceDrawHeight(y, hp) {
+  const surface = rampSurfaceAt(y, { halfpipe: hp });
+  const eased = surface.height * surface.height * (3 - 2 * surface.height);
+  return Math.round(eased * 74);
+}
+
+function drawVerticalRampEndWall(x, y, h, height) {
+  drawIsoWall(x - 0.28, y, 0.56, h, height, '#d7a166', '#9f5a32', '#6e2d24');
+  ctx.save();
+  ctx.strokeStyle = '#efd09a77';
+  ctx.lineWidth = 2;
+  for (let yy = y + 1; yy < y + h; yy += 2.0) drawIsoLine(x - 0.22, yy, x + 0.22, yy);
+  ctx.restore();
+}
+
+function drawRampBrickLip(x, y, w, height, above) {
+  const a = worldToScreen(x, y);
+  const b = worldToScreen(x + w, y);
+  const dy = above ? -height : height;
+  const skew = above ? -24 : 24;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.lineTo(b.x + skew, b.y + dy);
+  ctx.lineTo(a.x + skew, a.y + dy);
+  ctx.closePath();
+  ctx.fillStyle = '#a9332e';
+  ctx.fill();
+  ctx.strokeStyle = '#551721';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.clip();
+  ctx.strokeStyle = '#dc8676';
+  ctx.lineWidth = 1;
+  const minY = Math.min(a.y, a.y + dy, b.y, b.y + dy) - 8;
+  const maxY = Math.max(a.y, a.y + dy, b.y, b.y + dy) + 8;
+  for (let yy = minY; yy <= maxY; yy += 9) {
+    ctx.beginPath();
+    ctx.moveTo(Math.min(a.x, b.x) - 80, yy);
+    ctx.lineTo(Math.max(a.x, b.x) + 80, yy + (above ? -8 : 8));
+    ctx.stroke();
+  }
+  for (let xx = Math.min(a.x, b.x) - 80; xx <= Math.max(a.x, b.x) + 80; xx += 18) {
+    ctx.beginPath();
+    ctx.moveTo(xx, minY);
+    ctx.lineTo(xx + (above ? -16 : 16), maxY);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawHalfpipeDeckFace(x, y, w, h, fill, stroke) {
+  drawIsoRect(x, y, w, h, fill + 'cc', stroke, 2);
+  const steps = 7;
+  ctx.save();
+  ctx.strokeStyle = '#6d2b27';
+  ctx.lineWidth = 2;
+  for (let i = 1; i < steps; i++) {
+    const xx = x + (w / steps) * i;
+    drawIsoLine(xx, y + 0.05, xx, y + h - 0.05);
+  }
+  ctx.restore();
+}
+
+function drawHalfpipeContours(hp) {
+  const lines = [
+    [hp.copingTopY + 1.1, '#7b3a2d', 3],
+    [hp.copingTopY + 3.2, '#b86935', 2],
+    [hp.copingTopY + 6.1, '#7e432e', 2],
+    [hp.centerY - hp.flatHalf, '#663027', 3],
+    [hp.centerY + hp.flatHalf, '#663027', 3],
+    [hp.copingBottomY - 6.3, '#7e432e', 2],
+    [hp.copingBottomY - 3.1, '#b86935', 2],
+    [hp.copingBottomY - 1.0, '#7b3a2d', 3],
+  ];
+  ctx.save();
+  lines.forEach(([y, color, width]) => {
+    const z = rampSurfaceDrawHeight(y, hp) + 2;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    drawIsoLineZ(hp.xMin + 0.65, y, z, hp.xMax - 0.65, y, z);
+  });
+  ctx.strokeStyle = '#f6d96a';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 6; i++) {
+    const x = hp.xMin + 3.2 + i * 4.1;
+    drawIsoLineZ(
+      x,
+      hp.copingTopY + 0.7,
+      rampSurfaceDrawHeight(hp.copingTopY + 0.7, hp) + 1,
+      x + 0.45,
+      hp.copingBottomY - 0.8,
+      rampSurfaceDrawHeight(hp.copingBottomY - 0.8, hp) + 1,
+    );
+  }
+  ctx.restore();
 }
 
 function drawRampTransitionBand(x, y, w, lower) {
@@ -1921,10 +2650,20 @@ function drawWoodRail(x1, y1, x2, y2) {
 
 function drawDownhillArena() {
   const course = EVENT_COURSES.DOWNHILL;
-  drawIsoTexturedRect(0, 0, 36, course.length, TEXTURES.wall, '#9c9bb722', null, 0);
-  drawCourseRibbon('DOWNHILL', 0, course.length, 3.2, TEXTURES.tan, '#cf73352b', '#7b3b29');
-  drawCourseInnerLine('DOWNHILL', 2, course.length - 2, 5.4, '#f4b518');
-  drawCourseRails('DOWNHILL', 0, course.length, 4);
+  drawIsoRect(-10, -6, 56, course.length + 14, '#a8a8c1', null, 0);
+  drawMassiveCourseDeck('DOWNHILL', 1.5, course.length - 1.5, '#b76a35', '#7f3a28', 1.2);
+  drawDeckSideFaces('DOWNHILL', 1.5, course.length - 1.5, 96);
+  drawCourseRails('DOWNHILL', 1.5, course.length - 1.5, 7.0);
+  drawCourseEdgeGutters('DOWNHILL', 3.5, course.length - 3.0, '#8f4c2f', '#e09a4c');
+  drawWideLaneStripe('DOWNHILL', 7, course.length - 6);
+  course.slopeBands.forEach((band, index) => {
+    const y = (band.y0 + band.y1) * 0.5;
+    const center = eventCourseCenter('DOWNHILL', y);
+    const half = eventCourseHalfWidth('DOWNHILL', y);
+    if (band.grade > 1.25) drawSlopeChevron(center, y, half * 0.95, index % 2 === 0);
+    if (band.grade < 0.9) drawBankPatch('DOWNHILL', band.y0 + 1.4, band.y1 - 1.4, index % 2 === 0);
+    drawDeckSeam('DOWNHILL', band.y0, '#7b3d2b');
+  });
 
   course.checkpoints.forEach((checkpoint, index) => {
     const center = eventCourseCenter('DOWNHILL', checkpoint.y);
@@ -1941,11 +2680,13 @@ function drawDownhillArena() {
 }
 
 function drawSlalomArena() {
-  drawIsoTexturedRect(5.4, 1.6, 25.2, 32.8, TEXTURES.tan, '#65281f22', '#64281f', 2);
-  drawIsoTexturedRect(6, 2, 24, 32, TEXTURES.tan, '#c5743d22', '#87432b', 2);
-  drawIsoTexturedRect(10, 2, 6, 32, TEXTURES.tan, '#f0a04728', '#a95a30', 1);
-  drawIsoTexturedRect(16.5, 2, 3.0, 32, TEXTURES.tan, '#ffb34a33', '#aa6332', 1);
-  drawIsoTexturedRect(20, 2, 5, 32, TEXTURES.tan, '#b8613728', '#8d3f2b', 1);
+  drawIsoRect(-8, -6, 52, 46, '#aaa9c0', null, 0);
+  drawIsoTexturedRect(4.2, 0.8, 27.6, 35.2, TEXTURES.tan, '#b8683522', '#64281f', 2);
+  drawIsoRect(5.0, 1.6, 26.0, 33.6, '#c8793dcc', '#7b3a2a', 2);
+  drawIsoRect(10.2, 2.4, 5.8, 31.8, '#e7a14acc', '#9c552e', 1);
+  drawIsoRect(16.4, 2.4, 3.3, 31.8, '#ffc24ecc', '#a76030', 1);
+  drawIsoRect(20.3, 2.4, 5.8, 31.8, '#b65f35cc', '#743429', 1);
+  drawDeckSideFacesFixed(4.2, 0.8, 27.6, 35.2, 72);
   for (let y = 5.2; y < 31; y += 4.8) drawEventDeckPatch(13.1, y, '#e4a047');
   for (let i = 0; i < 8; i++) {
     const x = CENTER.x + Math.sin(i * 1.3) * 4.2;
@@ -1962,26 +2703,237 @@ function drawSlalomArena() {
 
 function drawJumpArena() {
   const course = EVENT_COURSES.JUMP;
-  drawIsoTexturedRect(0, 0, 36, course.length, TEXTURES.wall, '#c8c9d922', null, 0);
-  drawCourseRibbon('JUMP', 0, course.length, 3.8, TEXTURES.tan, '#d9893b26', '#8f552f');
-  drawCourseRails('JUMP', 0, course.length, 4.5);
+  drawIsoRect(-10, -6, 56, course.length + 14, '#aaa9c0', null, 0);
+  drawMassiveCourseDeck('JUMP', 1.5, course.length - 1.5, '#c7783b', '#8b4a2c', 1.4);
+  drawDeckSideFaces('JUMP', 1.5, course.length - 1.5, 88);
+  drawCourseRails('JUMP', 1.5, course.length - 1.5, 7.0);
+  drawCourseEdgeGutters('JUMP', 3.5, course.length - 4.0, '#8c4a2e', '#e1a24c');
+  drawJumpCourseLanes(course);
 
   course.water.forEach((pool) => {
-    drawIsoTexturedRect(pool.x - pool.w * 0.5, pool.y - pool.h * 0.5, pool.w, pool.h, TEXTURES.water, '#1f93d433', '#164e7d', 2);
-    drawIsoTexturedRect(pool.x - pool.w * 0.36, pool.y - pool.h * 0.36, pool.w * 0.72, pool.h * 0.72, TEXTURES.water, '#2faee833', '#1978a8', 1);
+    drawIsoWall(pool.x - pool.w * 0.5, pool.y - pool.h * 0.5, pool.w, pool.h, 36, '#1f93d4', '#156c91', '#124e73');
+    drawIsoTexturedRect(pool.x - pool.w * 0.42, pool.y - pool.h * 0.42, pool.w * 0.84, pool.h * 0.84, TEXTURES.water, '#2faee866', '#1978a8', 1);
   });
 
   course.ramps.forEach((ramp, index) => {
-    drawIsoRect(ramp.x - ramp.w * 0.5, ramp.y - ramp.h * 0.5, ramp.w, ramp.h, '#e8c12e', '#8b6818', 2);
-    drawTurnArrowMark(ramp.x, ramp.y + 0.4, index % 2 === 0);
+    drawJumpApproach(ramp, index);
+    drawJumpRampFace(ramp);
   });
   course.targets.forEach((target, index) => drawLandingTarget(target.x, target.y, index === course.targets.length - 1 ? 1.05 : 0.82));
   course.checkpoints.forEach((checkpoint, index) => {
     const center = eventCourseCenter('JUMP', checkpoint.y);
     drawIsoRect(center - 3.2, checkpoint.y - 0.45, 6.4, 0.9, index % 2 ? '#c7cbd3' : '#e6e9ef', '#6f7480', 1);
   });
-  drawCourseInnerLine('JUMP', 5, course.length - 4, 7.2, '#d5d9df');
   drawFinishPad('JUMP', course.finishY);
+}
+
+function drawCourseSlopeBands(id, course) {
+  course.slopeBands?.forEach((band, index) => {
+    const center = eventCourseCenter(id, (band.y0 + band.y1) * 0.5);
+    const half = eventCourseHalfWidth(id, (band.y0 + band.y1) * 0.5);
+    const fill = band.grade > 1.4
+      ? (index % 2 ? '#a9552f' : '#c46b36')
+      : band.grade < 0.75
+        ? '#d99045'
+        : '#bb6334';
+    drawIsoTexturedRect(center - half - 1.2, band.y0, half * 2 + 2.4, band.y1 - band.y0, TEXTURES.tan, `${fill}55`, '#7c3f2d', 1);
+    if (band.label) {
+      const p = worldToScreen(center - half * 0.62, band.y0 + 1.6);
+      drawBitmapTextShadow(band.label, p.x, p.y - 34, 3, '#ffd733', 'center');
+    }
+  });
+}
+
+function drawMassiveCourseDeck(id, yStart, yEnd, fill, stroke, extraWidth = 1.0) {
+  const sections = id === 'JUMP'
+    ? [[yStart, 20.2, '#d78c45'], [20.2, 36.2, '#c97839'], [36.2, 52.2, '#d98e45'], [52.2, yEnd, '#c77839']]
+    : [[yStart, 24, '#bd6f37'], [24, 45, '#aa5e31'], [45, yEnd, '#bd6f37']];
+  for (const [a, b, color] of sections) {
+    drawCourseQuad(id, a, b, extraWidth, color || fill, stroke);
+  }
+  drawCourseWoodGrain(id, yStart, yEnd, extraWidth);
+}
+
+function drawCourseQuad(id, y0, y1, extraWidth, fill, stroke) {
+  const c0 = eventCourseCenter(id, y0);
+  const c1 = eventCourseCenter(id, y1);
+  const h0 = eventCourseHalfWidth(id, y0) + extraWidth;
+  const h1 = eventCourseHalfWidth(id, y1) + extraWidth;
+  drawIsoPoly([
+    [c0 - h0, y0],
+    [c0 + h0, y0],
+    [c1 + h1, y1],
+    [c1 - h1, y1],
+  ], fill, stroke, 2);
+  drawCourseDither(id, y0, y1, extraWidth, '#2c140f44', Math.round((y1 - y0) * Math.max(h0, h1) * 2.8), 0, id.length * 47 + Math.round(y0 * 11));
+  drawCourseDither(id, y0, y1, extraWidth, '#f1b96a33', Math.round((y1 - y0) * Math.max(h0, h1) * 1.6), 0, id.length * 53 + Math.round(y1 * 7));
+}
+
+function drawCourseDither(id, y0, y1, extraWidth, color, count, z = 0, seed = 1) {
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < count; i++) {
+    const n = (i * 1103515245 + seed * 12345) >>> 0;
+    const t = ((n >>> 9) % 1000) / 1000;
+    const y = y0 + (y1 - y0) * t;
+    const center = eventCourseCenter(id, y);
+    const half = eventCourseHalfWidth(id, y) + extraWidth - 0.45;
+    const x = center + (((n >>> 21) % 1000) / 500 - 1) * half;
+    const p = isoPoint(x, y, z);
+    ctx.fillRect(p.x, p.y, (n & 3) === 0 ? 2 : 1, 1);
+  }
+  ctx.restore();
+}
+
+function drawCourseWoodGrain(id, y0, y1, extraWidth) {
+  ctx.save();
+  ctx.strokeStyle = '#6f392877';
+  ctx.lineWidth = 2;
+  for (let y = y0 + 1.4; y < y1; y += 2.6) {
+    drawDeckSeam(id, y, '#6f392866');
+  }
+  ctx.strokeStyle = '#e5a75a66';
+  ctx.lineWidth = 1;
+  for (let y = y0 + 0.8; y < y1; y += 1.1) {
+    const c = eventCourseCenter(id, y);
+    const h = eventCourseHalfWidth(id, y) + extraWidth - 0.7;
+    drawIsoLine(c - h, y, c + h, y + 0.22);
+  }
+  ctx.restore();
+}
+
+function drawCourseEdgeGutters(id, yStart, yEnd, dark, light) {
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = light;
+  for (let y = yStart; y < yEnd; y += 3.5) {
+    const y2 = Math.min(yEnd, y + 2.8);
+    const c0 = eventCourseCenter(id, y);
+    const c1 = eventCourseCenter(id, y2);
+    const h0 = eventCourseHalfWidth(id, y);
+    const h1 = eventCourseHalfWidth(id, y2);
+    drawIsoPoly([[c0 - h0 + 0.35, y], [c0 - h0 + 0.78, y], [c1 - h1 + 0.78, y2], [c1 - h1 + 0.35, y2]], dark, '#5b251d', 1);
+    drawIsoPoly([[c0 + h0 - 0.78, y], [c0 + h0 - 0.35, y], [c1 + h1 - 0.35, y2], [c1 + h1 - 0.78, y2]], dark, '#5b251d', 1);
+    ctx.strokeStyle = light;
+    drawIsoLine(c0 - h0 + 1.15, y, c1 - h1 + 1.15, y2);
+    drawIsoLine(c0 + h0 - 1.15, y, c1 + h1 - 1.15, y2);
+  }
+  ctx.restore();
+}
+
+function drawDeckSeam(id, y, color) {
+  const c = eventCourseCenter(id, y);
+  const h = eventCourseHalfWidth(id, y) + 1.1;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  drawIsoLine(c - h, y, c + h, y);
+  ctx.restore();
+}
+
+function drawDeckSideFaces(id, yStart, yEnd, height) {
+  for (let y = yStart; y < yEnd; y += 6.5) {
+    const y2 = Math.min(yEnd, y + 6.5);
+    drawCourseSideFace(id, y, y2, -1, height, '#7a2622');
+    drawCourseSideFace(id, y, y2, 1, height, '#6b211f');
+  }
+}
+
+function drawCourseSideFace(id, y0, y1, side, height, fill) {
+  const c0 = eventCourseCenter(id, y0);
+  const c1 = eventCourseCenter(id, y1);
+  const h0 = eventCourseHalfWidth(id, y0) + 1.2;
+  const h1 = eventCourseHalfWidth(id, y1) + 1.2;
+  const x0 = c0 + h0 * side;
+  const x1 = c1 + h1 * side;
+  drawIsoPoly([[x0, y0], [x1, y1], [x1, y1, height], [x0, y0, height]], fill, '#3c1116', 2);
+}
+
+function drawDeckSideFacesFixed(x, y, w, h, height) {
+  drawIsoPoly([[x, y + h], [x + w, y + h], [x + w, y + h, height], [x, y + h, height]], '#7a2622', '#3c1116', 2);
+  drawIsoPoly([[x + w, y], [x + w, y + h], [x + w, y + h, height], [x + w, y, height]], '#5f1e1e', '#3c1116', 2);
+}
+
+function drawWideLaneStripe(id, y0, y1) {
+  if (id === 'DOWNHILL') {
+    for (let y = y0; y < y1; y += 2.2) {
+      const y2 = Math.min(y1, y + 2.05);
+      const c0 = eventCourseCenter(id, y);
+      const c1 = eventCourseCenter(id, y2);
+      drawIsoPoly([[c0 - 0.42, y], [c0 + 0.42, y], [c1 + 0.42, y2], [c1 - 0.42, y2]], '#ffd126cc', '#9b6917', 1);
+    }
+    for (let y = y0 + 7; y < y1; y += 13.5) {
+      drawSlopeChevron(eventCourseCenter(id, y) - 1.25, y, 4.5, Math.floor(y / 13) % 2 === 0);
+    }
+    return;
+  }
+  for (let y = y0; y < y1; y += 12.5) {
+    const c = eventCourseCenter(id, y);
+    drawIsoRect(c - 1.0, y, 2.0, 6.8, '#ffd126bb', '#9b6917', 1);
+  }
+}
+
+function drawJumpCourseLanes(course) {
+  course.ramps.forEach((ramp, index) => {
+    const approachStart = ramp.y - ramp.approach - 1.2;
+    const approachEnd = ramp.y - 0.45;
+    const laneW = 0.72;
+    for (let y = approachStart; y < approachEnd; y += 1.85) {
+      const y2 = Math.min(approachEnd, y + 1.7);
+      const c0 = ramp.x + Math.sin((y + index) * 0.15) * 0.15;
+      const c1 = ramp.x + Math.sin((y2 + index) * 0.15) * 0.15;
+      drawIsoPoly([[c0 - laneW, y], [c0 + laneW, y], [c1 + laneW, y2], [c1 - laneW, y2]], y % 3.7 < 1.85 ? '#ffd126cc' : '#f5bd2dbb', '#9b6917', 1);
+    }
+    drawSlopeChevron(ramp.x, ramp.y - ramp.approach * 0.46, ramp.w * 1.35, index % 2 === 0);
+    drawIsoRect(ramp.x - ramp.w * 0.9, ramp.landingY - 0.65, ramp.w * 1.8, 1.3, '#d7d9dfdd', '#7c8089', 1);
+  });
+}
+
+function drawSlopeChevron(x, y, width, flip) {
+  const p = worldToScreen(x, y);
+  const w = width * 10;
+  ctx.save();
+  ctx.translate(p.x, p.y - 28);
+  if (flip) ctx.scale(-1, 1);
+  ctx.fillStyle = '#ffd12f';
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.65, -8);
+  ctx.lineTo(-w * 0.18, -25);
+  ctx.lineTo(-w * 0.08, -12);
+  ctx.lineTo(w * 0.45, -12);
+  ctx.lineTo(w * 0.45, 4);
+  ctx.lineTo(-w * 0.08, 4);
+  ctx.lineTo(-w * 0.18, 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawBankPatch(id, y0, y1, left) {
+  const mid = (y0 + y1) * 0.5;
+  const center = eventCourseCenter(id, mid);
+  const half = eventCourseHalfWidth(id, mid);
+  const x = left ? center - half + 0.7 : center + half - 4.5;
+  drawIsoTexturedRect(x, y0, 3.8, y1 - y0, TEXTURES.ramp, '#ffd64a55', '#9b6917', 1);
+}
+
+function drawJumpApproach(ramp, index) {
+  const laneW = 0.82;
+  drawIsoRect(ramp.x - ramp.w * 0.82, ramp.y - ramp.approach, ramp.w * 1.64, ramp.approach, '#b76534dd', '#6d3424', 2);
+  drawIsoDither(ramp.x - ramp.w * 0.82, ramp.y - ramp.approach, ramp.w * 1.64, ramp.approach, '#e7a35a44', Math.round(ramp.w * ramp.approach * 3), 0, index + 77);
+  drawIsoRect(ramp.x - laneW, ramp.y - ramp.approach + 0.9, laneW * 2, ramp.approach - 1.55, '#f7c633cc', '#9b6917', 1);
+  drawIsoRect(ramp.x - laneW * 0.45, ramp.y - ramp.approach + 1.15, laneW * 0.9, ramp.approach - 2.05, '#fff2a2aa', null, 0);
+  drawSlopeChevron(ramp.x, ramp.y - ramp.approach * 0.48, ramp.w * 1.22, index % 2 === 0);
+}
+
+function drawJumpRampFace(ramp) {
+  drawIsoWall(ramp.x - ramp.w * 0.38, ramp.y - ramp.h * 0.58, ramp.w * 0.76, ramp.h * 1.08, 58, '#e0a53b', '#b06b2d', '#7d3923');
+  drawIsoRect(ramp.x - ramp.w * 0.26, ramp.y - ramp.h * 0.18, ramp.w * 0.52, ramp.h * 0.48, '#ffe06a', '#9c781d', 1);
+  const p = worldToScreen(ramp.x, ramp.y);
+  const generatedW = 104;
+  const generatedH = 82;
+  drawGeneratedEnvAsset(ramp.x < CENTER.x ? 'rampLeft' : 'rampRight', p.x - generatedW * 0.5, p.y - generatedH + 6, generatedW, generatedH, 0.88);
+  drawTurnArrowMark(ramp.x, ramp.y + 0.4, false);
 }
 
 function drawCourseRibbon(id, yStart, yEnd, step, texture, tint, stroke) {
@@ -2019,7 +2971,7 @@ function drawCourseInnerLine(id, yStart, yEnd, step, color) {
 function drawFinishPad(id, y) {
   const center = eventCourseCenter(id, y);
   const half = eventCourseHalfWidth(id, y);
-  drawCheckpointStripes(center - half * 0.72, y - 0.9, half * 1.44, 1.8);
+  drawCheckpointStripes(center - half * 0.72, y - 0.45, half * 1.44, 0.9);
   drawBitmapTextShadow('FINISH', worldToScreen(center, y).x, worldToScreen(center, y).y - 52, 4, '#f6d04f', 'center');
 }
 
@@ -2027,6 +2979,7 @@ function drawCourseObstacle(obstacle) {
   const p = worldToScreen(obstacle.x, obstacle.y);
   if (obstacle.type === 'barrier') {
     drawIsoRect(obstacle.x - 1.25, obstacle.y - 0.35, 2.5, 0.7, '#562a1e', '#2b120f', 1);
+    if (drawGeneratedEnvAsset('railStraight', p.x - 42, p.y - 60, 84, 26, 0.96)) return;
     ctx.fillStyle = '#f4d34b';
     ctx.fillRect(p.x - 20, p.y - 36, 40, 8);
     ctx.fillStyle = '#672015';
@@ -2034,6 +2987,7 @@ function drawCourseObstacle(obstacle) {
     ctx.fillRect(p.x + 4, p.y - 34, 8, 4);
     return;
   }
+  if (drawGeneratedEnvAsset('cone', p.x - 17, p.y - 58, 34, 44, 0.96)) return;
   ctx.fillStyle = '#0007';
   ctx.beginPath();
   ctx.ellipse(p.x, p.y - 5, 11, 5, 0, 0, Math.PI * 2);
@@ -2047,10 +3001,10 @@ function drawCourseObstacle(obstacle) {
 }
 
 function drawCheckpointStripes(x, y, w, h) {
-  const stripeW = w / 9;
-  for (let i = 0; i < 9; i++) {
-    drawIsoRect(x + i * stripeW, y, stripeW * 0.72, h, i % 2 ? '#5e281b' : '#ffd033', null, 0);
-  }
+  drawIsoRect(x, y, w, h, '#e1a33d88', '#7d3c24', 1);
+  const stripeW = w / 17;
+  for (let i = 0; i < 17; i += 2) drawIsoRect(x + i * stripeW, y + h * 0.12, stripeW * 0.55, h * 0.76, '#6a2b1f88', null, 0);
+  drawIsoDither(x, y, w, h, '#ffe27a55', Math.round(w * h * 4), 0, 86);
 }
 
 function drawEventDeckPatch(x, y, color) {
@@ -2079,6 +3033,7 @@ function drawTurnArrowMark(x, y, flip) {
 
 function drawLandingTarget(x, y, scale) {
   const p = worldToScreen(x, y);
+  if (drawGeneratedEnvAsset('targetRound', p.x - 31 * scale, p.y - 49 * scale, 62 * scale, 48 * scale, 0.9)) return;
   const rings = [
     [42, '#ffd433'],
     [31, '#d88f29'],
@@ -2199,7 +3154,9 @@ function drawRailsAndRamps() {
     ctx.save();
     ctx.translate(p.x, p.y - 15);
     ctx.rotate(r.dir * 0.35);
-    ctx.drawImage(ATLAS.orangeRamp, -38, -14, 76, 28);
+    if (!drawGeneratedEnvAsset('deckTile', -44, -30, 88, 52)) {
+      ctx.drawImage(ATLAS.orangeRamp, -38, -14, 76, 28);
+    }
     ctx.restore();
   }
   for (const rail of rails) {
@@ -2225,27 +3182,75 @@ function drawShopBuilding(shop) {
   const p = worldToScreen(shop.x, shop.y);
   const label = shop.id === 'SHOES' ? 'HOT SHOES' : shop.id === 'BOARD' ? 'HOT BOARD' : shop.id;
   const closed = shop.bought;
-  drawIsoRect(shop.x - 1.9, shop.y - 0.82, 3.8, 1.5, '#182332', '#e5edf4', 2);
-  drawIsoWall(shop.x - 1.72, shop.y - 1.58, 0.88, 1.72, closed ? 70 : 98, closed ? '#777f8a' : '#16cbd4', '#0f8490', '#0a5c6e');
-  drawIsoWall(shop.x - 0.72, shop.y - 1.75, 0.92, 1.86, closed ? 78 : 116, closed ? '#707984' : '#1edbe4', '#1098a2', '#0d687b');
-  drawIsoWall(shop.x + 0.35, shop.y - 1.55, 0.92, 1.68, closed ? 68 : 94, closed ? '#6d7580' : '#12b5c7', '#0d7f8b', '#0b5c70');
+  const top = closed ? '#737c88' : '#15cfd7';
+  const sideA = closed ? '#4f5965' : '#0b8794';
+  const sideB = closed ? '#3b4450' : '#065f73';
+  drawIsoRect(shop.x - 2.25, shop.y - 0.88, 4.5, 1.78, '#101722', '#ecf2f6', 2);
+  drawIsoRect(shop.x - 2.05, shop.y - 0.66, 4.1, 1.24, '#263243', '#78818d', 1);
+  drawShopShadow(shop.x, shop.y);
+  drawIsoWall(shop.x - 2.05, shop.y - 1.72, 4.1, 2.25, closed ? 82 : 118, top, sideA, sideB);
+  drawIsoRect(shop.x - 1.86, shop.y - 1.48, 3.72, 0.22, closed ? '#8b929b' : '#15b8c4cc', '#075f6b', 1);
+  drawIsoRect(shop.x - 1.9, shop.y - 2.06, 3.8, 0.72, shop.id === 'BOARD' ? '#8c1622' : '#7d1d28', '#421016', 2);
+  drawIsoDither(shop.x - 2.0, shop.y - 1.66, 4.0, 2.05, closed ? '#1d2530aa' : '#023d4588', 95, 0, shop.x * 17 + shop.y * 31);
+  drawShopPanelLines(shop.x - 2.05, shop.y - 1.72, 4.1, 2.25, closed);
+  drawGeneratedShopOverlay(shop, p, closed);
   drawShopWindows(p, closed);
   drawShopPad(shop.x, shop.y + 0.88, label);
-  drawBitmapTextShadow(closed ? 'SOLD' : label, p.x, p.y - 112, label.length > 8 ? 3 : 4, closed ? '#c7ccd4' : '#fff45e', 'center');
+  drawBitmapTextShadow(closed ? 'SOLD' : label, p.x, p.y - 128, label.length > 8 ? 3 : 4, closed ? '#c7ccd4' : '#fff45e', 'center');
+}
+
+function drawGeneratedShopOverlay(shop, p, closed) {
+  if (closed) return;
+  const crop = shop.id === 'BOARD'
+    ? 'shopWide'
+    : shop.id === 'SHOES'
+      ? 'shopFront'
+      : 'shopCanopy';
+  const w = crop === 'shopCanopy' ? 138 : 156;
+  const h = crop === 'shopCanopy' ? 88 : 78;
+  drawGeneratedEnvAsset(crop, p.x - w * 0.5, p.y - h - 50, w, h, 0.88);
+}
+
+function drawShopShadow(x, y) {
+  const p = worldToScreen(x, y);
+  ctx.save();
+  ctx.fillStyle = '#00000055';
+  ctx.beginPath();
+  ctx.ellipse(p.x + 4, p.y - 12, 95, 28, -0.04, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawShopPanelLines(x, y, w, h, closed) {
+  ctx.save();
+  ctx.strokeStyle = closed ? '#98a0aa99' : '#4beaf077';
+  ctx.lineWidth = 2;
+  for (let i = 0.9; i < w; i += 0.9) drawIsoLine(x + i, y + 0.18, x + i, y + h - 0.18);
+  ctx.strokeStyle = closed ? '#303945aa' : '#064f5f99';
+  ctx.lineWidth = 1;
+  for (let i = -1.5; i < w + h; i += 1.25) {
+    drawIsoLine(x + clamp(i, 0, w), y + clamp(i - w, 0, h), x + clamp(i - h, 0, w), y + clamp(i, 0, h));
+  }
+  ctx.restore();
 }
 
 function drawShopWindows(p, closed) {
   const windowColor = closed ? '#394454' : '#1e3f72';
-  ctx.fillStyle = '#0b223e';
-  ctx.fillRect(p.x - 58, p.y - 108, 96, 18);
+  ctx.fillStyle = '#051623';
+  ctx.fillRect(p.x - 68, p.y - 116, 116, 22);
+  ctx.fillStyle = '#d3e8f0';
+  ctx.fillRect(p.x - 66, p.y - 114, 112, 3);
   ctx.fillStyle = windowColor;
-  for (let i = 0; i < 5; i++) {
-    ctx.fillRect(p.x - 52 + i * 18, p.y - 101, 10, 22);
+  for (let i = 0; i < 6; i++) {
+    ctx.fillRect(p.x - 60 + i * 18, p.y - 106, 10, 26);
+    ctx.fillStyle = closed ? '#74808c' : '#6effee';
+    ctx.fillRect(p.x - 58 + i * 18, p.y - 104, 3, 9);
+    ctx.fillStyle = windowColor;
   }
   ctx.fillStyle = closed ? '#8b929c' : '#8cff42';
-  for (let i = 0; i < 8; i++) {
-    ctx.fillRect(p.x - 56 + i * 13, p.y - 72, 4, 5);
-    if (i % 2 === 0) ctx.fillRect(p.x - 54 + i * 13, p.y - 60, 4, 5);
+  for (let i = 0; i < 10; i++) {
+    ctx.fillRect(p.x - 63 + i * 12, p.y - 72, 4, 5);
+    if (i % 2 === 0) ctx.fillRect(p.x - 61 + i * 12, p.y - 60, 4, 5);
   }
 }
 
@@ -2391,6 +3396,8 @@ function getPlayerVisualState() {
   const airborne = p.z > 0.01;
   const boardAngle = screenFacing;
   const landing = airborne && p.vz < -1.2 && p.z < 0.55;
+  const eventPose = state.mode === 'event' ? state.eventRun?.pose || null : null;
+  const eventTrick = state.mode === 'event' ? state.eventRun?.trick || null : null;
   let sheet = 'roll';
   let atlasRow = dir;
   let atlasCol = frame;
@@ -2403,17 +3410,35 @@ function getPlayerVisualState() {
     atlasCol = p.bail > 0.72 ? 0 : p.bail > 0.3 ? 1 : 2;
     spriteKey = `bail_${atlasCol}`;
     fallbackKey = 'bail';
+  } else if (eventTrick === 'grind' || eventTrick === 'handplant' || eventTrick === 'rock') {
+    const trickCols = { grind: 0, handplant: 1, rock: 2 };
+    sheet = 'trick';
+    atlasCol = trickCols[eventTrick] || 0;
+    spriteKey = `${eventTrick}_${dir}`;
+    fallbackKey = eventTrick === 'handplant' ? `air_${dir}` : `crouch_${dir}`;
   } else if (airborne) {
-    sheet = 'jump';
-    if (landing) {
-      atlasCol = 7;
-    } else if (Math.abs(p.spin) > 0.55) {
-      atlasCol = 4 + (Math.floor(Math.abs(p.spin) * 2.6) % 3);
+    if (eventPose === 'air-spin') {
+      sheet = 'trick';
+      atlasCol = 4 + (Math.floor(Math.abs(p.spin) * 3) % 2);
+      spriteKey = `ramp_spin_${dir}`;
+      fallbackKey = `spin_${dir}`;
     } else {
+      sheet = 'jump';
+      if (landing) {
+      atlasCol = 7;
+      } else if (Math.abs(p.spin) > 0.55) {
+      atlasCol = 4 + (Math.floor(Math.abs(p.spin) * 2.6) % 3);
+      } else {
       atlasCol = p.vz > 2.6 ? 2 : p.vz > 0 ? 3 : 4;
+      }
+      spriteKey = `${landing ? 'land' : Math.abs(p.spin) > 0.55 ? 'spin' : 'air'}_${dir}`;
+      fallbackKey = landing ? `land_${dir}` : Math.abs(p.spin) > 0.55 ? `spin_${dir}` : `air_${dir}`;
     }
-    spriteKey = `${landing ? 'land' : Math.abs(p.spin) > 0.55 ? 'spin' : 'air'}_${dir}`;
-    fallbackKey = landing ? `land_${dir}` : Math.abs(p.spin) > 0.55 ? `spin_${dir}` : `air_${dir}`;
+  } else if (eventPose === 'duck') {
+    sheet = 'duck';
+    atlasCol = Math.floor(p.anim) % SKATER_DUCK_FRAMES;
+    spriteKey = `duck_${dir}_${atlasCol}`;
+    fallbackKey = `crouch_${dir}`;
   } else if (p.pushTimer > 0 && speed > 0.02) {
     sheet = 'roll';
     atlasCol = frame;
@@ -2428,6 +3453,8 @@ function getPlayerVisualState() {
     dir,
     frame,
     airborne,
+    eventPose,
+    eventTrick,
     boardAngle,
     spriteKey,
     atlas: {
@@ -2454,7 +3481,8 @@ function drawPlayer() {
 
   const spriteX = Math.round(s.x);
   const groundY = Math.round(s.y - lift);
-  const imageScale = activeProjection().playerImageScale || 1;
+  let imageScale = activeProjection().playerImageScale || 1;
+  if (visual.eventTrick === 'handplant') imageScale *= 1.18;
   if (canDrawSkaterAtlasSprite(visual)) {
     if (p.bail <= 0) {
       drawSkateboardForAtlasSprite(visual, spriteX, groundY, imageScale);
@@ -2588,69 +3616,128 @@ function drawPx(x, y, w, h, color, scale = 1) {
 
 function drawCityMap() {
   ctx.save();
-  ctx.fillStyle = '#2442b4';
+  ctx.fillStyle = '#272c3a';
   ctx.fillRect(VIEW.x, VIEW.y, VIEW.w, VIEW.h);
-  ctx.translate(VIEW.x + VIEW.w / 2, VIEW.y + VIEW.h / 2);
-  ctx.rotate(-0.34);
+  ctx.fillStyle = '#b9bfcb88';
+  for (let i = 0; i < 860; i++) {
+    const x = VIEW.x + ((i * 37) % VIEW.w);
+    const y = VIEW.y + ((i * 71) % VIEW.h);
+    ctx.fillRect(x, y, 2, 2);
+  }
+
+  const cx = VIEW.x + VIEW.w * 0.52;
+  const cy = VIEW.y + VIEW.h * 0.50;
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.36);
   fillScreenPoly(0, 0, [
-    [-390, -18],
-    [-332, -100],
-    [-210, -146],
-    [-12, -168],
-    [178, -148],
-    [314, -90],
-    [390, -14],
-    [364, 64],
-    [210, 134],
-    [12, 168],
-    [-210, 148],
-    [-346, 92],
-  ], '#e6e11a', '#b3a909', 5);
+    [-360, -120], [-210, -196], [-10, -218], [202, -188],
+    [360, -112], [384, 10], [250, 114], [36, 190],
+    [-186, 172], [-354, 82],
+  ], '#d9dce4', '#858b96', 5);
+  fillScreenPoly(0, 0, [
+    [-296, -80], [-174, -138], [-14, -156], [152, -132],
+    [286, -68], [306, 4], [194, 74], [24, 124],
+    [-154, 114], [-282, 58],
+  ], '#f6f8fa', '#a1a7b2', 3);
 
-  ctx.strokeStyle = '#4d4d5e';
-  ctx.lineWidth = 18;
-  ctx.beginPath();
-  ctx.moveTo(-330, 0);
-  ctx.lineTo(330, 0);
-  ctx.stroke();
-  for (const wx of [-345, 345]) {
-    for (const wy of [-95, 95]) drawMapTruck(wx, wy);
-  }
-
-  ctx.rotate(0.34);
-  const blocks = [
-    [-160, -60, '#dc3934', 'DOWNHILL'],
-    [-100, 18, '#6aa9e9', 'JUMP'],
-    [88, -55, '#6aa9e9', 'RAMP'],
-    [155, 18, '#dc3934', 'SLALOM'],
-  ];
-  ctx.textAlign = 'center';
-  for (const [bx, by] of blocks) {
-    drawMapCourseSlats(bx, by);
-  }
-  for (const [bx, by, color, label] of blocks) {
-    drawMapCourseBlock(bx, by, color, label);
-  }
-
-  const px = (state.player.x / WORLD_W - 0.5) * 520;
-  const py = (state.player.y / WORLD_H - 0.5) * 230;
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(px, py, 9, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#10235e';
-  ctx.stroke();
+  drawSourceMapPath(-260, -24, 520, 48);
+  drawSourceMapPath(-26, -142, 52, 284);
+  drawSourceMapPlaza(-170, -88, 118, 72, '#6c2525');
+  drawSourceMapPlaza(54, -86, 118, 72, '#2f4b79');
+  drawSourceMapPlaza(-176, 42, 128, 72, '#2f4b79');
+  drawSourceMapPlaza(72, 38, 128, 76, '#6c2525');
+  drawSourceMapCourse(-310, 66, 122, 84, '#234283');
+  drawSourceMapCourse(214, 50, 120, 88, '#80501e');
+  drawSourceMapCourse(-312, -158, 126, 72, '#8a3b24');
+  drawSourceMapCourse(208, -154, 126, 72, '#9b2727');
+  drawMapTruck(-362, -126);
+  drawMapTruck(362, 116);
   ctx.restore();
 
+  drawSourceMapLabel(VIEW.x + 112, VIEW.y + 398, ['BOARD', 'SHOP'], 'left');
+  drawSourceMapLabel(VIEW.x + 206, VIEW.y + 560, ['JUMP', 'PARK', 'CLASS 1'], 'left');
+  drawSourceMapLabel(VIEW.x + 840, VIEW.y + 520, ['SLALOM', 'PARK', 'CLASS 1'], 'right');
+  drawSourceMapLabel(VIEW.x + 860, VIEW.y + 236, ['RAMP', 'PARK', 'CLASS 1'], 'right');
+  drawSourceMapLabel(VIEW.x + 118, VIEW.y + 246, ['DOWNHILL', 'PARK', 'CLASS 1'], 'left');
+  drawSourceMapLabel(VIEW.x + 500, VIEW.y + 188, ['HELMET', 'SHOP'], 'center');
+  drawSourceMapLabel(VIEW.x + 884, VIEW.y + 392, ['SHOE', 'SHOP'], 'right');
+  drawSourceMapLabel(VIEW.x + 560, VIEW.y + 622, ['PAD', 'SHOP'], 'center');
+  drawSourceYouAreHere(VIEW.x + VIEW.w / 2, VIEW.y + VIEW.h / 2 + 58);
+
+  const px = VIEW.x + 270 + (state.player.x / WORLD_W) * 420;
+  const py = VIEW.y + 252 + (state.player.y / WORLD_H) * 210;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(px, py, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0d1d5f';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
   ctx.fillStyle = '#0525d8';
-  ctx.fillRect(VIEW.x + 610, 520, 285, 132);
+  ctx.fillRect(VIEW.x + 720, 590, 230, 106);
   ctx.strokeStyle = '#07135d';
   ctx.lineWidth = 4;
-  ctx.strokeRect(VIEW.x + 610, 520, 285, 132);
-  drawBitmapText('EQUIPMENT LEVELS:', VIEW.x + 752, 536, 4, '#ffffff', 'center');
+  ctx.strokeRect(VIEW.x + 720, 590, 230, 106);
+  drawBitmapText('EQUIPMENT', VIEW.x + 835, 606, 4, '#ffffff', 'center');
   shops.forEach((s, i) => {
-    drawBitmapText(`${s.id}: ${s.bought ? 1 : 0}`, VIEW.x + 752, 570 + i * 24, 4, '#ffffff', 'center');
+    drawBitmapText(`${s.id}: ${s.bought ? 1 : 0}`, VIEW.x + 835, 630 + i * 18, 3, '#ffffff', 'center');
   });
+}
+
+function drawSourceMapPath(x, y, w, h) {
+  ctx.fillStyle = '#f1f2f5';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#6f7480';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x, y, w, h);
+}
+
+function drawSourceMapPlaza(x, y, w, h, fill) {
+  ctx.fillStyle = '#1b2030';
+  ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
+  ctx.fillStyle = fill;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#ffffff22';
+  for (let i = 0; i < w; i += 14) ctx.fillRect(x + i, y, 5, h);
+}
+
+function drawSourceMapCourse(x, y, w, h, fill) {
+  ctx.fillStyle = '#1b2030';
+  ctx.fillRect(x - 6, y - 6, w + 12, h + 12);
+  ctx.fillStyle = fill;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#ffe04a';
+  ctx.fillRect(x + 14, y + h * 0.5 - 6, w - 28, 12);
+}
+
+function drawSourceMapLabel(x, y, lines, align = 'center') {
+  const width = Math.max(76, Math.max(...lines.map((line) => line.length)) * 12 + 18);
+  const height = lines.length * 19 + 10;
+  const left = align === 'right' ? x - width : align === 'center' ? x - width / 2 : x;
+  drawPixelNoiseRect(left, y, width, height, ['#0525d8', '#1738ea', '#06157d'], 0.04);
+  ctx.strokeStyle = '#06125a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(left, y, width, height);
+  lines.forEach((line, index) => drawBitmapTextShadow(line, left + width / 2, y + 10 + index * 18, 4, '#ffffff', 'center'));
+}
+
+function drawSourceYouAreHere(x, y) {
+  const w = 260;
+  const h = 56;
+  ctx.fillStyle = '#1b1112';
+  ctx.fillRect(x - w / 2, y - h / 2, w, h);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+  drawBitmapTextShadow('YOU ARE HERE', x - 18, y - 10, 6, '#ffffff', 'center');
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(x + 94, y);
+  ctx.lineTo(x + 128, y - 18);
+  ctx.lineTo(x + 128, y + 18);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawMapTruck(x, y) {
@@ -2866,6 +3953,19 @@ function pushPlayer() {
   if (state.screen !== 'playing') return;
   const p = state.player;
   if (p.bail > 0) return;
+  const course = getEventCourse();
+  if (state.mode === 'event' && state.event?.id === 'RAMP' && course) {
+    rampPump();
+    return;
+  }
+  if (state.mode === 'event' && course && (state.event?.id === 'DOWNHILL' || state.event?.id === 'JUMP')) {
+    const run = state.eventRun || makeEventRun(state.event.id);
+    state.eventRun = run;
+    run.pendingPump = (run.pendingPump || 0) + (p.z > 0.01 ? 0.08 : 0.32);
+    p.pushTimer = 0.18;
+    p.anim += 0.65;
+    return;
+  }
   const boardBoost = shops[0].bought ? BOARD_SPEED_MULT : 1;
   const maxSpeed = BASE_MAX_SPEED * boardBoost;
   const impulse = (p.z > 0.01 ? AIR_PUSH_IMPULSE : PUSH_IMPULSE) * boardBoost;
@@ -2884,6 +3984,11 @@ function jumpPlayer() {
   if (state.screen !== 'playing') return;
   const p = state.player;
   if (p.z > 0.01 || p.bail > 0) return;
+  const course = getEventCourse();
+  if (state.mode === 'event' && state.event?.id === 'RAMP' && course) {
+    rampContextAction(course);
+    return;
+  }
   p.z = 0.02;
   p.vz = shops[1].bought ? 8.8 : 7.2;
   p.spinScore = 0;
@@ -2920,9 +4025,12 @@ function renderGameToText() {
   const playerScreen = worldToScreen(state.player.x, state.player.y);
   const visual = getPlayerVisualState();
   const activeCourse = getEventCourse();
-  const eventProgress = activeCourse
+  const eventProgress = state.event?.id === 'RAMP'
+    ? (state.eventRun?.progress || 0)
+    : activeCourse
     ? clamp((state.player.y - activeCourse.startY) / (activeCourse.finishY - activeCourse.startY), 0, 1)
     : 0;
+  const rampState = state.eventRun?.ramp || null;
   return JSON.stringify({
     coordinateSystem: 'world origin top-left, x right, y down; rendered isometric',
     screen: state.screen,
@@ -2970,6 +4078,8 @@ function renderGameToText() {
       frame: visual.frame,
       boardAngle: Number(visual.boardAngle.toFixed(3)),
       airborne: visual.airborne,
+      eventPose: visual.eventPose,
+      eventTrick: visual.eventTrick,
     },
     currentEvent: state.event?.id || null,
     eventRun: state.eventRun ? {
@@ -2978,6 +4088,20 @@ function renderGameToText() {
       checkpoints: Array.from(state.eventRun.checkpoints),
       ramps: Array.from(state.eventRun.ramps),
       targets: Array.from(state.eventRun.targets),
+      pose: state.eventRun.pose,
+      trick: state.eventRun.trick,
+      courseSpeed: Number((state.eventRun.courseSpeed || 0).toFixed(3)),
+      ducking: Boolean(state.eventRun.ducking),
+      sectionIndex: state.eventRun.sectionIndex || 0,
+      landingStatus: state.eventRun.landingStatus || '',
+      ramp: rampState ? {
+        cross: Number(rampState.cross.toFixed(2)),
+        along: Number(rampState.along.toFixed(2)),
+        crossVel: Number(rampState.crossVel.toFixed(2)),
+        alongVel: Number(rampState.alongVel.toFixed(2)),
+        surfaceHeight: Number(rampState.surface.toFixed(2)),
+        airZ: Number(rampState.airZ.toFixed(2)),
+      } : null,
     } : null,
     events: events.map((e) => ({ id: e.id, x: e.x, y: e.y })),
     shops: shops.map((s) => ({ id: s.id, x: s.x, y: s.y, bought: s.bought, price: s.price })),
@@ -3037,8 +4161,15 @@ function setVisualCaptureScenario(name) {
       x: state.player.x + 2.4 + (i % 3) * 0.55,
       y: state.player.y - 2.1 + Math.floor(i / 3) * 0.5,
     }));
-  } else if (name.startsWith('event-')) {
-    const eventId = name.replace('event-', '').toUpperCase();
+  } else if (name.startsWith('event-') || name.startsWith('ramp-') || name.startsWith('downhill-') || name.startsWith('jump-')) {
+    const scenarioEvent = name.startsWith('ramp-')
+      ? 'RAMP'
+      : name.startsWith('downhill-')
+        ? 'DOWNHILL'
+        : name.startsWith('jump-')
+          ? 'JUMP'
+          : name.replace('event-', '').toUpperCase();
+    const eventId = scenarioEvent;
     const eventDef = events.find((e) => e.id === eventId) || events[0];
     const course = EVENT_COURSES[eventDef.id];
     state.mode = 'event';
@@ -3046,21 +4177,111 @@ function setVisualCaptureScenario(name) {
     state.eventRun = makeEventRun(eventDef.id);
     state.eventTimer = eventDef.seconds * 0.62;
     const sampleY = course
-      ? eventDef.id === 'JUMP'
-        ? course.ramps[1].y
-        : course.startY + 18
+      ? eventDef.id === 'RAMP'
+        ? course.halfpipe.centerY
+        : eventDef.id === 'JUMP'
+          ? course.ramps[1].y
+          : course.startY + 18
       : CENTER.y + 6.8;
     state.player.x = course ? eventCourseCenter(eventDef.id, sampleY) : CENTER.x + 1.4;
     state.player.y = sampleY;
-    if (course) state.eventRun.progress = clamp((sampleY - course.startY) / (course.finishY - course.startY), 0, 1);
+    if (course) state.eventRun.progress = eventDef.id === 'RAMP'
+      ? clamp((eventDef.seconds - state.eventTimer) / eventDef.seconds, 0, 1)
+      : clamp((sampleY - course.startY) / (course.finishY - course.startY), 0, 1);
     state.player.facing = course ? Math.PI / 2 : -Math.PI / 2;
+    if (eventDef.id === 'RAMP' && state.eventRun?.ramp) {
+      const ramp = state.eventRun.ramp;
+      const hp = course.halfpipe;
+      ramp.along = CENTER.x;
+      ramp.cross = hp.centerY;
+      ramp.crossVel = 4.1;
+      ramp.alongVel = 0.9;
+      if (name === 'ramp-grind') {
+        ramp.cross = hp.copingTopY;
+        ramp.crossVel = 0;
+        ramp.alongVel = 4.2;
+        ramp.grindSide = -1;
+        state.eventRun.trick = 'grind';
+        state.eventRun.pose = 'grind';
+      } else if (name === 'ramp-air') {
+        ramp.cross = hp.copingBottomY - 0.9;
+        ramp.crossVel = -3.8;
+        ramp.airZ = 1.8;
+        ramp.airVz = 2.6;
+        state.player.z = ramp.airZ;
+        state.player.vz = ramp.airVz;
+        state.player.spin = 1.1;
+        state.eventRun.pose = 'air-spin';
+      } else if (name === 'ramp-handplant') {
+        ramp.cross = hp.copingBottomY;
+        ramp.crossVel = 0;
+        state.eventRun.trick = 'handplant';
+        state.eventRun.pose = 'handplant';
+        state.eventRun.trickTimer = 0.5;
+      } else if (name === 'ramp-rock') {
+        ramp.cross = hp.copingTopY;
+        ramp.crossVel = 1.0;
+        state.eventRun.trick = 'rock';
+        state.eventRun.pose = 'rock';
+        state.eventRun.trickTimer = 0.5;
+      }
+      state.player.x = ramp.along;
+      state.player.y = ramp.cross;
+    }
+    if (eventDef.id === 'DOWNHILL') {
+      if (name === 'downhill-duck') {
+        state.player.y = 36;
+        state.player.x = eventCourseCenter('DOWNHILL', 36);
+        state.eventRun.courseSpeed = 6.4;
+        state.eventRun.ducking = true;
+        state.eventRun.pose = 'duck';
+      } else if (name === 'downhill-turn') {
+        state.player.y = 24;
+        state.player.x = eventCourseCenter('DOWNHILL', 24) + 3.2;
+        state.eventRun.courseSpeed = 5.2;
+      }
+    }
+    if (eventDef.id === 'JUMP') {
+      if (name === 'jump-approach') {
+        const ramp = course.ramps[0];
+        state.player.x = ramp.x;
+        state.player.y = ramp.y - ramp.approach * 0.55;
+        state.eventRun.courseSpeed = 5.8;
+      } else if (name === 'jump-launch') {
+        const ramp = course.ramps[1];
+        state.player.x = ramp.x;
+        state.player.y = ramp.y;
+        state.player.z = 0.8;
+        state.player.vz = 5.6;
+        state.eventRun.courseSpeed = 6.2;
+        state.eventRun.launchIndex = 1;
+        state.eventRun.landingStatus = 'airborne';
+      } else if (name === 'jump-target') {
+        const target = course.targets[2];
+        state.player.x = target.x;
+        state.player.y = target.y;
+        state.eventRun.courseSpeed = 4.8;
+        state.eventRun.targets.add(2);
+        state.eventRun.landingStatus = 'target';
+      }
+    }
+    markScenarioPassedCheckpoints(course);
+    if (name.startsWith('ramp-') || name.startsWith('downhill-') || name.startsWith('jump-')) {
+      state.messageTimer = 0;
+    }
     setCameraPosition(state.player.x, state.player.y);
-    state.message = `${eventDef.id} PARK`;
-    state.messageTimer = 1.4;
+    if (state.messageTimer > 0) state.message = `${eventDef.id} PARK`;
   }
   updateCamera();
   render();
   return renderGameToText();
+}
+
+function markScenarioPassedCheckpoints(course) {
+  if (!course?.checkpoints || !state.eventRun) return;
+  course.checkpoints.forEach((checkpoint, index) => {
+    if (state.player.y >= checkpoint.y - 1.6) state.eventRun.checkpoints.add(index);
+  });
 }
 
 window.render_game_to_text = renderGameToText;
