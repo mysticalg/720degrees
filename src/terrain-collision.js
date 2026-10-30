@@ -11,6 +11,10 @@
     (sample.profile & 7) === 7 &&
     (!!(sample.profile & 64) || level.kind === "ramp");
   const solid = (level, sample) => sample.blocked || barrier(level, sample);
+  // Low-three-bit incline2 is the city's shallow curb, in all eight
+  // orientations. It remains rideable: this is a surface boundary, not a wall.
+  const curb = (level, sample) =>
+    level.name === "city" && sample.type === 0 && (sample.profile & 7) === 2;
   const dot = (a, b) => a.x * b.x + a.y * b.y;
   function cells(level, x, y, barriersOnly = false, maskReader = null) {
     const col = Math.floor(x / TILE - 0.5),
@@ -27,7 +31,13 @@
     const values = samples.map((sample, i) =>
       maskReader
         ? maskReader(points[i].x, points[i].y)
-        : (barriersOnly ? barrier(level, sample) : solid(level, sample))
+        : (
+              barriersOnly === "curbs"
+                ? curb(level, sample)
+                : barriersOnly
+                  ? barrier(level, sample)
+                  : solid(level, sample)
+            )
           ? 1
           : 0,
     );
@@ -76,7 +86,8 @@
       entry = { sample: level.sample };
       cache.set(level, entry);
     }
-    const key = barriersOnly ? "barriers" : "support";
+    const curbsOnly = barriersOnly === "curbs";
+    const key = curbsOnly ? "curbs" : barriersOnly ? "barriers" : "support";
     if (entry[key]) return entry[key];
     if (!entry.barrierRaster) {
       const width = level.columns + 4,
@@ -114,6 +125,7 @@
     }
     const raster = entry.barrierRaster;
     const maskReader = (x, y) => {
+      if (curbsOnly) return curb(level, level.sample(x, y)) ? 1 : 0;
       const col = Math.floor(x / TILE) + 2,
         row = Math.floor(y / TILE) + 2;
       const fence =
@@ -244,9 +256,11 @@
         if (!buckets.has(row)) buckets.set(row, []);
         buckets.get(row).push(segment);
       }
-    const outside = barriersOnly
-      ? barrier(level, level.sample(-8, -8))
-      : solid(level, level.sample(-8, -8));
+    const outside = curbsOnly
+      ? false
+      : barriersOnly
+        ? barrier(level, level.sample(-8, -8))
+        : solid(level, level.sample(-8, -8));
     return (entry[key] = { segments, buckets, outside, paths });
   }
   function blocked(level, x, y, barriersOnly = false) {
@@ -272,8 +286,49 @@
       (s) => dot({ x: point.x - s.a.x, y: point.y - s.a.y }, s.normal) < -1e-8,
     );
   }
+  /** Use the same diagonal curb region for physics and the developer overlay.
+   * Only cut/extend the edge tiles; retain the original orientation coefficients
+   * and neighbouring road/raised-platform profiles. Curbs are never solidified.
+   */
+  function curbSurface(level, x, y, original = level.sample(x, y)) {
+    if (level.name !== "city") return original;
+    // Purchase/map/park entry cells keep their recovered trigger semantics.
+    if (original.type !== 0 && !original.blocked) return original;
+    const inside = blocked(level, x, y, "curbs");
+    if (inside === curb(level, original)) return original;
+    let nearest = null,
+      distance = Infinity;
+    // Sample tile centres, not offsets from the player: the boundary must
+    // remain stationary as the skater moves across it.
+    const left = Math.floor(x / TILE) * TILE + TILE / 2,
+      top = Math.floor(y / TILE) * TILE + TILE / 2;
+    for (let dy = -64; dy <= 64; dy += TILE)
+      for (let dx = -64; dx <= 64; dx += TILE) {
+        const sample = level.sample(left + dx, top + dy),
+          d = (left + dx - x) ** 2 + (top + dy - y) ** 2;
+        if (
+          curb(level, sample) === inside &&
+          !solid(level, sample) &&
+          sample.type === 0 &&
+          d < distance
+        ) {
+          nearest = sample;
+          distance = d;
+        }
+      }
+    return nearest
+      ? {
+          ...original,
+          profile: nearest.profile,
+          type: nearest.type,
+          rawProfile: original.profile,
+          rawType: original.type,
+          contactGeometry: "diagonal-curb",
+        }
+      : original;
+  }
   function surface(level, x, y) {
-    const original = level.sample(x, y),
+    const original = curbSurface(level, x, y),
       occupied = blocked(level, x, y);
     if (occupied === original.blocked) return original;
     if (occupied)
@@ -308,7 +363,7 @@
         }
     }
     nearest ||= original;
-    return {
+    return curbSurface(level, x, y, {
       ...original,
       profile: nearest.profile,
       type: nearest.type,
@@ -316,7 +371,7 @@
       rawProfile: original.profile,
       rawType: original.type,
       contactGeometry: "diagonal",
-    };
+    });
   }
   function sweep(level, from, to, velocity, options = {}) {
     const barriersOnly = !!options.barriersOnly;

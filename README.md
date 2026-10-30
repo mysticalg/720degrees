@@ -6,6 +6,12 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Diagonal city curbs (build 51)
+
+All eight orientations of the city's recovered shallow curb profiles now use a shared diagonal surface contour. This smooths their tile-step boundaries while retaining the original incline coefficients and allowing skating and jumping across them. Coded shop, map and park-entry cells keep their original trigger semantics. This is an intentional playability improvement over square terrain cells.
+
+F8 shows these rideable curb regions in translucent green, with complete outlines and corner/end-cap markers. The green geometry is the same region used to choose curb physics; amber still marks solid walls, red support edges, and cyan sprite masks.
+
 ## Halfpipe update (build 50)
 
 The curved walls now progress through the recovered inclination poses instead of using a shallow pose all the way to the coping. Jump near the lip with B; use a shoulder button or the right stick to spin. Build speed with A first: low speed gives a shorter aerial. Successful aerials land at the same coping and turn back down that wall.

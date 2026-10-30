@@ -139,7 +139,7 @@
         c.fillStyle = "#08111be6";
         c.fillRect(0, 370, 512, 14);
         this.text(
-          "F8: COLLISIONS · RED EDGE / AMBER WALL / CYAN MASK",
+          "F8: RED EDGE / AMBER WALL / GREEN CURB / CYAN MASK",
           8,
           373,
           "#e8f7ff",
@@ -178,6 +178,30 @@
         c.lineTo(edge.b.x, edge.b.y);
       }
       c.stroke();
+      // Curbs are shallow, rideable terrain rather than solid fences. Show
+      // their full width and both ends using the exact physics contour.
+      if (level.name === "city") {
+        const curbs = S.TerrainCollision.debugMesh(level, "curbs");
+        area(curbs, "#50ffb84d");
+        c.strokeStyle = "#75ffd9";
+        c.fillStyle = "#d0fff1";
+        c.lineWidth = 0.8;
+        c.beginPath();
+        for (const edge of curbs?.segments || []) {
+          c.moveTo(edge.a.x, edge.a.y);
+          c.lineTo(edge.b.x, edge.b.y);
+        }
+        c.stroke();
+        for (const path of curbs?.paths || [])
+          for (const point of path)
+            if (
+              point.x >= left &&
+              point.x <= left + 512 &&
+              point.y >= top &&
+              point.y <= top + 384
+            )
+              c.fillRect(point.x - 1, point.y - 1, 2, 2);
+      }
       const read = game.objectRegistry?.readContactWord;
       if (!read) return;
       const mask = (x, bottom, pointer, color) => {
