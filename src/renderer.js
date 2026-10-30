@@ -124,8 +124,7 @@
       c.globalAlpha = 1;
       c.restore();
       this.hud(game, event);
-      if ((game.mapFrames > 0 || game.input.held("map")) && !event)
-        this.map(game);
+      if (game.mapFrames > 0 && !event) this.map(game);
     }
     city(game) {
       const c = this.ctx,
@@ -470,15 +469,14 @@
         this.text(message, 256, 362, "#fff9ba", 8, "center");
       } else {
         this.text(
-          `NEXT TICKET ${S.format(game.nextTicket || 3000)} Â· HOLD TAB FOR MAP`,
+          `NEXT TICKET ${S.format(game.nextTicket || 3000)} Â· TAB FOR MAP`,
           12,
           365,
           "#132d42",
           8,
         );
       }
-      // Small corner navigator is always available; Tab expands it.
-      if (!event && game.mode === "city") this.miniMap(game, 448, 279, 54, 67);
+      // Map visibility is timed by the game; there is no permanent navigator.
     }
     miniMap(game, x, y, w, h) {
       const c = this.ctx;

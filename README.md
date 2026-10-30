@@ -17,6 +17,7 @@ From this directory, run `python -m http.server 8722`, then open http://localhos
 - Jump: Space or Z; gamepad B.
 - Spin: C; gamepad shoulders or right stick.
 - Park interaction: E or Enter; park entry pads also activate by skating onto them.
+- Map: Tab or skate over a map marker; appears for at most three seconds. Fresh skating input dismisses it.
 - Pause: P or Escape. Fullscreen: F.
 - Point/Rotate steering: options button at the top; stick clicks do not change mode.
 - Music mute and volume: controls at the top.
@@ -42,3 +43,5 @@ Run the portable checks with `npm test` (Node.js required; no package installati
 Extraction tools are in `tools/`; they require the user's ROM and, for some older media extraction paths, additional development capture data and Python dependencies. Generated runtime assets are already included.
 
 Springboard cracks and vehicles now use recovered scanline masks after the original rectangle test, including two/three-strip vehicle masks and original carry-rounded shifts. Car/scooter response2/7 uses original impact speed, side selection and bail setup; transparent areas stay clear. Speaker87 explicitly selects original no-action response0, so its former native bail trigger was removed. Normal-stance player footprint selection is currently used; pose-specific footprints, cyclist attachment and pedestrian response controllers remain unfinished.
+
+Course corrections remove the artificial halfpipe boundary and grass blocker, preserve speed over its flag13 floor strip, and use a consistent airborne plane so downhill jumps cannot gain height indefinitely. Full coping and terrain-contact controllers remain unfinished.

@@ -92,11 +92,20 @@
     const control = document.querySelector("#music-mute");
     control.textContent = muted ? "MUSIC OFF" : "MUSIC ON";
     control.setAttribute("aria-pressed", String(muted));
-    document.querySelector("#music-volume").value = String(Math.round(audio.musicVolume * 100));
-    document.querySelector("#music-level").value = `${Math.round(audio.musicVolume * 100)}%`;
+    document.querySelector("#music-volume").value = String(
+      Math.round(audio.musicVolume * 100),
+    );
+    document.querySelector("#music-level").value =
+      `${Math.round(audio.musicVolume * 100)}%`;
   }
-  document.querySelector("#music-mute").onclick = () => { audio.toggleMusic(); syncMusic(); };
-  document.querySelector("#music-volume").oninput = event => { audio.setMusicVolume(Number(event.target.value) / 100); syncMusic(); };
+  document.querySelector("#music-mute").onclick = () => {
+    audio.toggleMusic();
+    syncMusic();
+  };
+  document.querySelector("#music-volume").oninput = (event) => {
+    audio.setMusicVolume(Number(event.target.value) / 100);
+    syncMusic();
+  };
   syncMusic();
   document.querySelector("#fullscreen").onclick = fullscreen;
   button.onclick = () => {
@@ -132,6 +141,7 @@
     )
       button.click();
     else if (!game.paused && ["city", "event"].includes(game.mode)) {
+      if (input.pressed("map") && game.mode === "city") game.showMap();
       if (input.pressed("jump")) game.jump();
       if (input.pressed("enter")) game.interact();
     }

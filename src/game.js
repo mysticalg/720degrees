@@ -325,7 +325,9 @@
           (["downhill", "jump"].includes(this.event?.kind) &&
             here.type === 16) ||
           (!this.event && here.type >= 128 && here.profile === 32) ||
-          (this.event?.kind === "ramp" && here.type === 9)) &&
+          (this.event?.kind === "ramp" &&
+            ([9, 13].includes(here.type) ||
+              (here.type >= 128 && [16, 120].includes(here.profile))))) &&
         S.OriginalRoutines.jumpRequestAllowed(2, 1, here.profile, 0)
       ) {
         const rom = S.OriginalGround,
@@ -391,16 +393,9 @@
       p.romSpeed = motion.mainSpeed;
       p.romMovementDirection = motion.direction;
       p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
-      p.vy =
-        (-(
-          motion.dy +
-          motion.fractionY / 256 +
-          motion.groundVertical.velocity +
-          motion.groundVertical.fraction / 256
-        ) *
-          60) /
-        64;
-      p.jumpGroundVertical = motion.groundVertical;
+      p.vy = (-(motion.dy + motion.fractionY / 256) * 60) / 64;
+      p.airborneTerrainReference = motion.groundVertical;
+      p.jumpGroundVertical = { velocity: 0, fraction: 0 };
       // A8A6 calls9F8A: action8/phase3, rather than the shoe-jump pose.
       p.jumpSequence = S.OriginalRoutines.beginDropAnimation(p.romSpeed);
       p.jumpSequence.savedSpeed = motion.savedSpeed & 65535;
@@ -552,18 +547,11 @@
         );
         p.romSpeed = motion.mainSpeed;
         p.romMovementDirection = motion.direction;
-        p.jumpGroundVertical = motion.groundVertical;
+        p.airborneTerrainReference = motion.groundVertical;
+        p.jumpGroundVertical = { velocity: 0, fraction: 0 };
         p.jumpSequence.savedSpeed = motion.savedSpeed & 65535;
         p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
-        p.vy =
-          (-(
-            motion.dy +
-            motion.fractionY / 256 +
-            motion.groundVertical.velocity +
-            motion.groundVertical.fraction / 256
-          ) *
-            60) /
-          64;
+        p.vy = (-(motion.dy + motion.fractionY / 256) * 60) / 64;
         p.jumpAnimation = p.jumpSequence;
       } else {
         const rate = S.OriginalRoutines.jumpAnimationRate(p.romSpeed || 0);
@@ -1036,7 +1024,10 @@
           (surface.type === 0 ||
             (["downhill", "jump"].includes(e?.kind) && surface.type === 16) ||
             (!e && surface.type >= 128 && surface.profile === 32) ||
-            (e?.kind === "ramp" && surface.type === 9)) &&
+            (e?.kind === "ramp" &&
+              ([9, 13].includes(surface.type) ||
+                (surface.type >= 128 &&
+                  [16, 120].includes(surface.profile))))) &&
           !this.input.brake
         ) {
           const rom = S.OriginalGround;
@@ -1201,14 +1192,11 @@
           romKind,
         );
         p.vz = (p.romVerticalVelocity * 60) / 64;
-        // Native z is clearance above the takeoff surface, whereas ROM05B2
-        // is absolute vertical motion. Keep the recovered moving-ground
-        // reference separate; full changing-terrain collision remains native.
-        const groundVertical = p.jumpSequence
-          ? (p.jumpGroundVertical?.velocity || 0) +
-            (p.jumpGroundVertical?.fraction || 0) / 256
-          : 0;
-        p.z += (((p.romVerticalVelocity - groundVertical) * 60) / 64) * dt;
+        // Airborne XY uses the plane displacement and Z uses the absolute
+        // original vertical velocity. Carrying a frozen takeoff-slope velocity
+        // in both fields can make clearance grow forever after gravity caps.
+        // The resulting rendered Y still follows B486: planeY minus height.
+        p.z += ((p.romVerticalVelocity * 60) / 64) * dt;
         if (!p.dropFall && p.z <= 0) {
           const support = (e?.level || this.city.level).sample(p.x, p.y);
           if (["downhill", "jump"].includes(e?.kind) && support.blocked) {
@@ -1256,9 +1244,37 @@
         ) === true
       );
     }
+    mapSkatingInput() {
+      return {
+        kick: this.input.held("kick"),
+        jump: this.input.held("jump"),
+        directions: ["up", "right", "down", "left"].reduce(
+          (bits, key, i) => bits | (this.input.held(key) ? 1 << i : 0),
+          0,
+        ),
+        x: this.input.stick.active ? this.input.stick.x : 0,
+        y: this.input.stick.active ? this.input.stick.y : 0,
+      };
+    }
+    showMap(frames = 180) {
+      this.mapFrames = Math.min(180, Math.max(1, frames));
+      this.mapInputSnapshot = this.mapSkatingInput();
+    }
     updateCity(dt) {
       const p = this.player;
       this.mapFrames = Math.max(0, this.mapFrames - 1);
+      if (this.mapFrames > 0) {
+        const current = this.mapSkatingInput(),
+          previous = this.mapInputSnapshot || current;
+        const resumed =
+          (current.kick && !previous.kick) ||
+          (current.jump && !previous.jump) ||
+          !!(current.directions & ~previous.directions) ||
+          (Math.hypot(current.x - previous.x, current.y - previous.y) > 0.18 &&
+            Math.hypot(current.x, current.y) > 0);
+        if (resumed) this.mapFrames = 0;
+        this.mapInputSnapshot = current;
+      }
       const surface = this.city.level.sample(p.x, p.y);
       if (!p.air && !p.bail && p.fallen <= 0) {
         for (const crack of this.cracks) {
@@ -1294,11 +1310,12 @@
         const bit = 1 << region;
         if (!(this.mapVisitMask & bit)) {
           this.mapVisitMask |= bit;
-          this.mapFrames =
+          this.showMap(
             S.OriginalRoutines.mapDisplaySeconds(
               this.mapDifficulty,
               this.mapVisitMask === bit,
-            ) * 60;
+            ) * 60,
+          );
         }
       }
       if (canContact && surface.type >= 5 && surface.type <= 8) {
@@ -1391,7 +1408,7 @@
     collideWithRecoveredTerrain() {
       const p = this.player,
         level = this.event?.level || this.city.level;
-      if (this.event?.kind === "ramp" || p.dropFall) return;
+      if (p.dropFall) return;
       const surface = level.sample(p.x, p.y);
       if (
         surface.blocked &&
@@ -1451,36 +1468,9 @@
       e.elapsed += dt;
       e.timer -= dt;
       if (e.kind === "ramp") {
-        // The half-pipe's curved walls turn horizontal speed into launch height.
-        // These axes follow the recovered isometric half-pipe, rather than a
-        // horizontal substitute. u crosses the pipe; v runs along its coping.
-        const center = { x: 676, y: 637 },
-          u = (p.x - center.x) * 0.8 - (p.y - center.y) * 0.6;
-        const v = (p.x - center.x) * 0.6 + (p.y - center.y) * 0.8;
-        const across = p.vx * 0.8 - p.vy * 0.6;
-        if (Math.abs(u) > 155 && Math.sign(u) * across > 50) {
-          if (!p.air) {
-            this.jump();
-            p.fromRamp = true;
-            e.rampHits++;
-          }
-          p.vx -= 1.7 * across * 0.8;
-          p.vy += 1.7 * across * 0.6;
-          p.angle = Math.atan2(p.vy, p.vx);
-          p.takeoffAngle = p.angle;
-        }
-        if (Math.abs(u) > 205) {
-          const correction = u - Math.sign(u) * 205;
-          p.x -= correction * 0.8;
-          p.y += correction * 0.6;
-        }
-        if (Math.abs(v) > 100) {
-          const correction = v - Math.sign(v) * 100;
-          p.x -= correction * 0.6;
-          p.y -= correction * 0.8;
-          p.vx *= 0.75;
-          p.vy *= 0.75;
-        }
+        // The decoded surface profiles supply wall travel. Do not clamp the
+        // pipe to a guessed rotated rectangle or reflect against an invisible
+        // lip: those limits cut through valid ramp lanes and its grass apron.
       } else {
         if (e.kind === "slalom") {
           for (const gate of e.gates) {

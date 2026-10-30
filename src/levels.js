@@ -69,8 +69,8 @@
         aliasHigh: this.originalMap.aliases[index],
         profile,
         type,
-        blocked:
-          type === 18 || type === 19 || (this.kind === "ramp" && tile === 7168),
+        // Halfpipe tile7168 is grass, not an invisible course fence.
+        blocked: type === 18 || type === 19,
       };
     }
     /** A navigation aid sampled from the decoded surface, never a replacement road. */
