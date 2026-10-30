@@ -384,7 +384,49 @@
       }
     return result;
   }
+  /** D838-D87E: attached movement must face within two of sixteen headings.
+   * Rear bumper geometry below is a native adapter over original occupied
+   * mask cells; it is not the unfinished D4E4 moving-platform height map.
+   */
+  function towHeadingAllowed(facing, direction) {
+    const delta = ((facing - direction + 24) & 15) - 8;
+    return Math.abs(delta) <= 2;
+  }
+  function vehicleRear(actor, readWord) {
+    if (actor.kind < 10 || actor.kind > 16 || !actor.extraPointer) return null;
+    const dx = signed(actor.dx || 0),
+      dy = -signed(actor.dy || 0),
+      length = Math.hypot(dx, dy * 2);
+    if (!length) return null;
+    const ux = dx / length,
+      uy = (dy * 2) / length,
+      shape = readShape(actor.extraPointer, readWord),
+      cells = maskCells(shape, readWord);
+    if (!cells.length) return null;
+    let rear = Infinity;
+    const points = cells.map((c) => {
+      const x = shape.x / 64 + c.x + 2,
+        y = -shape.y / 64 - c.y - 2;
+      const along = x * ux + y * 2 * uy;
+      rear = Math.min(rear, along);
+      return { x, y, along };
+    });
+    const edge = points.filter((c) => c.along <= rear + 6);
+    return {
+      x:
+        actor.actorX +
+        edge.reduce((n, c) => n + c.x, 0) / edge.length -
+        ux * 14,
+      y:
+        actor.actorY + edge.reduce((n, c) => n + c.y, 0) / edge.length - uy * 7,
+      ux,
+      uy,
+      direction: actor.direction & 15,
+    };
+  }
   const api = Object.freeze({
+    towHeadingAllowed,
+    vehicleRear,
     maskCells,
     readShape,
     broadPhase,

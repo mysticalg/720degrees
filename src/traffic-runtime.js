@@ -249,12 +249,17 @@
         [...this.actors.values()].find((actor) => actor.sprite === sprite),
       );
       for (const actor of this.actors.values()) {
-        if (S.OriginalActors.trafficRouteDue(actor)) this.route(actor);
-        const motion = S.OriginalActors.stepMotionActor(actor, m);
-        actor.x = word(actor.x + motion.dx);
-        actor.y = word(actor.y + motion.dy);
-        actor.height = word((actor.height || 0) + motion.dz);
-        this.sync(actor);
+        // A grabbed car keeps its native towing assist for this visible trip.
+        // Advance the original motion/route controller at each extra clock,
+        // rather than scaling displacement past a pending turn or junction.
+        for (let clock = 0; clock < (actor.towBoost || 1); clock++) {
+          if (S.OriginalActors.trafficRouteDue(actor)) this.route(actor);
+          const motion = S.OriginalActors.stepMotionActor(actor, m);
+          actor.x = word(actor.x + motion.dx);
+          actor.y = word(actor.y + motion.dy);
+          actor.height = word((actor.height || 0) + motion.dz);
+          this.sync(actor);
+        }
       }
       if (this.population.total) {
         S.OriginalPopulation.spawnOne(

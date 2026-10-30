@@ -1,3 +1,9 @@
+## Vehicle towing (build65)
+
+Skate into a moving car's rear strip while facing its travel direction to grab automatically. The skater uses the original high-speed crouching body table; the board stays in its flat-road stance. Kick or jump releases with inherited car momentum, with a short same-car contact grace period. Front, side, opposite-facing and airborne approaches do not latch. Turns follow the routed vehicle; stopping, retirement or blocked rear support releases safely.
+
+Rear-strip mask geometry, the latch controller and a three-clock towing speed assist are native gameplay improvements. A grabbed car keeps the assist for its current visible trip so release does not instantly slow the car into the skater. The original actor motion and route routines still run on each clock. This is not a claim that the entire original attachment controller has been translated. No new or replacement assets, sounds or emulator were added.
+
 # 720° — native JavaScript port in progress
 
 Recent native contact corrections:

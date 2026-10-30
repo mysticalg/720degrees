@@ -376,6 +376,7 @@
     /** Jump velocity sets height; horizontal momentum is retained in the air. */
     jump() {
       const p = this.player;
+      if (p.vehicleTow) this.releaseVehicleTow();
       if (
         p.air ||
         p.fallen > 0 ||
@@ -1206,6 +1207,7 @@
     }
     crash(reason) {
       const p = this.player;
+      if (p.vehicleTow) this.releaseVehicleTow();
       if (p.invulnerable > 0 || p.fallen > 0) return;
       const level = this.event?.level || this.city.level;
       const surface = level.contactSample(p.x, p.y);
@@ -1484,6 +1486,135 @@
         this.city.height,
       );
     }
+    /** Carry the board at the rear of a real routed vehicle. Traffic still
+     * runs its original scheduler; steering never redirects the car.
+     */
+    tryVehicleTow() {
+      const p = this.player;
+      if (
+        p.vehicleTow ||
+        p.air ||
+        p.bail ||
+        p.fallen > 0 ||
+        p.towReleaseTime > this.elapsed ||
+        this.input.held("jump")
+      )
+        return;
+      for (const actor of this.trafficActors || []) {
+        const rear = S.OriginalContact.vehicleRear(
+          actor,
+          this.objectRegistry.readContactWord,
+        );
+        if (
+          !rear ||
+          !S.OriginalContact.towHeadingAllowed(
+            p.romDirection ?? 4,
+            rear.direction,
+          )
+        )
+          continue;
+        const dx = p.x - rear.x,
+          dy = (p.y - rear.y) * 2,
+          along = dx * rear.ux + dy * rear.uy,
+          side = dx * -rear.uy + dy * rear.ux;
+        // Only the short strip behind the bumper admits a grab. Nose/side
+        // contacts continue through the existing original crash response.
+        if (
+          along < -24 ||
+          along > 8 ||
+          Math.abs(side) > 14 ||
+          p.vx * rear.ux + p.vy * 2 * rear.uy <= 0
+        )
+          continue;
+        if (this.city.level.contactSample(rear.x, rear.y).blocked) continue;
+        // Native towing assist: once caught, this car runs three original
+        // motion clocks per simulation tick for the rest of its visible trip.
+        // This provides the requested above-kick-speed tow without changing
+        // ROM vectors, graphics, route selection or other traffic clocks.
+        actor.towBoost = 3;
+        p.vehicleTow = {
+          actor, // Identity prevents latching to a replacement reusing this slot.
+          sprite: actor.sprite,
+          slot: actor.slot,
+          actorX: actor.actorX,
+          actorY: actor.actorY,
+        };
+        p.attachedSprite = actor.sprite;
+        p.air = false;
+        p.z = 0;
+        p.fakie = false;
+        p.jumpSequence = p.jumpRecovery = p.kickAnimation = null;
+        p.romFacingDirection = undefined;
+        p.x = rear.x;
+        p.y = rear.y;
+        p.kickWasHeld = this.input.held("kick");
+        return;
+      }
+    }
+    releaseVehicleTow() {
+      const p = this.player;
+      if (!p.vehicleTow) return;
+      p.towReleasedSprite = p.vehicleTow.sprite;
+      p.towReleaseTime = this.elapsed + 0.65;
+      p.vehicleTow = null;
+      p.attachedSprite = 0;
+      // Convert inherited car motion back to the existing original scalar,
+      // preserving coasting/jump momentum rather than resetting to kick speed.
+      const unit = S.OriginalGround.velocity(1024, p.romDirection ?? 4),
+        vx = ((unit.dx + unit.fractionX / 256) * 60) / 64,
+        vy = (-(unit.dy + unit.fractionY / 256) * 60) / 64;
+      p.romSpeed = Math.round(
+        (Math.hypot(p.vx, p.vy) / Math.max(0.001, Math.hypot(vx, vy))) * 1024,
+      );
+    }
+    updateVehicleTow(dt) {
+      const p = this.player,
+        tow = p.vehicleTow;
+      if (!tow) return false;
+      const actor = this.trafficActors.find(
+          (a) =>
+            a === tow.actor && a.sprite === tow.sprite && a.slot === tow.slot,
+        ),
+        rear =
+          actor &&
+          S.OriginalContact.vehicleRear(
+            actor,
+            this.objectRegistry.readContactWord,
+          );
+      if (
+        !rear ||
+        this.mode !== "city" ||
+        this.city.level.contactSample(rear.x, rear.y).blocked
+      ) {
+        this.releaseVehicleTow();
+        return false;
+      }
+      p.vx = (actor.actorX - tow.actorX) / dt;
+      p.vy = (actor.actorY - tow.actorY) / dt;
+      tow.actorX = actor.actorX;
+      tow.actorY = actor.actorY;
+      p.romDirection = p.romMovementDirection = rear.direction;
+      p.angle = Math.atan2(
+        -S.OriginalGround.tables.y[rear.direction],
+        S.OriginalGround.tables.x[rear.direction],
+      );
+      const kick = this.input.held("kick"),
+        pressed = kick && !p.kickWasHeld;
+      p.kickWasHeld = kick;
+      if (pressed) {
+        this.releaseVehicleTow();
+        return false;
+      }
+      p.x = rear.x;
+      p.y = rear.y;
+      p.romSurfaceProfile = 24;
+      p.romGroundActive = true;
+      this.updateCity(dt);
+      this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
+      this.camera.y +=
+        (this.cameraTargetY(p) - this.camera.y) * Math.min(1, dt * 7);
+      return true;
+    }
     update(dt) {
       if (this.paused || !["city", "event"].includes(this.mode)) return;
       if (!(this.event?.level || this.city.level).ready) return;
@@ -1539,6 +1670,7 @@
         p.fallen = Math.max(0, p.fallen - dt);
         return;
       }
+      if (this.updateVehicleTow(dt)) return;
       // Course ramp fronts have profile low bits7: their coefficients describe
       // a vertical face, not a surface to skate along. Sampling that artwork
       // as ground reverses screen-Y velocity and traps the rider at the lip.
@@ -2085,10 +2217,19 @@
           this.caughtByBees();
       }
       if (!p.bail) {
+        this.tryVehicleTow();
         const read = this.objectRegistry.readContactWord;
         const contact = [...(this.trafficActors || [])]
           .sort((a, b) => b.sprite - a.sprite)
-          .find((actor) => this.actorMaskContact(actor));
+          .find(
+            (actor) =>
+              actor.sprite !== p.attachedSprite &&
+              !(
+                actor.sprite === p.towReleasedSprite &&
+                p.towReleaseTime > this.elapsed
+              ) &&
+              this.actorMaskContact(actor),
+          );
         if (!contact) p.lastOriginalContact = 0;
         else {
           const code = S.OriginalContact.responseCode(
@@ -2372,6 +2513,7 @@
           airborne: p.air,
           speed: +(Math.hypot(p.vx, p.vy) * S.CONFIG.skatingPace).toFixed(1),
           angleDegrees: +((p.angle * 180) / Math.PI).toFixed(1),
+          towing: p.vehicleTow?.sprite ?? null,
           fakie: !!p.fakie,
           facingDirection: p.romFacingDirection ?? p.romDirection,
           travelDirection: p.romMovementDirection ?? p.romDirection,

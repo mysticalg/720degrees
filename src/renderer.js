@@ -417,7 +417,16 @@
             ),
         })),
         {
-          y: game.player.y,
+          // A gripping skater overlaps the rear bumper: draw its crouched
+          // original body after that vehicle instead of hiding it underneath.
+          y: game.player.vehicleTow
+            ? Math.max(
+                game.player.y,
+                (game.trafficActors.find(
+                  (a) => a.sprite === game.player.vehicleTow.sprite,
+                )?.actorY ?? game.player.y) + 0.01,
+              )
+            : game.player.y,
           draw: () =>
             this.skater(
               game.player,
@@ -563,8 +572,8 @@
       const directory = this.motionBanks[0];
       const groundPose = S.OriginalRoutines.groundPoseEntries(
         frame,
-        profile,
-        p.halfpipePoseProfile ? 0 : p.romSpeed || 0,
+        p.vehicleTow ? 2 : profile,
+        p.vehicleTow ? 0x0500 : p.halfpipePoseProfile ? 0 : p.romSpeed || 0,
         (a) => directory[a - 0x4000] | (directory[a - 0x4000 + 1] << 8),
       );
       const equipment = S.OriginalEquipment.palettes(
