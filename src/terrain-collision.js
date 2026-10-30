@@ -15,6 +15,10 @@
   // orientations. It remains rideable: this is a surface boundary, not a wall.
   const curb = (level, sample) =>
     level.name === "city" && sample.type === 0 && (sample.profile & 7) === 2;
+  // The recovered incline field is1..6;0 is flat and7 is a vertical face.
+  // Keep this diagnostic category separate from support/barrier collision.
+  const slope = (sample) =>
+    !sample.blocked && (sample.profile & 7) >= 1 && (sample.profile & 7) <= 6;
   const dot = (a, b) => a.x * b.x + a.y * b.y;
   function cells(level, x, y, barriersOnly = false, maskReader = null) {
     const col = Math.floor(x / TILE - 0.5),
@@ -32,11 +36,13 @@
       maskReader
         ? maskReader(points[i].x, points[i].y)
         : (
-              barriersOnly === "curbs"
-                ? curb(level, sample)
-                : barriersOnly
-                  ? barrier(level, sample)
-                  : solid(level, sample)
+              barriersOnly === "slopes"
+                ? slope(sample)
+                : barriersOnly === "curbs"
+                  ? curb(level, sample)
+                  : barriersOnly
+                    ? barrier(level, sample)
+                    : solid(level, sample)
             )
           ? 1
           : 0,
@@ -87,7 +93,14 @@
       cache.set(level, entry);
     }
     const curbsOnly = barriersOnly === "curbs";
-    const key = curbsOnly ? "curbs" : barriersOnly ? "barriers" : "support";
+    const slopesOnly = barriersOnly === "slopes";
+    const key = slopesOnly
+      ? "slopes"
+      : curbsOnly
+        ? "curbs"
+        : barriersOnly
+          ? "barriers"
+          : "support";
     if (entry[key]) return entry[key];
     if (!entry.barrierRaster) {
       const width = level.columns + 4,
@@ -125,6 +138,7 @@
     }
     const raster = entry.barrierRaster;
     const maskReader = (x, y) => {
+      if (slopesOnly) return slope(level.sample(x, y)) ? 1 : 0;
       if (curbsOnly) return curb(level, level.sample(x, y)) ? 1 : 0;
       const col = Math.floor(x / TILE) + 2,
         row = Math.floor(y / TILE) + 2;
@@ -256,11 +270,12 @@
         if (!buckets.has(row)) buckets.set(row, []);
         buckets.get(row).push(segment);
       }
-    const outside = curbsOnly
-      ? false
-      : barriersOnly
-        ? barrier(level, level.sample(-8, -8))
-        : solid(level, level.sample(-8, -8));
+    const outside =
+      curbsOnly || slopesOnly
+        ? false
+        : barriersOnly
+          ? barrier(level, level.sample(-8, -8))
+          : solid(level, level.sample(-8, -8));
     return (entry[key] = { segments, buckets, outside, paths });
   }
   function blocked(level, x, y, barriersOnly = false) {

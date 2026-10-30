@@ -139,7 +139,7 @@
         c.fillStyle = "#08111be6";
         c.fillRect(0, 370, 512, 14);
         this.text(
-          "F8: RED EDGE / AMBER WALL / GREEN CURB / CYAN MASK",
+          "F8: RED EDGE / AMBER WALL / PURPLE SLOPE / GREEN CURB / CYAN MASK",
           8,
           373,
           "#e8f7ff",
@@ -174,6 +174,25 @@
       c.strokeStyle = "#ffc64fcc";
       c.beginPath();
       for (const edge of walls?.segments || []) {
+        c.moveTo(edge.a.x, edge.a.y);
+        c.lineTo(edge.b.x, edge.b.y);
+      }
+      c.stroke();
+      // Inclined terrain is rideable. Its coverage needs its own diagnostic
+      // layer, rather than being shown as an impassable support/fence region.
+      const slopes = S.TerrainCollision.debugMesh(level, "slopes");
+      area(slopes, "#b276ff55");
+      c.strokeStyle = "#d8acff";
+      c.lineWidth = 0.8;
+      c.beginPath();
+      for (const edge of slopes?.segments || []) {
+        if (
+          Math.max(edge.a.x, edge.b.x) < left ||
+          Math.min(edge.a.x, edge.b.x) > left + 512 ||
+          Math.max(edge.a.y, edge.b.y) < top ||
+          Math.min(edge.a.y, edge.b.y) > top + 384
+        )
+          continue;
         c.moveTo(edge.a.x, edge.a.y);
         c.lineTo(edge.b.x, edge.b.y);
       }

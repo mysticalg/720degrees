@@ -6,6 +6,10 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## F8 slope regions (build 55)
+
+F8 now includes translucent purple incline coverage with outlined start/end boundaries in the city and courses. It reads the recovered low-three-bit slope field1..6, excluding flat terrain, vertical faces and voids. City curbs retain their green layer above the purple slope coverage. The diagnostic geometry is cached separately from support/wall collision geometry; toggling it changes rendering only.
+
 ## Jump-course ground projection (build 54)
 
 The airborne shadow now follows the first rideable lower surface rather than staying on the takeoff plane. It uses the recovered ground board/shadow pose, not the airborne board animation (whose tucked frames visibly floated above the ground). It hides over open space when no supported surface is found. Jump-course falling contact waits until the feet reach that lower surface; it no longer ends flight merely because height passes the upper takeoff plane.
