@@ -16,6 +16,8 @@
   class Level {
     constructor(info) {
       Object.assign(this, info);
+      if (this.kind === "ramp")
+        this.halfpipeWallAt = (x, y) => S.Halfpipe.wallAt(this, x, y);
       // Native E908-EA5C decompression supplies the original CPU-visible
       // words. Visual palette packing cannot preserve collision bit4000.
       this.originalMap = S.OriginalMapDecoder.decodeLevel(

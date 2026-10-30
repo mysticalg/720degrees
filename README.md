@@ -6,6 +6,12 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Southern halfpipe coping (build 56)
+
+The south wall now projects its terrain height onto the original artwork's white coping line, y=x/2+382 in ramp-1.png. Previously the native adapter drew that wall, its skater and aerial origins on the lower wooden face. Ground poses, aerials, handplants, camera tracking, landing effects and F8 slope/contact display now share the projected height. The original motion, scoring and animation controllers remain in use. This is an explicit artwork-space geometry adapter, not a claim that the full original height controller is complete.
+
+Short foreground-rail interruptions are bridged only where bounded by recovered south-curve/floor samples. Real coping faces and unrelated/wide fences remain solid; fence-gap closing cannot grow into a recovered riding surface. Coping launch ignores interior rail interruptions, and the landing point settles on the rideable side of the contour. Tests cover18 southern edge/angled cycles and12 jump/no-jump cycles at two speeds/three lanes, including the original46->40->47->48->43->45 handplant sequence. The north wall retains its existing projection.
+
 ## F8 slope regions (build 55)
 
 F8 now includes translucent purple incline coverage with outlined start/end boundaries in the city and courses. It reads the recovered low-three-bit slope field1..6, excluding flat terrain, vertical faces and voids. City curbs retain their green layer above the purple slope coverage. The diagnostic geometry is cached separately from support/wall collision geometry; toggling it changes rendering only.

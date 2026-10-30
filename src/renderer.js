@@ -118,7 +118,7 @@
         if (f.originalLanding)
           this.descriptorSkater(
             f.x,
-            f.y,
+            f.y - (f.groundRise || 0),
             0,
             false,
             "body",
@@ -154,14 +154,18 @@
       const c = this.ctx,
         left = -this.offset.x,
         top = -this.offset.y;
-      const area = (mesh, color) => {
+      const projectSlope = (point) =>
+        S.Halfpipe.projectSlopePoint(level, point);
+      const area = (mesh, color, projected = false) => {
         if (!mesh) return;
         c.beginPath();
         if (mesh.outside) c.rect(left - 1, top - 1, 514, 386);
         for (const path of mesh.paths) {
           if (!path.length) continue;
-          c.moveTo(path[0].x, path[0].y);
-          for (let i = 1; i < path.length; i++) c.lineTo(path[i].x, path[i].y);
+          const points = projected ? path.map(projectSlope) : path;
+          c.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++)
+            c.lineTo(points[i].x, points[i].y);
           c.closePath();
         }
         c.fillStyle = color;
@@ -181,7 +185,7 @@
       // Inclined terrain is rideable. Its coverage needs its own diagnostic
       // layer, rather than being shown as an impassable support/fence region.
       const slopes = S.TerrainCollision.debugMesh(level, "slopes");
-      area(slopes, "#b276ff55");
+      area(slopes, "#b276ff55", true);
       c.strokeStyle = "#d8acff";
       c.lineWidth = 0.8;
       c.beginPath();
@@ -193,8 +197,10 @@
           Math.min(edge.a.y, edge.b.y) > top + 384
         )
           continue;
-        c.moveTo(edge.a.x, edge.a.y);
-        c.lineTo(edge.b.x, edge.b.y);
+        const a = projectSlope(edge.a),
+          b = projectSlope(edge.b);
+        c.moveTo(a.x, a.y);
+        c.lineTo(b.x, b.y);
       }
       c.stroke();
       // Curbs are shallow, rideable terrain rather than solid fences. Show
@@ -257,7 +263,10 @@
       }
       mask(
         game.player.x - 40,
-        game.player.y + 11 - game.player.z,
+        game.player.y +
+          11 -
+          game.player.z -
+          S.Halfpipe.groundRise(level, game.player),
         0x7114,
         "#00ffccb3",
       );
@@ -329,10 +338,16 @@
         }
       }
     }
-    skater(p, time, profile = p.romSurfaceProfile ?? 24, gear = {}) {
+    skater(
+      p,
+      time,
+      profile = p.romSurfaceProfile ?? 24,
+      gear = {},
+      groundRise = 0,
+    ) {
       const c = this.ctx;
       if (p.invulnerable > 0 && Math.floor(time * 14) % 2) c.globalAlpha = 0.35;
-      const y = p.y - p.z;
+      const y = p.y - p.z - groundRise;
       // Use the same original direction index as movement. Canvas angles are
       // isometric: reversing/quantizing them again selects the wrong pose.
       let frame = p.romDirection;
@@ -381,7 +396,7 @@
       if (!(p.air && p.courseShadowY === null))
         this.descriptorSkater(
           p.x,
-          p.air ? (p.courseShadowY ?? p.y) : p.y,
+          (p.air ? (p.courseShadowY ?? p.y) : p.y) - groundRise,
           frame,
           false,
           "shadow",
@@ -447,7 +462,7 @@
       c.globalAlpha = 1;
       if (p.air && Math.abs(p.spin) > Math.PI)
         this.text(
-          `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}°`,
+          `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}Â°`,
           p.x,
           y - 73,
           "#fff637",
@@ -587,6 +602,7 @@
         game.player.halfpipePoseProfile ??
           level.sample(game.player.x, game.player.y).profile,
         game.gear,
+        S.Halfpipe.groundRise(level, game.player),
       );
       if (e.kind !== "ramp" && Math.abs(game.player.y - level.finish.y) < 250)
         this.text(
@@ -630,7 +646,7 @@
       c.fillStyle = "#052435e8";
       c.fillRect(388, 8, 116, 48);
       this.text(
-        `TICKETS ${game.practice ? "âˆž" : game.tickets}`,
+        `TICKETS ${game.practice ? "Ã¢Ë†Å¾" : game.tickets}`,
         496,
         12,
         "#ffeb57",
@@ -652,7 +668,7 @@
       );
       if (event) {
         this.text(
-          `${event.kind.toUpperCase()} Â· CLASS ${event.difficulty}`,
+          `${event.kind.toUpperCase()} Ã‚Â· CLASS ${event.difficulty}`,
           256,
           65,
           S.COLORS[event.kind],
@@ -670,7 +686,7 @@
       const near = game.nearestInteraction();
       let message = game.messageTime > 0 ? game.message : "";
       if (near) {
-        message = `E / Y: ${near.kind.toUpperCase()} · ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
+        message = `E / Y: ${near.kind.toUpperCase()} Â· ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
       }
       if (message) {
         c.fillStyle = "#05154de8";
@@ -680,7 +696,7 @@
         this.text(message, 256, 362, "#fff9ba", 8, "center");
       } else {
         this.text(
-          `NEXT TICKET ${S.format(game.nextTicket || 3000)} Â· TAB FOR MAP`,
+          `NEXT TICKET ${S.format(game.nextTicket || 3000)} Ã‚Â· TAB FOR MAP`,
           12,
           365,
           "#132d42",
@@ -730,7 +746,7 @@
           "center",
         );
       this.text(
-        "BLUE SHOPS = EQUIPMENT Â· WHITE DOT = YOU",
+        "BLUE SHOPS = EQUIPMENT Ã‚Â· WHITE DOT = YOU",
         256,
         290,
         "#cad6e7",

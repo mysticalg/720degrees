@@ -209,7 +209,7 @@
         this.objectRegistry,
         this.actorMemory.readSpriteByte,
       );
-      this.tell("SKATE CITY · JUMP + C TO SPIN · E AT A PARK", 7);
+      this.tell("SKATE CITY Â· JUMP + C TO SPIN Â· E AT A PARK", 7);
       this.audio.unlock();
       this.audio.playStartCue();
       this.changed?.();
@@ -282,7 +282,7 @@
     interact(target = this.nearestInteraction()) {
       if (this.mode !== "city") return;
       if (!target) {
-        this.tell("FOLLOW A PARK ARROW · E TO ENTER", 2);
+        this.tell("FOLLOW A PARK ARROW Â· E TO ENTER", 2);
         return;
       }
       if (target.type === "shop") {
@@ -313,9 +313,12 @@
           this.shopState.visitMask =
             (this.shopState.visitMask || 0) | (1 << index);
           this.audio.effect("coin");
-          this.tell(`${shop.label} LEVEL ${result.level} · $${result.cost}`, 3);
+          this.tell(
+            `${shop.label} LEVEL ${result.level} Â· $${result.cost}`,
+            3,
+          );
         } else if (result.status === "funds")
-          this.tell(`NEED $${result.cost} · WIN MEDALS TO EARN CASH`, 3);
+          this.tell(`NEED $${result.cost} Â· WIN MEDALS TO EARN CASH`, 3);
         return;
       }
       if (!this.available(target.kind)) {
@@ -323,7 +326,7 @@
         return;
       }
       if (this.tickets < 1) {
-        this.tell("NEED A TICKET · JUMP AND SPIN TO EARN POINTS", 3);
+        this.tell("NEED A TICKET Â· JUMP AND SPIN TO EARN POINTS", 3);
         return;
       }
       if (!this.practice) this.tickets--;
@@ -342,10 +345,10 @@
       this.camera = { x: this.player.x, y: this.player.y };
       this.audio.effect("coin");
       const help = {
-        ramp: "HALF PIPE · KICK TOWARD EITHER LIP · JUMP + SPIN",
-        downhill: "RACE DOWNHILL · STAY ON THE ROAD",
-        jump: "JUMP AT THE RAMP · LAND INSIDE THE TARGET",
-        slalom: "PASS BETWEEN THE FLAGS · KICK FOR SPEED",
+        ramp: "HALF PIPE Â· KICK TOWARD EITHER LIP Â· JUMP + SPIN",
+        downhill: "RACE DOWNHILL Â· STAY ON THE ROAD",
+        jump: "JUMP AT THE RAMP Â· LAND INSIDE THE TARGET",
+        slalom: "PASS BETWEEN THE FLAGS Â· KICK FOR SPEED",
       };
       this.tell(help[target.kind], 6);
       this.changed?.();
@@ -732,6 +735,19 @@
       // A128-A14A's FCD0 heading aligns the steep wall before descending.
       p.x = flight.wall.lip.x;
       p.y = flight.wall.lip.y;
+      // A contour may cut a few pixels into a raster lip. Start the wheels on
+      // its rideable side, rather than inside the fence mesh on landing.
+      const level = this.event.level,
+        sign = flight.wall.rawProfile === 1 ? -1 : 1;
+      for (let inset = 0; inset <= 16; inset += 2) {
+        const x = flight.wall.lip.x + sign * inset,
+          y = flight.wall.lip.y - sign * inset * 0.5;
+        if (!level.contactSample(x, y).blocked) {
+          p.x = x;
+          p.y = y;
+          break;
+        }
+      }
       p.romSpeed = flight.speed;
       p.romDirection = p.romMovementDirection = flight.wall.returnDirection;
       p.angle = Math.atan2(
@@ -893,6 +909,7 @@
           p.y,
           profile,
         );
+        effect.groundRise = S.Halfpipe.groundRise(this.event?.level, p);
         // F064 setup occurs before the original frame's B378 clock pass.
         S.OriginalEffects.tickLandingEffect(effect, p.x, p.y);
         this.floats = this.floats.filter((f) => !f.originalLanding);
@@ -1027,7 +1044,11 @@
       else if (this.mode === "event") this.updateEvent(dt);
       this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
       this.camera.y +=
-        (p.y - 35 - (p.halfpipeFlight ? p.z * 0.6 : 0) - this.camera.y) *
+        (p.y -
+          35 -
+          S.Halfpipe.groundRise(this.event?.level, p) -
+          (p.halfpipeFlight ? p.z * 0.6 : 0) -
+          this.camera.y) *
         Math.min(1, dt * 7);
     }
     caughtByBees() {
@@ -1042,7 +1063,7 @@
       }
       this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
       this.resetCityClock();
-      this.tell(`THE BEES GOT YOU · ${this.lives} BOARDS LEFT`, 4);
+      this.tell(`THE BEES GOT YOU Â· ${this.lives} BOARDS LEFT`, 4);
     }
     finishEvent() {
       if (this.mode !== "event") return;
@@ -1119,7 +1140,7 @@
       this.shopState.stockMask = S.OriginalEquipment.stockMask(this.gear, 3);
       this.shopState.attemptMask = 0;
       this.resetCityClock();
-      this.tell("MEDAL CASH BUYS GEAR · FIND THE NEXT PARK", 5);
+      this.tell("MEDAL CASH BUYS GEAR Â· FIND THE NEXT PARK", 5);
       this.changed?.();
     }
     /** Original pending route clock followed by active traffic scheduling. */
@@ -1518,7 +1539,11 @@
       else this.updateEvent(dt);
       this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
       this.camera.y +=
-        (p.y - 35 - (p.halfpipeFlight ? p.z * 0.6 : 0) - this.camera.y) *
+        (p.y -
+          35 -
+          S.Halfpipe.groundRise(this.event?.level, p) -
+          (p.halfpipeFlight ? p.z * 0.6 : 0) -
+          this.camera.y) *
         Math.min(1, dt * 7);
     }
     /** Recovered normal-stance footprint and original scanline contact masks.
@@ -1634,7 +1659,7 @@
       if (this.cityTimer <= 0 && !this.warned) {
         this.warned = true;
         this.bees = { x: p.x - 230, y: p.y - 120, born: this.elapsed };
-        this.tell("SKATE OR DIE! · GET TO A PARK!", 6);
+        this.tell("SKATE OR DIE! Â· GET TO A PARK!", 6);
         this.audio.clip("bees");
       }
       if (this.bees) {
@@ -1732,6 +1757,7 @@
         wall &&
         wall.progress > 0.7 &&
         level.sample(p.x, p.y).profile !== wall.rawProfile &&
+        !S.Halfpipe.wallAt(level, p.x, p.y) &&
         (p.romGroundVertical?.velocity || 0) > 0
       ) {
         if (this.launchHalfpipe(wall)) return;
@@ -1845,7 +1871,7 @@
               Math.abs(p.x - ramp.x) < 125 &&
               !p.air
             )
-              this.tell("JUMP AT THE LIP · LAND ON THE NEXT PLATFORM", 2);
+              this.tell("JUMP AT THE LIP Â· LAND ON THE NEXT PLATFORM", 2);
           }
         }
         if (e.level.contactSample(p.x, p.y).type === 10 && !p.air) {

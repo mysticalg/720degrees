@@ -7,9 +7,14 @@
   // Bit40/low7 profiles identify vertical scenery faces such as fences.
   // The halfpipe also has untagged brick/wood faces; curved walls1/17 and
   // flat coping/grass remain rideable. Voids are support edges, not fences.
-  const barrier = (level, sample) =>
+  const barrier = (level, sample, x, y) =>
     (sample.profile & 7) === 7 &&
-    (!!(sample.profile & 64) || level.kind === "ramp");
+    (!!(sample.profile & 64) || level.kind === "ramp") &&
+    !(
+      sample.profile === 15 &&
+      Number.isFinite(x) &&
+      level.halfpipeWallAt?.(x, y)
+    );
   const solid = (level, sample) => sample.blocked || barrier(level, sample);
   // Low-three-bit incline2 is the city's shallow curb, in all eight
   // orientations. It remains rideable: this is a surface boundary, not a wall.
@@ -17,8 +22,17 @@
     level.name === "city" && sample.type === 0 && (sample.profile & 7) === 2;
   // The recovered incline field is1..6;0 is flat and7 is a vertical face.
   // Keep this diagnostic category separate from support/barrier collision.
-  const slope = (sample) =>
-    !sample.blocked && (sample.profile & 7) >= 1 && (sample.profile & 7) <= 6;
+  const slope = (sample, level, x, y) =>
+    !sample.blocked &&
+    !(
+      sample.profile === 17 &&
+      level?.halfpipeWallAt &&
+      !level.halfpipeWallAt(x, y)
+    ) &&
+    (((sample.profile & 7) >= 1 && (sample.profile & 7) <= 6) ||
+      (sample.profile === 15 &&
+        Number.isFinite(x) &&
+        level?.halfpipeWallAt?.(x, y)));
   const dot = (a, b) => a.x * b.x + a.y * b.y;
   function cells(level, x, y, barriersOnly = false, maskReader = null) {
     const col = Math.floor(x / TILE - 0.5),
@@ -37,11 +51,11 @@
         ? maskReader(points[i].x, points[i].y)
         : (
               barriersOnly === "slopes"
-                ? slope(sample)
+                ? slope(sample, level, points[i].x, points[i].y)
                 : barriersOnly === "curbs"
                   ? curb(level, sample)
                   : barriersOnly
-                    ? barrier(level, sample)
+                    ? barrier(level, sample, points[i].x, points[i].y)
                     : solid(level, sample)
             )
           ? 1
@@ -113,6 +127,8 @@
           raw[y * width + x] = barrier(
             level,
             level.sample((x - 1.5) * TILE, (y - 1.5) * TILE),
+            (x - 1.5) * TILE,
+            (y - 1.5) * TILE,
           )
             ? 1
             : 0;
@@ -138,7 +154,7 @@
     }
     const raster = entry.barrierRaster;
     const maskReader = (x, y) => {
-      if (slopesOnly) return slope(level.sample(x, y)) ? 1 : 0;
+      if (slopesOnly) return slope(level.sample(x, y), level, x, y) ? 1 : 0;
       if (curbsOnly) return curb(level, level.sample(x, y)) ? 1 : 0;
       const col = Math.floor(x / TILE) + 2,
         row = Math.floor(y / TILE) + 2;
@@ -146,7 +162,12 @@
         col >= 0 && row >= 0 && col < raster.width && row < raster.height
           ? raster.closed[row * raster.width + col]
           : 0;
-      return fence || (!barriersOnly && level.sample(x, y).blocked) ? 1 : 0;
+      // Closing post gaps must not grow a foreground railing into a recovered
+      // halfpipe curve. Keep the effective riding surface open in both meshes.
+      return (fence && !level.halfpipeWallAt?.(x, y)) ||
+        (!barriersOnly && level.sample(x, y).blocked)
+        ? 1
+        : 0;
     };
     const edges = [];
     for (let row = -1; row < level.rows; row++)
