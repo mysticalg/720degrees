@@ -1,10 +1,17 @@
+# 720° — native JavaScript port in progress
+
+## Slalom flags, session medals and fakie correction (build66)
+
+Original placed slalom actors26..35 now render across all six layouts (8/16/19/22/30/34 placements), with original directories and animation clocks. Native checkpoints use these actual placements instead of ten uniformly guessed positions; the full original gate-pair response/scoring controller remains unfinished. MEDALS at the top opens a paused session board for the four rounds and four parks. Award selection still uses the existing provisional medal rules; this is a native text board, not a recovered original medal-screen layout.
+
+Fakie ground movement now uses the retained travel direction rather than the reversed sprite-facing angle. This fixes the previous one-frame-after-landing reversal, including kick acceleration and steering. Rotate mode also starts its dial from travel at touchdown. Tests now assert actual postlanding velocity, beyond the pose-only checks that missed the bug.
+
 ## Vehicle towing (build65)
 
 Skate into a moving car's rear strip while facing its travel direction to grab automatically. The skater uses the original high-speed crouching body table; the board stays in its flat-road stance. Kick or jump releases with inherited car momentum, with a short same-car contact grace period. Front, side, opposite-facing and airborne approaches do not latch. Turns follow the routed vehicle; stopping, retirement or blocked rear support releases safely.
 
 Rear-strip mask geometry, the latch controller and a three-clock towing speed assist are native gameplay improvements. A grabbed car keeps the assist for its current visible trip so release does not instantly slow the car into the skater. The original actor motion and route routines still run on each clock. This is not a claim that the entire original attachment controller has been translated. No new or replacement assets, sounds or emulator were added.
 
-# 720° — native JavaScript port in progress
 
 Recent native contact corrections:
 
@@ -14,7 +21,7 @@ Recent native contact corrections:
 - Park entrances are larger isometric columns that catch airborne crossings. Return positions are checked for clear pavement and a swept connection to the entrance.
 - Rider response 8 now applies the original FD10 cash table and retires contacted NPCs. Elevated pedestrian response 6 applies A64C's reward/recovery branch without bailing the player. Original height limits still allow high jumps to clear NPCs.
 - A 180-degree landing keeps momentum and selects backward-facing original poses. Point/rotate input held through touchdown does not immediately reverse the rolling direction.
-- The first additional effect is the original credit-insertion cue in assets/coin.mp3. Existing coin/purchase/ticket/park-entry events share it; exact distinct event sound commands and other missing effects remain unrecovered. Music controls remain separate from effects. Asset provenance is recorded in assets/sound-sources.json. The playable game contains no emulator.
+- Original effects now include credit insertion, command5F equipment purchases, command61 rider takedowns and command7B crack springboards. Purchase/takedown/springboard captures use the original6502 queue and unmodified sound driver offline. Music controls remain separate from effects; master mute/stop applies to all. Provenance is recorded in assets/sound-sources.json. Resident state-dependent kick/landing/crash effects remain unrecovered; unrelated service-test tones are not used. The playable game contains no emulator.
 
 
 A playable browser version built from translations of the original gameplay routines and graphics/audio recovered from the supplied ROM. The browser runs JavaScript, with no emulator or ROM instruction interpreter.

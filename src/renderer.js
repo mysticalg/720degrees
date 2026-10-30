@@ -806,6 +806,18 @@
           11,
           "center",
         );
+      for (const actor of e.actors || [])
+        this.descriptorSkater(
+          actor.actorX + 40,
+          actor.actorY - 11,
+          0,
+          false,
+          ["body", "board", null, "shadow"][actor.palette],
+          null,
+          0,
+          actor.pointer,
+          actor.columns,
+        );
       this.skater(
         game.player,
         game.elapsed,
@@ -888,7 +900,7 @@
         );
         const detail =
           event.kind === "slalom"
-            ? `GATES ${event.gatesHit}/10`
+            ? `GATES ${event.gatesHit}/${event.gates.length}`
             : event.kind === "jump"
               ? `TARGETS ${event.jumpsLanded}/3`
               : `EVENT ${S.format(event.points)}`;

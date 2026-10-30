@@ -45,7 +45,75 @@
     canvas.focus();
     syncScreen();
   }
+  // Session medals are kept by Game.finishEvent; this board reads them
+  // directly so retries and title restarts never create invented awards.
+  const medalsPanel = document.querySelector("#medals-panel");
+  let medalsWasPaused = false,
+    medalsFocus = null;
+  function closeMedals() {
+    medalsPanel.hidden = true;
+    game.paused = medalsWasPaused;
+    input.clear();
+    previousFrame = null;
+    accumulator = 0;
+    if (!game.paused && ["city", "event"].includes(game.mode))
+      audio.playMusic();
+    syncScreen();
+    (medalsFocus || canvas).focus();
+  }
+  document.querySelector("#medals-open").onclick = () => {
+    if (!medalsPanel.hidden) return;
+    medalsWasPaused = game.paused;
+    medalsFocus = document.activeElement;
+    game.paused = true;
+    input.clear();
+    audio.pauseMusic();
+    const body = document.querySelector("#medals-grid tbody");
+    body.replaceChildren();
+    for (let round = 1; round <= 4; round++) {
+      const row = document.createElement("tr"),
+        label = document.createElement("th");
+      label.textContent = String(round);
+      row.append(label);
+      for (const park of ["ramp", "downhill", "jump", "slalom"]) {
+        const cell = document.createElement("td"),
+          award = game.medals.find((m) => m.park === park && m.round === round);
+        cell.textContent = award?.medal || "—";
+        cell.dataset.medal = award?.medal || "none";
+        cell.title = award
+          ? `${S.format(award.points)} event points`
+          : "Not completed this session";
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    document.querySelector("#medals-total").textContent =
+      `${game.medals.filter((m) => m.medal !== "PARTICIPATION").length} MEDALS · ${game.medals.length}/16 EVENTS COMPLETED`;
+    medalsPanel.hidden = false;
+    document.querySelector("#medals-close").focus();
+  };
+  document.querySelector("#medals-close").onclick = closeMedals;
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (medalsPanel.hidden) return;
+      if (event.code === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        closeMedals();
+      }
+      if (event.code === "Tab") {
+        event.preventDefault();
+        document.querySelector("#medals-close").focus();
+      }
+    },
+    true,
+  );
   function togglePause() {
+    if (!medalsPanel.hidden) {
+      closeMedals();
+      return;
+    }
     if (!["city", "event"].includes(game.mode)) return;
     previousFrame = null;
     accumulator = 0;
@@ -138,6 +206,15 @@
       renderer.showCollisions = !renderer.showCollisions;
     if (input.pressed("fullscreen")) fullscreen();
     if (input.pressed("mute")) toggleSound();
+    if (!medalsPanel.hidden) {
+      if (
+        input.pressed("pause") ||
+        input.pressed("enter") ||
+        input.pressed("jump")
+      )
+        closeMedals();
+      return;
+    }
     if (input.pressed("pause")) togglePause();
     if (
       game.mode === "title" &&

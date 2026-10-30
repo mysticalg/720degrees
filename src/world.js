@@ -56,6 +56,21 @@
       const y = start + ((end - start) * index) / 9;
       return { x: level.centerAt(y), y, hit: false, missed: false };
     });
+    if (kind === "slalom") {
+      const variant = Number(level.name.split("-").at(-1)) - 1;
+      course.actors = S.SLALOM_DATA[variant].map((actor) => ({ ...actor }));
+      // The checkpoints now coincide with the original placed flags rather
+      // than ten guessed points spread uniformly down the map.
+      course.gates = course.actors
+        .map((actor) => ({
+          x: actor.actorX,
+          y: actor.actorY,
+          actor,
+          hit: false,
+          missed: false,
+        }))
+        .sort((a, b) => a.y - b.y);
+    }
     // Launch and target regions come from the ROM's original gap tiles (type 18).
     course.ramps = level.launches || [];
     course.targets =

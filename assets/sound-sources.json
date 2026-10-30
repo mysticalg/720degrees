@@ -5,7 +5,47 @@
     "capture": "offline only; the delivered JavaScript game plays this static MP3",
     "processing": "Trim silence, +18dB fixed gain, 44.1kHz stereo MP3; no synthesis or pitch change",
     "durationSeconds": 2.85,
-    "events": ["coin", "purchase", "ticket", "park entry"],
-    "mapping": "Native shared coin event; exact distinct purchase/ticket ROM commands remain pending"
+    "events": [
+      "coin",
+      "ticket",
+      "park entry"
+    ],
+    "mapping": "Native shared ticket/park-entry event; purchases now use original command5F. Exact ticket/entry commands remain pending."
+  },
+  "takedown.mp3": {
+    "source": "User-provided 720.zip original 6502 sound ROM",
+    "command": "0x61",
+    "sourceRoutine": "A70C/A710 rider collision cash reward",
+    "identification": "Original command injected into original 6502 input ring0200/0210/0211; unmodified4333 dispatcher and sound program rendered offline",
+    "capture": "work/sfx-58.webm; offline only; delivered game plays static MP3",
+    "processing": "Trim 0.325..2.33 seconds, fixed +16.1dB gain,44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 2.005,
+    "events": [
+      "takedown"
+    ]
+  },
+  "purchase.mp3": {
+    "source": "User-provided 720.zip original 6502 sound ROM",
+    "command": "0x5f",
+    "sourceRoutine": "bank16000:52CA-52DE equipment increment",
+    "identification": "Original command injected into original 6502 input ring0200/0210/0211; unmodified4333 dispatcher and sound program rendered offline",
+    "capture": "work/sfx-59.webm; offline only; delivered game plays static MP3",
+    "processing": "Trim 0.315..1.25 seconds, fixed +14.32dB gain,44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 0.935,
+    "events": [
+      "purchase"
+    ]
+  },
+  "springboard.mp3": {
+    "source": "User-provided 720.zip original 6502 sound ROM",
+    "command": "0x7b",
+    "sourceRoutine": "A864-A8AE crack activation",
+    "identification": "Original command injected into original 6502 input ring0200/0210/0211; unmodified4333 dispatcher and sound program rendered offline",
+    "capture": "work/sfx-61.webm; offline only; delivered game plays static MP3",
+    "processing": "Trim 0.325..4.63 seconds, fixed +7.63dB gain,44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 4.305,
+    "events": [
+      "springboard"
+    ]
   }
 }

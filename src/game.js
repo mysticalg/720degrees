@@ -331,7 +331,7 @@
         if (result.status === "purchased") {
           this.shopState.visitMask =
             (this.shopState.visitMask || 0) | (1 << index);
-          this.audio.effect("coin");
+          this.audio.effect("purchase");
           this.tell(
             `${shop.label} LEVEL ${result.level} \u00b7 $${result.cost}`,
             3,
@@ -498,6 +498,7 @@
       p.romGravity = 12;
       p.launchSource =
         "ROM A864 crack springboard; pad impulse table7CA4; native contact";
+      this.audio.effect("springboard");
       return true;
     }
     /** Native ledge-contact adapter: no button press and no shoe impulse.
@@ -1164,6 +1165,10 @@
         ),
         delta = (facing - travel + 16) & 15;
       p.romDirection = travel;
+      p.romDialAngle = Math.atan2(
+        -S.OriginalGround.tables.y[travel] * 2,
+        S.OriginalGround.tables.x[travel],
+      );
       p.fakie = delta >= 6 && delta <= 10;
       p.romFacingDirection = p.fakie ? (travel + 8) & 15 : undefined;
       const face = p.romFacingDirection ?? travel;
@@ -1342,7 +1347,7 @@
       this.mapDifficulty = e.difficulty;
       let performance = 0;
       if (e.kind === "ramp") performance = e.points / 3500;
-      if (e.kind === "slalom") performance = e.gatesHit / 10;
+      if (e.kind === "slalom") performance = e.gatesHit / e.gates.length;
       if (e.kind === "jump") performance = e.jumpsLanded / 3;
       if (e.kind === "downhill")
         performance =
@@ -1849,15 +1854,16 @@
             coefficients.slopeDelta,
             kind,
           );
-          // Browser heading -> nearest original isometric direction. The ROM
-          // coefficient vectors, rather than trigonometric replacements, move us.
+          // Fakie reverses the body pose, not the rolling vector. Selecting
+          // coefficients from its facing angle reverses travel one frame
+          // after landing. Keep movement tied to the retained travel heading.
           let best = Infinity,
             direction = 0;
           for (let i = 0; i < 16; i++) {
             const error = Math.abs(
               S.angleDelta(
                 Math.atan2(-rom.tables.y[i], rom.tables.x[i]),
-                p.angle,
+                p.fakie ? isoAngle(p.romDirection ?? 4) : p.angle,
               ),
             );
             if (error < best) {
@@ -1938,8 +1944,9 @@
           const acceleration =
             (kick ? (245 + this.gear.board * 32) * throttle : 115 * drive) *
             (1 - this.input.brake);
-          p.vx += Math.cos(p.angle) * acceleration * dt;
-          p.vy += Math.sin(p.angle) * acceleration * dt;
+          const travelAngle = p.fakie ? isoAngle(p.romDirection ?? 4) : p.angle;
+          p.vx += Math.cos(travelAngle) * acceleration * dt;
+          p.vy += Math.sin(travelAngle) * acceleration * dt;
           const drag = Math.exp(
             -((kick ? 0.65 : 1.55) + this.input.brake * 6) * dt,
           );
@@ -2459,6 +2466,14 @@
     updateEvent(dt) {
       const e = this.event,
         p = this.player;
+      for (const actor of e.actors || []) {
+        const motion = S.OriginalActors.stepMotionActor(
+          actor,
+          this.actorMemory,
+        );
+        actor.actorX += motion.dx / 64;
+        actor.actorY -= motion.dy / 64;
+      }
       e.elapsed += dt;
       e.timer -= dt;
       if (e.kind === "ramp") {
@@ -2468,13 +2483,16 @@
       } else {
         if (e.kind === "slalom") {
           for (const gate of e.gates) {
-            if (!gate.hit && !gate.missed && p.y >= gate.y) {
-              if (Math.abs(p.x - gate.x) < 76) {
+            if (!gate.hit && !gate.missed) {
+              // Curving isometric paths can place consecutive flags almost
+              // level in screen Y. Allow the player to weave across to them;
+              // crossing one horizontal pixel row must not mark them missed.
+              if (S.distance(p, gate) < 76) {
                 gate.hit = true;
                 e.gatesHit++;
                 this.addScore(300, "GATE +300");
                 this.audio.effect("coin");
-              } else {
+              } else if (p.y > gate.y + 140) {
                 gate.missed = true;
                 this.popup("MISSED GATE", p.x, p.y - 60, "#ff9f88");
               }

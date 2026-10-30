@@ -313,3 +313,16 @@ footer small {
 .support-link { margin: 18px 0 0; }
 .support-link a { display: inline-block; padding: 10px 16px; border: 1px solid #d7ff35; border-radius: 6px; color: #d7ff35; text-decoration: none; }
 .support-link a:hover, .support-link a:focus-visible { background: #d7ff35; color: #101329; }
+
+/* Text awards use the actual session records; no substitute medal sprites. */
+.medals-box { width: min(96%, 650px); max-width: 650px; }
+.medals-box h2 { margin:0; color:var(--lime); }
+#medals-grid { width:100%; border-collapse:collapse; font-size:11px; }
+#medals-grid th, #medals-grid td { padding:12px 5px; border:1px solid #52606e; text-align:center; }
+#medals-grid td[data-medal="GOLD"] { color:#ffe347; }
+#medals-grid td[data-medal="SILVER"] { color:#dbe5f0; }
+#medals-grid td[data-medal="BRONZE"] { color:#eea16b; }
+#medals-grid td[data-medal="none"] { color:#607080; }
+@media(max-width:650px){nav{gap:4px}nav button{padding:8px 5px;font-size:9px}header{gap:10px}header p{display:none}#medals-grid{font-size:8px}#medals-grid th,#medals-grid td{padding:8px 2px}}
+.medals-box { background:#0b1527f5; padding:24px; border:1px solid #52606e; }
+#medals-panel { z-index:4; }
