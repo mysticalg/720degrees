@@ -23,6 +23,9 @@
   // The recovered incline field is1..6;0 is flat and7 is a vertical face.
   // Keep this diagnostic category separate from support/barrier collision.
   const slope = (sample, level, x, y) => {
+    // City curbs have their own continuous region; avoid duplicate pebble
+    // contours from the generic incline diagnostic.
+    if (curb(level, sample)) return false;
     const profile = level?.surfaceProfile?.(sample) ?? sample.profile;
     return (
       !sample.blocked &&
@@ -76,8 +79,19 @@
     if (edges.length === 2) pairs = [[edges[0], edges[1]]];
     // In the ambiguous saddle case, retain each solid corner as its own
     // triangle. Do not join two diagonal solids into an invisible wall.
-    else if (edges.length === 4)
-      for (let i = 0; i < 4; i++) if (values[i]) pairs.push([(i + 3) % 4, i]);
+    else if (edges.length === 4) {
+      // Diagonal curb tiles meet corner-to-corner along a single painted
+      // strip. Join matching curb profiles through the saddle, rather than
+      // producing a separate hexagon per stone. Solid walls retain the
+      // conservative corner rule, and different curb orientations stay apart.
+      const occupied = samples.filter((_, i) => values[i]);
+      const join =
+        barriersOnly === "curbs" &&
+        occupied.length === 2 &&
+        occupied[0].profile === occupied[1].profile;
+      for (let i = 0; i < 4; i++)
+        if (join ? !values[i] : values[i]) pairs.push([(i + 3) % 4, i]);
+    }
     const segments = pairs.map(([a, b]) => {
       const p = middle(a),
         q = middle(b),

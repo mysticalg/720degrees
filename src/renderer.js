@@ -571,10 +571,16 @@
           : p.jumpRecovery?.action === 9
             ? 4
             : null;
-      if (!(p.air && p.courseShadowY === null))
+      if (!(p.air && p.courseShadowY === null)) {
+        // Retain the original board silhouette on the ground as well as in
+        // flight. A small offset keeps the landed shadow visible under the
+        // wheels; translucent blur softens it without replacement artwork.
+        c.save();
+        c.globalAlpha *= p.air ? 0.28 : 0.2;
+        c.filter = "blur(0.45px)";
         this.descriptorSkater(
-          p.x,
-          (p.air ? (p.courseShadowY ?? p.y) : p.y) - groundRise,
+          p.x + (p.air ? 0 : 1),
+          (p.air ? (p.courseShadowY ?? p.y) : p.y + 2) - groundRise,
           frame,
           false,
           "shadow",
@@ -589,6 +595,8 @@
                 (a) => directory[a - 0x4000] | (directory[a - 0x4000 + 1] << 8),
               ).shadow,
         );
+        c.restore();
+      }
       this.descriptorSkater(
         p.x,
         y,

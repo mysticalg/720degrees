@@ -330,6 +330,7 @@
         return;
       }
       if (!this.practice) this.tickets--;
+      this.cityEntryPosition = { x: this.player.x, y: this.player.y };
       this.event = S.makeEvent(
         target.kind,
         this.clears[target.kind] + 1,
@@ -1260,6 +1261,50 @@
       this.audio.effect("medal");
       this.changed?.();
     }
+    /** Find clear pavement connected to the actual entrance, not an offset
+     * that can land behind its fence. Keep a board-sized clearance around it.
+     */
+    cityReturnPosition(gate) {
+      const level = this.city.level,
+        anchor = this.cityEntryPosition || gate;
+      const target = { x: gate.x, y: gate.y + 96 };
+      let best = null,
+        distance = Infinity;
+      for (let dy = -192; dy <= 192; dy += 8)
+        for (let dx = -192; dx <= 192; dx += 8) {
+          const point = { x: target.x + dx, y: target.y + dy },
+            cost = dx * dx + dy * dy;
+          if (cost >= distance) continue;
+          if (
+            ![
+              [0, 0],
+              [-16, 0],
+              [16, 0],
+              [0, -8],
+              [0, 8],
+              [-16, -8],
+              [16, -8],
+              [-16, 8],
+              [16, 8],
+            ].every(([x, y]) => {
+              const s = level.contactSample(point.x + x, point.y + y);
+              return !s.blocked && s.type === 0 && (s.profile & 7) <= 2;
+            })
+          )
+            continue;
+          const path = S.TerrainCollision.sweep(
+            level,
+            anchor,
+            point,
+            { x: point.x - anchor.x, y: point.y - anchor.y },
+            { barriersOnly: true },
+          );
+          if (Math.hypot(path.x - point.x, path.y - point.y) > 1) continue;
+          best = point;
+          distance = cost;
+        }
+      return best || { ...this.city.spawn };
+    }
     continueAfterEvent() {
       if (Object.values(this.clears).every((count) => count >= 4)) {
         this.addScore(this.cash * 10);
@@ -1271,10 +1316,10 @@
       const gate = this.city.gates.find((g) => g.kind === this.event.kind);
       this.event = null;
       this.mode = "city";
-      this.resetPlayer(
-        gate.x + (gate.x < 3072 ? 80 : -80),
-        gate.y + (gate.y < 1536 ? 60 : -60),
-      );
+      const position = this.cityReturnPosition(gate);
+      this.resetPlayer(position.x, position.y);
+      this.camera = { ...position };
+      this.cityEntryPosition = null;
       // Every visit awards enough points toward the next ticket; a consolation
       // ticket prevents a low-scoring first park from trapping a beginner.
       this.tickets = Math.max(1, this.tickets);

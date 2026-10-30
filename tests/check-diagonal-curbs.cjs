@@ -54,3 +54,42 @@ for (const profile of [2, 10, 18, 26, 34, 42, 50, 58]) {
 console.log(
   "PASS eight curb orientations: shared diagonal physics/overlay, finite end caps and unrestricted crossing",
 );
+
+for (const sign of [-1, 1]) {
+  const make = (gap = false) => ({
+    name: "city",
+    columns: 40,
+    rows: 24,
+    sample(x, y) {
+      const col = Math.floor(x / 8),
+        row = Math.floor(y / 8),
+        start = sign === 1 ? 4 + 2 * row : 36 - 2 * row;
+      const on =
+        row >= 3 &&
+        row < 15 &&
+        (!gap || row !== 9) &&
+        col >= start &&
+        col < start + 2;
+      return {
+        profile: on ? (sign === 1 ? 18 : 26) : 24,
+        type: 0,
+        blocked: false,
+      };
+    },
+  });
+  const mesh = collision.debugMesh(make(), "curbs");
+  assert.equal(
+    mesh.paths.length,
+    1,
+    "corner-touching curb stones form one strip",
+  );
+  assert(mesh.segments.some((e) => Math.abs(e.a.x - e.b.x) > 100));
+  assert.equal(
+    collision.debugMesh(make(true), "curbs").paths.length,
+    2,
+    "retain an actual missing row/gap",
+  );
+}
+console.log(
+  "PASS matching diagonal curb saddles join into one piece; real gaps remain open",
+);
