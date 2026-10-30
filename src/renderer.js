@@ -15,6 +15,7 @@
       this.ready = false;
       this.loadPromise = Promise.all(
         [
+          "motion-indices",
           "motion-tiles",
           "motion-tiles-1",
           "motion-tiles-3",
@@ -41,6 +42,13 @@
             }),
         ),
       ).then(() => {
+        const indexed = document.createElement("canvas");
+        indexed.width = 2048;
+        indexed.height = 1024;
+        const context = indexed.getContext("2d", { willReadFrequently: true });
+        context.drawImage(this.assets["motion-indices"], 0, 0);
+        this.motionIndices = context.getImageData(0, 0, 2048, 1024).data;
+        this.equipmentTiles = new Map();
         this.ready = true;
         this.pavement = this.ctx.createPattern(this.assets.pavement, "repeat");
       });
@@ -259,6 +267,7 @@
               game.player,
               game.elapsed,
               city.level.sample(game.player.x, game.player.y).profile,
+              game.gear,
             ),
         },
       ];
@@ -277,7 +286,7 @@
         }
       }
     }
-    skater(p, time, profile = p.romSurfaceProfile ?? 24) {
+    skater(p, time, profile = p.romSurfaceProfile ?? 24, gear = {}) {
       const c = this.ctx;
       if (p.invulnerable > 0 && Math.floor(time * 14) % 2) c.globalAlpha = 0.35;
       const y = p.y - p.z;
@@ -305,6 +314,13 @@
         p.romSpeed || 0,
         (a) => directory[a - 0x4000] | (directory[a - 0x4000 + 1] << 8),
       );
+      const equipment = S.OriginalEquipment.palettes(
+        gear,
+        Math.floor(time * 60),
+        S.EQUIPMENT_DATA,
+      );
+      const bodyPalette = gear.pads || gear.shoes ? equipment.body : null;
+      const boardPalette = gear.board ? equipment.board : null;
       const kicking = !p.air && !!p.kickAnimation;
       const kickPhase = p.kickAnimation?.phase ?? 0;
       const jumpPhase = p.jumpSequence
@@ -336,8 +352,10 @@
           ? 0x50fa
           : (p.rampAnimation?.currentBoard ??
               (jumpPhase === null ? groundPose.board : null)),
+        null,
+        boardPalette,
       );
-      this.descriptorSkater(
+      const bodyEntry = this.descriptorSkater(
         p.x,
         y,
         frame,
@@ -352,7 +370,24 @@
             : jumpPhase === null && !kicking
               ? groundPose.body
               : null,
+        null,
+        bodyPalette,
       );
+      // E5AE-E5CA adds a separate original helmet descriptor, paired with
+      // the current body entry; actor3 has two columns and the body palette.
+      if (gear.helmet && !p.bail)
+        this.descriptorSkater(
+          p.x,
+          y,
+          frame,
+          false,
+          "helmet",
+          null,
+          0,
+          bodyEntry + 0x061e,
+          2,
+          bodyPalette,
+        );
       c.globalAlpha = 1;
       if (p.air && Math.abs(p.spin) > Math.PI)
         this.text(
@@ -377,10 +412,11 @@
       kickPhase = 0,
       overrideEntry = null,
       overrideColumns = null,
+      palette = null,
     ) {
       const [directory, low, high] = this.motionBanks;
       // Native kick timing remains provisional; directory selection is original.
-      const board = component !== "body";
+      const board = component === "board" || component === "shadow";
       let entry = board
         ? 0x4f64 + direction * 2
         : S.OriginalRoutines.animationEntry(direction, 0, 0, 0, {});
@@ -433,20 +469,48 @@
             top + row * 16,
           );
           if (record.code & 0x4000) this.ctx.scale(-1, 1);
-          this.ctx.drawImage(
-            this.assets[atlas],
-            (tile % 128) * 16,
-            Math.floor(tile / 128) * 16,
-            16,
-            16,
-            0,
-            0,
-            16,
-            16,
-          );
+          if (palette)
+            this.ctx.drawImage(this.equipmentTile(tile, palette), 0, 0);
+          else
+            this.ctx.drawImage(
+              this.assets[atlas],
+              (tile % 128) * 16,
+              Math.floor(tile / 128) * 16,
+              16,
+              16,
+              0,
+              0,
+              16,
+              16,
+            );
           this.ctx.restore();
         }
       }
+      return entry;
+    }
+    /** Recolour original indexed pixels using recovered palette-RAM words.
+     * Cached16px tiles avoid copying/repainting a full atlas during play.
+     */
+    equipmentTile(code, palette) {
+      const key =
+        code + ":" + palette.map((color) => color.join(",")).join(";");
+      if (this.equipmentTiles.has(key)) return this.equipmentTiles.get(key);
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 16;
+      const context = canvas.getContext("2d"),
+        image = context.createImageData(16, 16);
+      const left = (code % 128) * 16,
+        top = Math.floor(code / 128) * 16;
+      for (let y = 0; y < 16; y++)
+        for (let x = 0; x < 16; x++) {
+          const pen = this.motionIndices[((top + y) * 2048 + left + x) * 4],
+            offset = (y * 16 + x) * 4;
+          if (pen === 15) continue;
+          image.data.set([...palette[pen], 255], offset);
+        }
+      context.putImageData(image, 0, 0);
+      this.equipmentTiles.set(key, canvas);
+      return canvas;
     }
     course(game, e) {
       const c = this.ctx,
@@ -465,6 +529,7 @@
         game.player,
         game.elapsed,
         level.sample(game.player.x, game.player.y).profile,
+        game.gear,
       );
       if (e.kind !== "ramp" && Math.abs(game.player.y - level.finish.y) < 250)
         this.text(
@@ -548,10 +613,7 @@
       const near = game.nearestInteraction();
       let message = game.messageTime > 0 ? game.message : "";
       if (near) {
-        message =
-          near.type === "park"
-            ? `E / Y: ${near.kind.toUpperCase()} · ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`
-            : `E: ${near.label} Â· $${100 * (game.gear[near.kind] + 1)}`;
+        message = `E / Y: ${near.kind.toUpperCase()} · ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
       }
       if (message) {
         c.fillStyle = "#05154de8";

@@ -16,6 +16,7 @@ From this directory, run `python -m http.server 8722`, then open http://localhos
 - Kick: X or Shift; gamepad A.
 - Jump: Space or Z; gamepad B.
 - Spin: C; gamepad shoulders or right stick.
+- Upgrades: skate over the original shop mat to buy automatically. Each item can be purchased once per city visit; returning from a park refreshes availability. Equipment persists up to level3.
 - Park interaction: E or Enter; park entry pads also activate by skating onto them.
 - Developer collision overlay: F8 toggles transparent terrain/fence areas and original sprite masks; collisions remain active.
 - Map: Tab or skate over a map marker; appears for at most three seconds. Fresh skating input dismisses it.
@@ -50,3 +51,5 @@ Course corrections remove the artificial halfpipe boundary and grass blocker, pr
 Presentation interpolates skater, camera, traffic and bee positions between the fixed60Hz simulation ticks. Original sprite frames stay discrete and physics/contact/scoring state is never interpolated. Park changes, resets, pause and large recovery teleports snap immediately. Halfpipe coping/handplant gameplay integration remains unfinished.
 
 Terrain contacts intentionally improve playability beyond the original: diagonal contours replace square tile corners, and swept contacts preserve movement along walls/fences. One-tile fence joins close post gaps, and contour simplification stays within four pixels of the recovered grid. This applies across city and park layouts; jump/downhill voids remain drop-offs. Native physics/scoring and original sprite masks remain separate from this improved terrain layer.
+
+Upgrade purchasing now uses recovered price/availability routines and tables. The requested once-per-item-per-city-visit policy is an explicit adapter over the original stock mask. Successful park returns refresh that visit mask. Shop/map contact tiles remain ordinary rideable ground. Helmets use the original paired descriptor at body entry+061E; pad/shoe/board colours use original palette-RAM tables and indexed ROM pixels. No replacement equipment graphics are used. Shop scenery price variants remain initial-class artwork; actual purchase prices follow the recovered progression table, with completed browser events supplying its stage counter.

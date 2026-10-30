@@ -48,6 +48,13 @@
       this.tickets = 1;
       this.lives = 3;
       this.gear = { helmet: 0, shoes: 0, board: 0, pads: 0 };
+      this.shopState = {
+        stockMask: 0,
+        attemptMask: 0,
+        visitMask: 0,
+        stage: 0,
+        cash: 0,
+      };
       this.clears = { ramp: 0, downhill: 0, jump: 0, slalom: 0 };
       this.medals = [];
       this.highScore = 0;
@@ -183,6 +190,13 @@
       this.lives = 3;
       this.nextTicket = 3000;
       this.gear = { helmet: 0, shoes: 0, board: 0, pads: 0 };
+      this.shopState = {
+        stockMask: 0,
+        attemptMask: 0,
+        visitMask: 0,
+        stage: 0,
+        cash: 0,
+      };
       this.clears = { ramp: 0, downhill: 0, jump: 0, slalom: 0 };
       this.medals = [];
       this.floats = [];
@@ -236,11 +250,26 @@
         this.clears[kind] === Math.min(...Object.values(this.clears))
       );
     }
+    /** Contact flags5..8 select a shop region. The original5326 consumes
+     * scrolling map fields; nearest wrapped region adapts the full city PNG.
+     */
+    shopAt(x, y) {
+      const distance = (shop) => {
+        const dx = Math.abs(x - shop.x),
+          dy = Math.abs(y - shop.y);
+        return (
+          Math.min(dx, this.city.width - dx) ** 2 +
+          Math.min(dy, this.city.height - dy) ** 2
+        );
+      };
+      return this.city.shops.reduce((best, shop) =>
+        distance(shop) < distance(best) ? shop : best,
+      );
+    }
     nearestInteraction() {
       if (this.mode !== "city") return null;
       const candidates = [
         ...this.city.gates.map((g) => ({ ...g, type: "park" })),
-        ...this.city.shops.map((g) => ({ ...g, type: "shop" })),
       ];
       return (
         candidates
@@ -257,20 +286,36 @@
         return;
       }
       if (target.type === "shop") {
-        const level = this.gear[target.kind],
-          price = 100 * (level + 1);
-        if (level >= 3) {
-          this.tell(`${target.label}: MAXIMUM GEAR`, 2);
-          return;
-        }
-        if (this.cash < price) {
-          this.tell(`NEED $${price} · WIN MEDALS TO EARN CASH`, 3);
-          return;
-        }
-        this.cash -= price;
-        this.gear[target.kind]++;
-        this.audio.effect("coin");
-        this.tell(`${target.label} UPGRADED TO LEVEL ${level + 1}`, 3);
+        // Purchase only on a coded shop pad, including optional legacy E use.
+        const surface = this.city.level.contactSample(
+          this.player.x,
+          this.player.y,
+        );
+        if (surface.type < 5 || surface.type > 8) return;
+        const shop = this.shopAt(this.player.x, this.player.y);
+        const index = S.OriginalEquipment.kinds.indexOf(shop.kind);
+        if (this.shopState.cash !== this.cash) this.shopState.attemptMask = 0;
+        // User-requested visit policy: each item can be bought once, rather
+        // than5602 closing every previously owned item after a purchase.
+        this.shopState.stockMask =
+          S.OriginalEquipment.stockMask(this.gear, 3) |
+          (this.shopState.visitMask || 0);
+        this.shopState.cash = this.cash;
+        this.shopState.stage = Math.min(15, this.medals.length);
+        const result = S.OriginalEquipment.purchase(
+          this.shopState,
+          index,
+          this.gear,
+          S.EQUIPMENT_DATA,
+        );
+        this.cash = this.shopState.cash;
+        if (result.status === "purchased") {
+          this.shopState.visitMask =
+            (this.shopState.visitMask || 0) | (1 << index);
+          this.audio.effect("coin");
+          this.tell(`${shop.label} LEVEL ${result.level} · $${result.cost}`, 3);
+        } else if (result.status === "funds")
+          this.tell(`NEED $${result.cost} · WIN MEDALS TO EARN CASH`, 3);
         return;
       }
       if (!this.available(target.kind)) {
@@ -322,6 +367,7 @@
       // whether E366 selects immediate rising-surface takeoff or anticipation.
       if (
         (here.type === 0 ||
+          (!this.event && [5, 6, 7, 8, 17].includes(here.type)) ||
           (["downhill", "jump"].includes(this.event?.kind) &&
             here.type === 16) ||
           (!this.event && here.type >= 128 && here.profile === 32) ||
@@ -863,6 +909,9 @@
       // Every visit awards enough points toward the next ticket; a consolation
       // ticket prevents a low-scoring first park from trapping a beginner.
       this.tickets = Math.max(1, this.tickets);
+      this.shopState.visitMask = 0;
+      this.shopState.stockMask = S.OriginalEquipment.stockMask(this.gear, 3);
+      this.shopState.attemptMask = 0;
       this.resetCityClock();
       this.tell("MEDAL CASH BUYS GEAR · FIND THE NEXT PARK", 5);
       this.changed?.();
@@ -1023,6 +1072,7 @@
         // The input adapter still supplies turning and kick state timing.
         if (
           (surface.type === 0 ||
+            (!e && [5, 6, 7, 8, 17].includes(surface.type)) ||
             (["downhill", "jump"].includes(e?.kind) && surface.type === 16) ||
             (!e && surface.type >= 128 && surface.profile === 32) ||
             (e?.kind === "ramp" &&
@@ -1321,13 +1371,9 @@
         }
       }
       if (canContact && surface.type >= 5 && surface.type <= 8) {
-        const shop = this.city.shops.reduce((closest, item) =>
-          S.distance(p, item) < S.distance(p, closest) ? item : closest,
-        );
-        if (S.distance(p, shop) < 220 && p.shopPad !== shop.kind) {
-          p.shopPad = shop.kind;
-          this.interact({ ...shop, type: "shop" });
-        }
+        const shop = this.shopAt(p.x, p.y);
+        p.shopPad = shop.kind;
+        this.interact({ ...shop, type: "shop" });
       } else p.shopPad = null;
 
       // Type1 marks the original green park entry pads. Trigger on walking
