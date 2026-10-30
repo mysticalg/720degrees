@@ -6,6 +6,12 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Raised ramps with multiple faces (build 58)
+
+Raised city ramps now decode their secondary face profiles using original94BA-94D4 mode2 semantics. The pictured blue ramp has primary material48, while flag0x84 supplies front incline4, flag0x92 supplies opposite incline18, and flag0xF8 supplies the flat120 crest. These profiles now drive native coefficients, speed changes, slope-jump admission and original poses, rather than treating both faces as flat material48. Inclined poses take priority over road kick frames. F8 includes the secondary slopes and internal incline divisions, which are diagnostic lines, not extra walls.
+
+Layer admission is still a native adapter: it selects known city platform materials32/48 with rideable alternate flags128..191 or crest248, while preserving overhead scenery. The original full9514-9798 layer-transition/height controller remains incomplete. Tests verify131072 primary/mode2 combinations and the real blue ramp in both directions: opposite vertical signs, uphill deceleration/downhill acceleration, rising launch261 and the original inclined sprite entry.
+
 ## Painted course markers (build 57)
 
 Direction/start, finish, target and lip flags9/10/15/16 now retain native ground movement and jump admission in slalom, downhill and jump courses. Some painted arrows mix ordinary and flag9 tiles; entering a flagged piece previously selected the fallback movement branch and reset speed to zero. Their recovered profiles/flags remain intact for course logic. Verified48 marker cases across the decoded layouts, plus coasting and jumping on the curved arrow at1636,956 in jump-1.

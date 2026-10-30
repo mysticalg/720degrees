@@ -209,7 +209,7 @@
         this.objectRegistry,
         this.actorMemory.readSpriteByte,
       );
-      this.tell("SKATE CITY Â· JUMP + C TO SPIN Â· E AT A PARK", 7);
+      this.tell("SKATE CITY Ã‚Â· JUMP + C TO SPIN Ã‚Â· E AT A PARK", 7);
       this.audio.unlock();
       this.audio.playStartCue();
       this.changed?.();
@@ -282,7 +282,7 @@
     interact(target = this.nearestInteraction()) {
       if (this.mode !== "city") return;
       if (!target) {
-        this.tell("FOLLOW A PARK ARROW Â· E TO ENTER", 2);
+        this.tell("FOLLOW A PARK ARROW Ã‚Â· E TO ENTER", 2);
         return;
       }
       if (target.type === "shop") {
@@ -314,11 +314,11 @@
             (this.shopState.visitMask || 0) | (1 << index);
           this.audio.effect("coin");
           this.tell(
-            `${shop.label} LEVEL ${result.level} Â· $${result.cost}`,
+            `${shop.label} LEVEL ${result.level} Ã‚Â· $${result.cost}`,
             3,
           );
         } else if (result.status === "funds")
-          this.tell(`NEED $${result.cost} Â· WIN MEDALS TO EARN CASH`, 3);
+          this.tell(`NEED $${result.cost} Ã‚Â· WIN MEDALS TO EARN CASH`, 3);
         return;
       }
       if (!this.available(target.kind)) {
@@ -326,7 +326,7 @@
         return;
       }
       if (this.tickets < 1) {
-        this.tell("NEED A TICKET Â· JUMP AND SPIN TO EARN POINTS", 3);
+        this.tell("NEED A TICKET Ã‚Â· JUMP AND SPIN TO EARN POINTS", 3);
         return;
       }
       if (!this.practice) this.tickets--;
@@ -345,10 +345,10 @@
       this.camera = { x: this.player.x, y: this.player.y };
       this.audio.effect("coin");
       const help = {
-        ramp: "HALF PIPE Â· KICK TOWARD EITHER LIP Â· JUMP + SPIN",
-        downhill: "RACE DOWNHILL Â· STAY ON THE ROAD",
-        jump: "JUMP AT THE RAMP Â· LAND INSIDE THE TARGET",
-        slalom: "PASS BETWEEN THE FLAGS Â· KICK FOR SPEED",
+        ramp: "HALF PIPE Ã‚Â· KICK TOWARD EITHER LIP Ã‚Â· JUMP + SPIN",
+        downhill: "RACE DOWNHILL Ã‚Â· STAY ON THE ROAD",
+        jump: "JUMP AT THE RAMP Ã‚Â· LAND INSIDE THE TARGET",
+        slalom: "PASS BETWEEN THE FLAGS Ã‚Â· KICK FOR SPEED",
       };
       this.tell(help[target.kind], 6);
       this.changed?.();
@@ -379,7 +379,9 @@
           (!this.event && [5, 6, 7, 8, 17].includes(here.type)) ||
           (["slalom", "downhill", "jump"].includes(this.event?.kind) &&
             [9, 10, 15, 16].includes(here.type)) ||
-          (!this.event && here.type >= 128 && here.profile === 32) ||
+          (!this.event &&
+            (here.terrainLayer === "raised" ||
+              (here.type >= 128 && here.profile === 32))) ||
           (this.event?.kind === "ramp" &&
             ([9, 13].includes(here.type) ||
               (here.type >= 128 && [16, 120].includes(here.profile))))) &&
@@ -1063,7 +1065,7 @@
       }
       this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
       this.resetCityClock();
-      this.tell(`THE BEES GOT YOU Â· ${this.lives} BOARDS LEFT`, 4);
+      this.tell(`THE BEES GOT YOU Ã‚Â· ${this.lives} BOARDS LEFT`, 4);
     }
     finishEvent() {
       if (this.mode !== "event") return;
@@ -1140,7 +1142,7 @@
       this.shopState.stockMask = S.OriginalEquipment.stockMask(this.gear, 3);
       this.shopState.attemptMask = 0;
       this.resetCityClock();
-      this.tell("MEDAL CASH BUYS GEAR Â· FIND THE NEXT PARK", 5);
+      this.tell("MEDAL CASH BUYS GEAR Ã‚Â· FIND THE NEXT PARK", 5);
       this.changed?.();
     }
     /** Original pending route clock followed by active traffic scheduling. */
@@ -1314,7 +1316,9 @@
             // carry gameplay flags, not a different physical road surface.
             (["slalom", "downhill", "jump"].includes(e?.kind) &&
               [9, 10, 15, 16].includes(surface.type)) ||
-            (!e && surface.type >= 128 && surface.profile === 32) ||
+            (!e &&
+              (surface.terrainLayer === "raised" ||
+                (surface.type >= 128 && surface.profile === 32))) ||
             (e?.kind === "ramp" &&
               ([9, 13].includes(surface.type) ||
                 (surface.type >= 128 &&
@@ -1662,7 +1666,7 @@
       if (this.cityTimer <= 0 && !this.warned) {
         this.warned = true;
         this.bees = { x: p.x - 230, y: p.y - 120, born: this.elapsed };
-        this.tell("SKATE OR DIE! Â· GET TO A PARK!", 6);
+        this.tell("SKATE OR DIE! Ã‚Â· GET TO A PARK!", 6);
         this.audio.clip("bees");
       }
       if (this.bees) {
@@ -1874,7 +1878,7 @@
               Math.abs(p.x - ramp.x) < 125 &&
               !p.air
             )
-              this.tell("JUMP AT THE LIP Â· LAND ON THE NEXT PLATFORM", 2);
+              this.tell("JUMP AT THE LIP Ã‚Â· LAND ON THE NEXT PLATFORM", 2);
           }
         }
         if (e.level.contactSample(p.x, p.y).type === 10 && !p.air) {

@@ -80,7 +80,37 @@
     }
     /** Improved diagonal support geometry, separate from untouched ROM samples. */
     contactSample(x, y) {
-      return S.TerrainCollision.surface(this, x, y);
+      const sample = S.TerrainCollision.surface(this, x, y);
+      const profile = this.surfaceProfile(sample);
+      return !this.usesRaisedProfile(sample)
+        ? sample
+        : {
+            ...sample,
+            primaryProfile: sample.profile,
+            profile,
+            terrainLayer: "raised",
+          };
+    }
+    /** Raised city ramps encode their individual faces in flag bytes. This
+     * native layer-admission adapter selects the original mode2 decoder for
+     * known rideable platform materials; overhead scenery stays on its layer.
+     */
+    surfaceProfile(sample) {
+      if (this.usesRaisedProfile(sample))
+        return S.OriginalTerrainProbe.resolveProfile(
+          sample.profile,
+          sample.type,
+          2,
+        );
+      return sample.profile;
+    }
+    usesRaisedProfile(sample) {
+      return (
+        this.name === "city" &&
+        [32, 48].includes(sample.profile) &&
+        sample.type & 128 &&
+        (sample.type < 192 || sample.type === 248)
+      );
     }
     /** A navigation aid sampled from the decoded surface, never a replacement road. */
     centerAt(y) {

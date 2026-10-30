@@ -6,6 +6,14 @@
   const word = (x) => x & 65535,
     signed = (x) => (x << 16) >> 16,
     byteSigned = (x) => (x << 24) >> 24;
+  /** 94BA-94D4: mode2 uses a negative flag byte's low7 bits as the
+   * surface profile. Otherwise retain the signed primary profile byte.
+   */
+  function resolveProfile(profile, flag, mode) {
+    return (mode & 255) === 2 && flag & 128
+      ? flag & 127
+      : word(byteSigned(profile));
+  }
   function probeTerrain(state, memory) {
     let x = word(state.x),
       bank = word(state.bank),
@@ -147,10 +155,11 @@
       const tile = point.tile & 65535;
       const alias = word((tile & 1023) + (tile & 1024 ? aliasHigh : aliasLow));
       const flags = memory.readFlagByte(alias) & 255;
-      const profile =
-        (mode & 255) === 2 && flags & 128
-          ? flags & 127
-          : word(byteSigned(memory.readProfileByte(alias)));
+      const profile = resolveProfile(
+        memory.readProfileByte(alias),
+        flags,
+        mode,
+      );
       return { ...point, alias, profile, flags };
     });
     return {
@@ -166,6 +175,7 @@
     contactPoints,
     probeContact,
     decodeContactProfiles,
+    resolveProfile,
   });
   if (typeof module !== "undefined") module.exports = api;
   else window.Skate720.OriginalTerrainProbe = api;

@@ -22,17 +22,21 @@
     level.name === "city" && sample.type === 0 && (sample.profile & 7) === 2;
   // The recovered incline field is1..6;0 is flat and7 is a vertical face.
   // Keep this diagnostic category separate from support/barrier collision.
-  const slope = (sample, level, x, y) =>
-    !sample.blocked &&
-    !(
-      sample.profile === 17 &&
-      level?.halfpipeWallAt &&
-      !level.halfpipeWallAt(x, y)
-    ) &&
-    (((sample.profile & 7) >= 1 && (sample.profile & 7) <= 6) ||
-      (sample.profile === 15 &&
-        Number.isFinite(x) &&
-        level?.halfpipeWallAt?.(x, y)));
+  const slope = (sample, level, x, y) => {
+    const profile = level?.surfaceProfile?.(sample) ?? sample.profile;
+    return (
+      !sample.blocked &&
+      !(
+        sample.profile === 17 &&
+        level?.halfpipeWallAt &&
+        !level.halfpipeWallAt(x, y)
+      ) &&
+      (((profile & 7) >= 1 && (profile & 7) <= 6) ||
+        (sample.profile === 15 &&
+          Number.isFinite(x) &&
+          level?.halfpipeWallAt?.(x, y)))
+    );
+  };
   const dot = (a, b) => a.x * b.x + a.y * b.y;
   function cells(level, x, y, barriersOnly = false, maskReader = null) {
     const col = Math.floor(x / TILE - 0.5),
@@ -477,10 +481,57 @@
     }
     return { x: end.x, y: end.y, vx: v.x, vy: v.y, hits };
   }
+  /** Separate the recovered inclined faces inside a slope region. These
+   * marching-cell boundaries are diagnostic only and never create walls.
+   */
+  function slopeDivisions(level) {
+    if (!geometry(level, "slopes")) return [];
+    const entry = cache.get(level);
+    if (entry.divisions) return entry.divisions;
+    const result = [],
+      seen = new Set();
+    const profile = (x, y) => {
+      const sample = level.sample(x, y);
+      return sample.blocked
+        ? -1
+        : (level.surfaceProfile?.(sample) ?? sample.profile);
+    };
+    for (let row = 0; row < level.rows - 1; row++)
+      for (let col = 0; col < level.columns - 1; col++) {
+        const x = (col + 1) * TILE,
+          y = (row + 1) * TILE;
+        const values = [
+          profile(x - 4, y - 4),
+          profile(x + 4, y - 4),
+          profile(x + 4, y + 4),
+          profile(x - 4, y + 4),
+        ];
+        const faces = new Set(values);
+        if (
+          faces.size < 2 ||
+          values.some((p) => p < 0 || (p & 7) < 1 || (p & 7) > 6)
+        )
+          continue;
+        for (const face of faces)
+          for (const edge of cells(level, x, y, false, (px, py) =>
+            profile(px, py) === face ? 1 : 0,
+          ).segments) {
+            const key = [edge.a.x + "," + edge.a.y, edge.b.x + "," + edge.b.y]
+              .sort()
+              .join("/");
+            if (!seen.has(key)) {
+              seen.add(key);
+              result.push(edge);
+            }
+          }
+      }
+    return (entry.divisions = result);
+  }
   const api = Object.freeze({
     blocked,
     surface,
     sweep,
+    slopeDivisions,
     invalidate: (level) => cache.delete(level),
     debugMesh: (level, barriersOnly = false) => geometry(level, barriersOnly),
     contours: (level, barriersOnly = false) =>

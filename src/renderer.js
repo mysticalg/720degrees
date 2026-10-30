@@ -203,6 +203,24 @@
         c.lineTo(b.x, b.y);
       }
       c.stroke();
+      // Incline changes inside one ramp need visible divisions too.
+      c.strokeStyle = "#f1dfffaa";
+      c.lineWidth = 0.6;
+      c.beginPath();
+      for (const edge of S.TerrainCollision.slopeDivisions(level)) {
+        if (
+          Math.max(edge.a.x, edge.b.x) < left ||
+          Math.min(edge.a.x, edge.b.x) > left + 512 ||
+          Math.max(edge.a.y, edge.b.y) < top ||
+          Math.min(edge.a.y, edge.b.y) > top + 384
+        )
+          continue;
+        const a = projectSlope(edge.a),
+          b = projectSlope(edge.b);
+        c.moveTo(a.x, a.y);
+        c.lineTo(b.x, b.y);
+      }
+      c.stroke();
       // Curbs are shallow, rideable terrain rather than solid fences. Show
       // their full width and both ends using the exact physics contour.
       if (level.name === "city") {
@@ -318,7 +336,7 @@
             this.skater(
               game.player,
               game.elapsed,
-              city.level.sample(game.player.x, game.player.y).profile,
+              city.level.contactSample(game.player.x, game.player.y).profile,
               game.gear,
             ),
         },
@@ -382,9 +400,10 @@
       const kicking =
         !p.air &&
         !!p.kickAnimation &&
-        // Every curved-wall band needs its original inclined stance, including
-        // the shallow descent. A held kick must not replace it with road art.
-        !p.halfpipePoseProfile;
+        // Inclined surfaces keep their original terrain stance while kicking;
+        // road kick frames must not hide either face of a curved ramp.
+        !p.halfpipePoseProfile &&
+        (profile & 7) === 0;
       const kickPhase = p.kickAnimation?.phase ?? 0;
       const jumpPhase = p.jumpSequence
         ? p.jumpSequence.phase
@@ -462,7 +481,7 @@
       c.globalAlpha = 1;
       if (p.air && Math.abs(p.spin) > Math.PI)
         this.text(
-          `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}Â°`,
+          `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}Ãƒâ€šÃ‚Â°`,
           p.x,
           y - 73,
           "#fff637",
@@ -646,7 +665,7 @@
       c.fillStyle = "#052435e8";
       c.fillRect(388, 8, 116, 48);
       this.text(
-        `TICKETS ${game.practice ? "Ã¢Ë†Å¾" : game.tickets}`,
+        `TICKETS ${game.practice ? "ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â Ãƒâ€¦Ã‚Â¾" : game.tickets}`,
         496,
         12,
         "#ffeb57",
@@ -668,7 +687,7 @@
       );
       if (event) {
         this.text(
-          `${event.kind.toUpperCase()} Ã‚Â· CLASS ${event.difficulty}`,
+          `${event.kind.toUpperCase()} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· CLASS ${event.difficulty}`,
           256,
           65,
           S.COLORS[event.kind],
@@ -686,7 +705,7 @@
       const near = game.nearestInteraction();
       let message = game.messageTime > 0 ? game.message : "";
       if (near) {
-        message = `E / Y: ${near.kind.toUpperCase()} Â· ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
+        message = `E / Y: ${near.kind.toUpperCase()} Ãƒâ€šÃ‚Â· ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
       }
       if (message) {
         c.fillStyle = "#05154de8";
@@ -696,7 +715,7 @@
         this.text(message, 256, 362, "#fff9ba", 8, "center");
       } else {
         this.text(
-          `NEXT TICKET ${S.format(game.nextTicket || 3000)} Ã‚Â· TAB FOR MAP`,
+          `NEXT TICKET ${S.format(game.nextTicket || 3000)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· TAB FOR MAP`,
           12,
           365,
           "#132d42",
@@ -746,7 +765,7 @@
           "center",
         );
       this.text(
-        "BLUE SHOPS = EQUIPMENT Ã‚Â· WHITE DOT = YOU",
+        "BLUE SHOPS = EQUIPMENT ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· WHITE DOT = YOU",
         256,
         290,
         "#cad6e7",
