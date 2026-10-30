@@ -1,5 +1,13 @@
 # 720° — native JavaScript port in progress
 
+## Halfpipe containment and touchdown alignment (build71)
+
+The halfpipe barrier mesh now applies during airborne and bail movement, closing the outer roof-edge escape without treating support gaps as airborne walls. Ground, air and F8 use the same continuous diagonal boundary.
+
+Coping landings replace the aerial velocity immediately with the return heading's original surface-coefficient motion, using the same projection as grounded riding. This removes the sideways touchdown tick before the next ground update corrected it. Grind return paths begin at their existing curve origin without carrying a lateral aerial step.
+
+Checks cover 96 outer-roof crossings at ground/40/250px heights, straight720 return vectors on both walls at three speeds, six natural analog grinds with automatic descent, matched wall traversal and the existing fence-sliding regression.
+
 ## Continuous diagonal fences (build70)
 
 Matching diagonal fence faces now join through marching-square saddles in both the barrier and support meshes. Repeated fence-post hexagons become a continuous diagonal strip, shared by swept collision and F8. Ordinary isolated obstacles, differently oriented faces and actual missing-panel gaps retain separate geometry. Original artwork is unchanged.

@@ -957,6 +957,25 @@
         S.OriginalRoutines.tickMotionAnimation,
       );
     }
+    /** Project fixed-point surface motion consistently on touchdown and while
+     * riding. Using a stale aerial vector for the touchdown tick shifts lanes. */
+    projectGroundMotion(motion, vertical, wall, level) {
+      const dx = motion.dx + motion.fractionX / 256,
+        dy = motion.dy + motion.fractionY / 256,
+        groundY = vertical.velocity + vertical.fraction / 256;
+      if (!wall) return { vx: (dx * 60) / 64, vy: (-(dy + groundY) * 60) / 64 };
+      // Wall artwork already includes the rise. Project height travel along
+      // its isometric axis, avoiding a second screen-Y rise that shifts lanes.
+      // travelScale restores equal physical travel on the compressed south wall.
+      const along = (dx - 2 * dy) / 2,
+        across =
+          (dx + 2 * dy) / 2 + (wall.rawProfile === 1 ? 1 : -1) * 2 * groundY,
+        mappedAcross = across * S.Halfpipe.travelScale(level, wall);
+      return {
+        vx: ((along + mappedAcross) * 60) / 64,
+        vy: ((along - mappedAcross) * 30) / 64,
+      };
+    }
     landHalfpipe() {
       const p = this.player,
         flight = p.halfpipeFlight;
@@ -1010,6 +1029,45 @@
       p.jumpSequence = p.jumpRecovery = p.jumpAnimation = null;
       p.halfpipeReturning = true;
       p.halfpipePoseProfile = flight.wall.profile;
+      // Land() retains airborne momentum for ordinary fakie jumps. A coping
+      // return explicitly changes travel, so replace that vector immediately.
+      if (p.copingReturn) p.vx = p.vy = 0;
+      else {
+        const rom = S.OriginalGround,
+          reader = rom.terrainTableReader(S.TERRAIN_TABLES);
+        const coefficient = rom.surfaceCoefficients(
+          p.romDirection,
+          flight.wall.profile,
+          1,
+          3,
+          p.romSpeed,
+          Math.min(3, this.gear.board),
+          reader.readByte,
+          reader.readWord,
+        );
+        const productX = Math.imul(p.romSpeed, coefficient.x),
+          productY = Math.imul(p.romSpeed, coefficient.y);
+        const motion = {
+          dx: productX >> 16,
+          dy: productY >> 16,
+          fractionX: (productX >>> 8) & 255,
+          fractionY: (productY >>> 8) & 255,
+        };
+        p.romGroundVertical = rom.surfaceVerticalMotion(
+          p.romSpeed,
+          coefficient.vertical,
+        );
+        p.halfpipeWall = flight.wall;
+        Object.assign(
+          p,
+          this.projectGroundMotion(
+            motion,
+            p.romGroundVertical,
+            flight.wall,
+            level,
+          ),
+        );
+      }
     }
     updateCopingTravel() {
       const p = this.player,
@@ -1965,30 +2023,17 @@
           // ROM screen Y is projected with a minus sign in motion objects.
           // Convert both the velocity and the input dial orientation together.
           // Coordinates use 64 fixed-point units per pixel.
-          p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
-          // B486-B48E projects actor Y plus its terrain height. Omitting
-          // the height delta makes opposite faces of a ramp trap the skater.
           const groundY =
             p.romGroundVertical.velocity + p.romGroundVertical.fraction / 256;
-          p.vy = -((motion.dy + motion.fractionY / 256 + groundY) * 60) / 64;
-          if (p.halfpipeWall) {
-            // PNG wall coordinates already contain the curved rise. Project
-            // original height travel along that wall's isometric axis rather
-            // than adding it to screenY a second time (which changes lanes).
-            const dx = motion.dx + motion.fractionX / 256,
-              dy = motion.dy + motion.fractionY / 256;
-            const along = (dx - 2 * dy) / 2,
-              across =
-                (dx + 2 * dy) / 2 +
-                (p.halfpipeWall.rawProfile === 1 ? 1 : -1) * 2 * groundY;
-            // The foreground map compresses the south wall into48px while
-            // the opposite curve spans176px. Convert common physical travel
-            // into that wall's parameter distance, not a4x faster ascent.
-            const wallScale = S.Halfpipe.travelScale(e.level, p.halfpipeWall),
-              mappedAcross = across * wallScale;
-            p.vx = ((along + mappedAcross) * 60) / 64;
-            p.vy = ((along - mappedAcross) * 30) / 64;
-          }
+          Object.assign(
+            p,
+            this.projectGroundMotion(
+              motion,
+              p.romGroundVertical,
+              p.halfpipeWall,
+              e?.level,
+            ),
+          );
           if (p.copingReturn) {
             const path = p.copingReturn;
             const travel =
@@ -2437,7 +2482,8 @@
       const p = this.player,
         level = this.event?.level || this.city.level;
       if (p.dropFall) return;
-      if (p.copingReturn) {
+      // These motions already follow a finite, clamped coping path.
+      if (p.copingReturn || p.halfpipeFlight?.trick === "grind") {
         p.terrainStepOrigin = null;
         p.edgeContact = false;
         return;
@@ -2454,7 +2500,13 @@
       ) {
         if (this.launchHalfpipe(wall)) return;
       }
-      if (!p.air && !p.bail && p.fallen <= 0 && p.terrainStepOrigin) {
+      // Halfpipe enclosure walls stay solid during airs and bail motion.
+      // Support gaps remain airborne space; only the wall mesh blocks a jump.
+      const halfpipeBoundary = this.event?.kind === "ramp";
+      if (
+        ((!p.air && !p.bail && p.fallen <= 0) || halfpipeBoundary) &&
+        p.terrainStepOrigin
+      ) {
         const slide = S.TerrainCollision.sweep(
           level,
           p.terrainStepOrigin,
@@ -2463,7 +2515,12 @@
             x: p.vx,
             y: p.vy,
           },
-          { barriersOnly: ["downhill", "jump"].includes(this.event?.kind) },
+          {
+            barriersOnly:
+              p.air ||
+              p.bail ||
+              ["downhill", "jump"].includes(this.event?.kind),
+          },
         );
         if (slide.hits) {
           p.x = slide.x;
