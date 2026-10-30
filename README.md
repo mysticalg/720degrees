@@ -6,6 +6,10 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Painted course markers (build 57)
+
+Direction/start, finish, target and lip flags9/10/15/16 now retain native ground movement and jump admission in slalom, downhill and jump courses. Some painted arrows mix ordinary and flag9 tiles; entering a flagged piece previously selected the fallback movement branch and reset speed to zero. Their recovered profiles/flags remain intact for course logic. Verified48 marker cases across the decoded layouts, plus coasting and jumping on the curved arrow at1636,956 in jump-1.
+
 ## Southern halfpipe coping (build 56)
 
 The south wall now projects its terrain height onto the original artwork's white coping line, y=x/2+382 in ramp-1.png. Previously the native adapter drew that wall, its skater and aerial origins on the lower wooden face. Ground poses, aerials, handplants, camera tracking, landing effects and F8 slope/contact display now share the projected height. The original motion, scoring and animation controllers remain in use. This is an explicit artwork-space geometry adapter, not a claim that the full original height controller is complete.

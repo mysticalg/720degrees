@@ -377,8 +377,8 @@
       if (
         (here.type === 0 ||
           (!this.event && [5, 6, 7, 8, 17].includes(here.type)) ||
-          (["downhill", "jump"].includes(this.event?.kind) &&
-            here.type === 16) ||
+          (["slalom", "downhill", "jump"].includes(this.event?.kind) &&
+            [9, 10, 15, 16].includes(here.type)) ||
           (!this.event && here.type >= 128 && here.profile === 32) ||
           (this.event?.kind === "ramp" &&
             ([9, 13].includes(here.type) ||
@@ -1310,7 +1310,10 @@
         if (
           (surface.type === 0 ||
             (!e && [5, 6, 7, 8, 17].includes(surface.type)) ||
-            (["downhill", "jump"].includes(e?.kind) && surface.type === 16) ||
+            // Painted course markers (direction/start, finish, target, lip)
+            // carry gameplay flags, not a different physical road surface.
+            (["slalom", "downhill", "jump"].includes(e?.kind) &&
+              [9, 10, 15, 16].includes(surface.type)) ||
             (!e && surface.type >= 128 && surface.profile === 32) ||
             (e?.kind === "ramp" &&
               ([9, 13].includes(surface.type) ||
