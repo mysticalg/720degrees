@@ -416,7 +416,7 @@
     ) {
       const [directory, low, high] = this.motionBanks;
       // Native kick timing remains provisional; directory selection is original.
-      const board = component === "board" || component === "shadow";
+      const board = component !== "body" && component !== "helmet";
       let entry = board
         ? 0x4f64 + direction * 2
         : S.OriginalRoutines.animationEntry(direction, 0, 0, 0, {});
