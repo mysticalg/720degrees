@@ -1242,14 +1242,14 @@
       this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
       this.camera.y += (p.y - 35 - this.camera.y) * Math.min(1, dt * 7);
     }
-    /** Recovered normal-stance footprint and original small contact masks.
-     * Pose-specific footprint selection and wide vehicle masks remain pending.
+    /** Recovered normal-stance footprint and original scanline contact masks.
+     * Pose-specific footprint selection and remaining response controllers are pending.
      */
     actorMaskContact(actor, pointer = actor.extraPointer) {
       if (!pointer) return false;
       const read = this.objectRegistry.readContactWord;
       return (
-        S.OriginalContact.smallMaskContact(
+        S.OriginalContact.maskContact(
           S.OriginalContact.actorContact(actor, pointer, read),
           S.OriginalContact.playerContact(this.player, read),
           read,
@@ -1341,14 +1341,52 @@
         if (length < 22 || this.cityTimer < -S.CONFIG.beeGrace)
           this.caughtByBees();
       }
-      if (p.invulnerable <= 0 && !p.bail) {
-        for (const actor of this.cityActors) {
-          if (actor.kind === 87 && this.actorMaskContact(actor)) {
-            this.crash("WIPEOUT!");
-            break;
+      if (!p.bail) {
+        const read = this.objectRegistry.readContactWord;
+        const contact = [...(this.trafficActors || [])]
+          .sort((a, b) => b.sprite - a.sprite)
+          .find((actor) => this.actorMaskContact(actor));
+        if (!contact) p.lastOriginalContact = 0;
+        else {
+          const code = S.OriginalContact.responseCode(
+            contact.kind,
+            !p.air,
+            Math.round(p.z * 64),
+            this.objectRegistry.readTypeByte,
+          );
+          // A5B8 handles response2/7 with the original1300-unit impact speed.
+          // Cyclist attachment(5) and pedestrian(6) controllers are separate.
+          if (
+            (code === 2 || code === 7) &&
+            p.lastOriginalContact !== contact.sprite &&
+            p.invulnerable <= 0
+          ) {
+            const player = S.OriginalContact.playerContact(p, read);
+            const actor = S.OriginalContact.actorContact(
+              contact,
+              contact.extraPointer,
+              read,
+            );
+            actor.sprite = contact.sprite;
+            const side = S.OriginalContact.impactSide(
+              player,
+              actor,
+              this.objectRegistry.readTypeWord,
+            );
+            const direction = side ? 4 : 12;
+            p.romDirection = p.romMovementDirection = direction;
+            p.angle = Math.atan2(
+              -S.OriginalGround.tables.y[direction],
+              S.OriginalGround.tables.x[direction],
+            );
+            p.romSpeed = 0x0514;
+            this.crash("TRAFFIC COLLISION");
           }
+          if (code !== null) p.lastOriginalContact = contact.sprite;
         }
       }
+      // Speaker87 maps to61DA response0: its original contact causes no bail.
+      // Scenery/terrain contact remains responsible for its solid platform.
     }
     collideWithRecoveredTerrain() {
       const p = this.player,

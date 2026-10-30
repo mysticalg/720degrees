@@ -109,6 +109,109 @@
     }
     return false;
   }
+  /** Original7DB8 word shifter. Negative counts round right shifts using
+   * the discarded carry (ROR/ADC); positive counts shift left. The original
+   * jump table accepts-16..15 and returns zero outside that range.
+   */
+  function shiftMask(value, count) {
+    value = word(value);
+    if (count < -16 || count > 15) return 0;
+    if (count >= 0) return word(value << count);
+    const right = -count;
+    return word(Math.floor((value + 2 ** (right - 1)) / 2 ** right));
+  }
+  /** 58CC-5A44: two/three-strip vehicle masks. Strip anchors follow the
+   * original width-16/width-32 offsets, not padded16-bit rectangles.
+   * The player mask is the original narrow footprint used by this caller.
+   */
+  function wideMaskContact(actor, player, readWord) {
+    const candidate = broadPhase(actor, player);
+    if (!candidate.overlap) return false;
+    const width = actor.shape.width >>> 8;
+    if (width <= 16) return smallMaskContact(actor, player, readWord);
+    if (width > 48 || player.shape.width >>> 8 > 16) return null;
+    const actorTop = word(actor.y + actor.shape.y),
+      playerTop = word(player.y + player.shape.y);
+    const actorBottom = word(actorTop + actor.shape.height),
+      playerBottom = word(playerTop + player.shape.height);
+    const bottom =
+      signed(playerBottom) >= signed(actorBottom) ? actorBottom : playerBottom;
+    const offset = signed(word(playerTop - actorTop));
+    let p3, p2, delta, top, playerAbove;
+    if (offset >= 0) {
+      p3 = word(player.shape.pointer - 2);
+      p2 = word(actor.shape.pointer - ((word(offset + 256) >>> 8) & 255) * 2);
+      delta = candidate.dx;
+      top = playerTop;
+      playerAbove = false;
+    } else {
+      p3 = word(actor.shape.pointer - 2);
+      p2 = word(player.shape.pointer - ((word(256 - offset) >>> 8) & 255) * 2);
+      delta = signed(word(-candidate.dx));
+      top = actorTop;
+      playerAbove = true;
+    }
+    const rows = signed(word(bottom - top + 192)) >> 8;
+    if (rows <= 0) return false;
+    const stride = (actor.shape.height >>> 8) * 2;
+    // SWAB's N flag is byte-sized; COMB of the upper byte sign-extends it.
+    const base = delta >> 8;
+    const extra = playerAbove ? base - (width - 16) : base + (width - 16);
+    const middle = width > 32 ? extra + (playerAbove ? 16 : -16) : extra;
+    const passes = [];
+    if (Math.abs(base) < 16) passes.push([width > 32 ? 2 : 1, base]);
+    if (Math.abs(middle) < 16) passes.push([width > 32 ? 1 : 0, middle]);
+    if (width > 32 && extra > -16) passes.push([0, extra]);
+    for (const [column, shift] of passes) {
+      let left = p3,
+        right = p2;
+      for (let row = 0; row < rows; row++) {
+        const mask = playerAbove
+          ? readWord(word(left - column * stride))
+          : readWord(left);
+        const other = playerAbove
+          ? readWord(right)
+          : readWord(word(right - column * stride));
+        if (shiftMask(mask, shift) & other) return true;
+        left = word(left - 2);
+        right = word(right - 2);
+      }
+    }
+    return false;
+  }
+  function maskContact(actor, player, readWord) {
+    return actor.shape.width >>> 8 <= 16
+      ? smallMaskContact(actor, player, readWord)
+      : wideMaskContact(actor, player, readWord);
+  }
+  /** A57C-A5AE: grounded contact bypasses the airborne height gate, then
+   * original61DA selects the response. Code0 is explicitly no action.
+   */
+  function responseCode(kind, grounded, relativeHeight, readByte) {
+    const limit = (readByte(0x6631 + kind) & 255) << 8;
+    if (!grounded && signed(word(relativeHeight)) > signed(word(limit)))
+      return null;
+    return readByte(0x61da + kind) & 255;
+  }
+  /** AD94-ADFE for player slot0 versus an ordinary actor. Shape words8,
+   * 10 and12 determine the original left/right knockdown-side decision.
+   * The attached-actor special case is supplied explicitly by the caller.
+   */
+  function impactSide(player, actor, readWord, attachedSprite = 0) {
+    if (actor.sprite === attachedSprite) return 0;
+    const pp = player.shape.pointer,
+      ap = actor.shape.pointer;
+    if (!pp) return 1;
+    if (!ap) return 0;
+    const dx = signed(
+      word(player.x + readWord(pp + 8) - actor.x - readWord(ap + 8)),
+    );
+    const dy =
+      dx < 0
+        ? word(player.y + readWord(pp + 12) - actor.y - readWord(ap + 10))
+        : word(player.y + readWord(pp + 10) - actor.y - readWord(ap + 12));
+    return signed(dy) >= 0 ? 1 : 0;
+  }
   /** Browser sprite anchors -> original fixed-point contact coordinates.
    * Same -40X/+11Y anchor used by Renderer.descriptorSkater. Normal stance
    * header7114 is recovered; full pose-dependent header selection is pending.
@@ -132,6 +235,11 @@
     broadPhase,
     findContact,
     smallMaskContact,
+    shiftMask,
+    wideMaskContact,
+    maskContact,
+    responseCode,
+    impactSide,
     playerContact,
     actorContact,
   });
