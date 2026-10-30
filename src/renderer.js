@@ -311,7 +311,7 @@
       const groundPose = S.OriginalRoutines.groundPoseEntries(
         frame,
         profile,
-        p.romSpeed || 0,
+        p.halfpipePoseProfile ? 0 : p.romSpeed || 0,
         (a) => directory[a - 0x4000] | (directory[a - 0x4000 + 1] << 8),
       );
       const equipment = S.OriginalEquipment.palettes(
@@ -321,7 +321,10 @@
       );
       const bodyPalette = gear.pads || gear.shoes ? equipment.body : null;
       const boardPalette = gear.board ? equipment.board : null;
-      const kicking = !p.air && !!p.kickAnimation;
+      const kicking =
+        !p.air &&
+        !!p.kickAnimation &&
+        !(p.halfpipePoseProfile && (p.halfpipePoseProfile & 7) >= 4);
       const kickPhase = p.kickAnimation?.phase ?? 0;
       const jumpPhase = p.jumpSequence
         ? p.jumpSequence.phase
@@ -528,7 +531,8 @@
       this.skater(
         game.player,
         game.elapsed,
-        level.sample(game.player.x, game.player.y).profile,
+        game.player.halfpipePoseProfile ??
+          level.sample(game.player.x, game.player.y).profile,
         game.gear,
       );
       if (e.kind !== "ramp" && Math.abs(game.player.y - level.finish.y) < 250)

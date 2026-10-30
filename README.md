@@ -6,6 +6,12 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Halfpipe update (build 50)
+
+The curved walls now progress through the recovered inclination poses instead of using a shallow pose all the way to the coping. Jump near the lip with B; use a shoulder button or the right stick to spin. Build speed with A first: low speed gives a shorter aerial. Successful aerials land at the same coping and turn back down that wall.
+
+The native implementation uses the original slope coefficients, shoe boost/caps, ramp animation controller, sprite frames and scoring. A missing doubled orientation-table offset in the coping coefficient translation is corrected for the opposite wall. The decoded map still needs an explicit browser geometry adapter: it scans each lane for floor/coping, projects the curve into the original artwork, and holds the return heading until clear of the steep wall. These geometry and contact transitions are improvements to the port, rather than a claim of complete instruction-for-instruction original halfpipe behavior.
+
 ## Run
 
 From this directory, run `python -m http.server 8722`, then open http://localhost:8722. No build step is required.

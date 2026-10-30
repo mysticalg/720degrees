@@ -149,7 +149,7 @@
     const terrain = s8(profile);
     let index = s8(direction);
     if (terrain & 7) {
-      if ((terrain & 7) === 7) index = word(index + (terrain & 56) + 0x220);
+      if ((terrain & 7) === 7) index = word(index + (terrain & 56) * 2 + 0x220);
       else
         index = word(
           index +

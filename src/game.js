@@ -362,6 +362,12 @@
       )
         return;
       const level = this.event?.level || this.city.level;
+      const wall =
+        this.event?.kind === "ramp" ? S.Halfpipe.wallAt(level, p.x, p.y) : null;
+      if (wall && wall.progress > 0.55 && !p.halfpipeReturning) {
+        p.halfpipeJumpQueued = 20;
+        return;
+      }
       const here = level.contactSample(p.x, p.y);
       // E344 admits profiles0..2. Their vertical coefficient determines
       // whether E366 selects immediate rising-surface takeoff or anticipation.
@@ -550,6 +556,165 @@
         p.vx = p.vy = p.romSpeed = 0;
       }
     }
+    /** Coping entry: use the original vertical-face coefficient and4A
+     * shoe boost, followed by5264's original animation selection. The map
+     * scan supplies a local coping plane until full terrain probing is ported.
+     */
+    launchHalfpipe(wall) {
+      const p = this.player,
+        rom = S.OriginalGround,
+        reader = rom.terrainTableReader(S.TERRAIN_TABLES);
+      const speed = Math.abs(p.romSpeed || 0);
+      const coefficients = rom.surfaceCoefficients(
+        wall.upDirection,
+        wall.copingProfile,
+        1,
+        3,
+        speed,
+        this.gear.board,
+        reader.readByte,
+        reader.readWord,
+      );
+      const ground = rom.surfaceVerticalMotion(
+        speed,
+        coefficients.vertical,
+      ).velocity;
+      let vertical = ground;
+      const jumping = this.input.held("jump") || p.halfpipeJumpQueued > 0;
+      if (jumping) {
+        const boost = {
+          action: 0x4a,
+          currentPhase: 1,
+          savedVertical: vertical,
+        };
+        S.OriginalRampAnimation.tickRampSecondary(boost, this.gear.shoes);
+        vertical = (boost.vertical << 16) >> 16;
+      }
+      if (vertical <= 0) return false;
+      const setup = S.OriginalRampAnimation.setupRampAnimation(
+        vertical,
+        ground,
+        wall.upDirection,
+        jumping ? 128 : 0,
+        wall.copingProfile,
+      );
+      p.halfpipeFlight = {
+        speed,
+        wall,
+        baseHeight: setup.targetHeight,
+        jumping,
+      };
+      p.x = wall.lip.x;
+      p.y = wall.lip.y;
+      p.z = 1;
+      p.air = true;
+      p.fromRamp = true;
+      p.airTime = 0;
+      p.spin = 0;
+      p.romDirection = wall.upDirection;
+      p.angle = p.takeoffAngle = Math.atan2(
+        -rom.tables.y[wall.upDirection],
+        rom.tables.x[wall.upDirection],
+      );
+      p.vx = p.vy = 0;
+      p.romVerticalVelocity = vertical;
+      p.jumpLaunchVelocity = vertical;
+      p.romGravity = 12;
+      p.launchSource =
+        "original coping slope/4A boost/5264 animation; decoded-wall adapter";
+      p.jumpSequence = p.jumpRecovery = p.kickAnimation = null;
+      p.halfpipeReturning = false;
+      p.halfpipeJumpQueued = 0;
+      const rate = S.OriginalRoutines.jumpAnimationRate(speed);
+      p.jumpAnimation = { rate, countdown: rate, phase: 0 };
+      p.rampAnimation =
+        setup.sequence && setup.bodyPointer
+          ? {
+              ...setup,
+              profile: wall.copingProfile,
+              direction: wall.upDirection,
+              speed,
+              vertical,
+              gravity: 12,
+              savedVertical: vertical,
+              currentBody: setup.bodyPointer,
+              currentBoard: setup.boardPointer,
+              bodyCountdown: setup.countdown,
+              currentPhase: 0,
+              frameEvent: 0,
+              completed: 0,
+              heightGauge: 0x6000,
+              actorX: 0,
+              actorY: 0,
+              velocityX: 0,
+              velocityY: 0,
+            }
+          : null;
+      return true;
+    }
+    tickHalfpipeAnimation() {
+      const p = this.player,
+        state = p.rampAnimation,
+        flight = p.halfpipeFlight;
+      if (!state || !flight) return;
+      this.rampMarkerBytes ||= Uint8Array.from(
+        atob(S.RAMP_DATA.sequence),
+        (c) => c.charCodeAt(0),
+      );
+      const readByte = (a) => {
+        const index = a - S.RAMP_DATA.sequenceBase;
+        if (index < 0 || index >= this.rampMarkerBytes.length)
+          throw Error("Missing original ramp marker");
+        return this.rampMarkerBytes[index];
+      };
+      state.height = (flight.baseHeight + Math.round(p.z * 64)) & 65535;
+      state.actorX = 0;
+      state.actorY =
+        ((state.profile === 7 ? 0x2600 : 0xe000) - 256 - Math.round(p.z * 64)) &
+        65535;
+      state.vertical = p.romVerticalVelocity & 65535;
+      state.direction = S.Halfpipe.heading(p.angle, S.OriginalGround.tables);
+      S.OriginalRampAnimation.tickRampController(
+        state,
+        this.gear.shoes,
+        readByte,
+        {
+          readWord: this.objectRegistry.readTypeWord,
+          readByte: (a) =>
+            a >= S.RAMP_DATA.poseBase
+              ? S.RAMP_DATA.pose[a - S.RAMP_DATA.poseBase]
+              : this.objectRegistry.readTypeByte(a),
+        },
+      );
+      p.z = (((state.height - flight.baseHeight) << 16) >> 16) / 64;
+      p.romVerticalVelocity = (state.vertical << 16) >> 16;
+      p.romGravity = state.gravity;
+      S.OriginalRampAnimation.tickRampClocks(
+        state,
+        this.objectRegistry.readTypeWord,
+        S.OriginalRoutines.tickMotionAnimation,
+      );
+    }
+    landHalfpipe() {
+      const p = this.player,
+        flight = p.halfpipeFlight;
+      this.land();
+      p.halfpipeFlight = p.rampAnimation = null;
+      if (p.bail) return;
+      // A128-A14A's FCD0 heading aligns the steep wall before descending.
+      p.x = flight.wall.lip.x;
+      p.y = flight.wall.lip.y;
+      p.romSpeed = flight.speed;
+      p.romDirection = p.romMovementDirection = flight.wall.returnDirection;
+      p.angle = Math.atan2(
+        -S.OriginalGround.tables.y[p.romDirection],
+        S.OriginalGround.tables.x[p.romDirection],
+      );
+      p.romDialAngle = p.angle;
+      p.jumpSequence = p.jumpRecovery = p.jumpAnimation = null;
+      p.halfpipeReturning = true;
+      p.halfpipePoseProfile = flight.wall.profile;
+    }
     launchJump() {
       const p = this.player;
       if (
@@ -736,6 +901,8 @@
         readWord,
       );
       p.air = false;
+      p.rampAnimation = p.halfpipeFlight = null;
+      p.halfpipeReturning = false;
       p.dropFall = null;
       p.romVerticalVelocity = p.bail.vertical;
       p.spin = 0;
@@ -822,7 +989,9 @@
       if (this.mode === "city") this.updateCity(dt);
       else if (this.mode === "event") this.updateEvent(dt);
       this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
-      this.camera.y += (p.y - 35 - this.camera.y) * Math.min(1, dt * 7);
+      this.camera.y +=
+        (p.y - 35 - (p.halfpipeFlight ? p.z * 0.6 : 0) - this.camera.y) *
+        Math.min(1, dt * 7);
     }
     caughtByBees() {
       if (this.practice) return;
@@ -1011,6 +1180,7 @@
         Math.hypot(p.vx, p.vy) > 0.01
       )
         this.dropFromLedge();
+      if (p.halfpipeJumpQueued > 0) p.halfpipeJumpQueued--;
       const direction = this.input.direction(),
         kick = this.input.held("kick");
       const kickAnimationSpeed = p.romSpeed || 0; // Previous frame's0331 speed band.
@@ -1030,7 +1200,7 @@
             -S.OriginalGround.tables.y[index],
             S.OriginalGround.tables.x[index],
           );
-        if (rotating) {
+        if (rotating && !p.halfpipeReturning) {
           // Continuous analog dial adapter, followed by the original lookup.
           p.romDialAngle =
             (p.romDialAngle ?? p.angle) +
@@ -1044,7 +1214,7 @@
           p.romDirection = S.OriginalGround.dialDirection(p.romDialCounter);
           p.angle = isoAngle(p.romDirection);
         }
-        if (direction.active && !rotating) {
+        if (direction.active && !rotating && !p.halfpipeReturning) {
           const dial = dialFromAngle(Math.atan2(direction.y * 2, direction.x));
           const target = S.OriginalGround.dialDirection(dial);
           let current = p.romDirection;
@@ -1067,7 +1237,17 @@
           : rotating
             ? Math.max(0, -stick.y)
             : 0;
-        const surface = (e?.level || this.city.level).contactSample(p.x, p.y);
+        let surface = (e?.level || this.city.level).contactSample(p.x, p.y);
+        p.halfpipeWall =
+          e?.kind === "ramp" ? S.Halfpipe.wallAt(e.level, p.x, p.y) : null;
+        p.halfpipePoseProfile = p.halfpipeWall?.profile;
+        if (
+          p.halfpipeReturning &&
+          (!p.halfpipeWall || p.halfpipeWall.progress < 0.3)
+        )
+          p.halfpipeReturning = false;
+        if (p.halfpipeWall)
+          surface = { ...surface, profile: p.halfpipeWall.profile };
         // Recovered surface coefficients and grounded arithmetic apply to flag0.
         // The input adapter still supplies turning and kick state timing.
         if (
@@ -1174,6 +1354,19 @@
           const groundY =
             p.romGroundVertical.velocity + p.romGroundVertical.fraction / 256;
           p.vy = -((motion.dy + motion.fractionY / 256 + groundY) * 60) / 64;
+          if (p.halfpipeWall) {
+            // PNG wall coordinates already contain the curved rise. Project
+            // original height travel along that wall's isometric axis rather
+            // than adding it to screenY a second time (which changes lanes).
+            const dx = motion.dx + motion.fractionX / 256,
+              dy = motion.dy + motion.fractionY / 256;
+            const along = (dx - 2 * dy) / 2,
+              across =
+                (dx + 2 * dy) / 2 +
+                (p.halfpipeWall.rawProfile === 1 ? 1 : -1) * 2 * groundY;
+            p.vx = ((along + across) * 60) / 64;
+            p.vy = ((along - across) * 30) / 64;
+          }
           p.romSpeed = scalar;
           p.romKicking = kick;
           p.romGroundActive = true;
@@ -1225,6 +1418,7 @@
         } else p.spin += spinDirection * spinRate * dt;
         p.angle = p.takeoffAngle + p.spin;
         p.airTime += dt;
+        this.tickHalfpipeAnimation();
         if (p.jumpSequence) {
           const state = p.jumpSequence;
           state.vertical = p.romVerticalVelocity;
@@ -1254,7 +1448,8 @@
             // Crossing the takeoff plane over empty scenery is still flight.
             // Keep the current impulse/momentum until lower support is found.
             p.dropFall = { frames: 0 };
-          } else this.land();
+          } else if (p.halfpipeFlight) this.landHalfpipe();
+          else this.land();
         }
       }
       const maxSpeed = kick
@@ -1280,7 +1475,9 @@
       if (this.mode === "city") this.updateCity(dt);
       else this.updateEvent(dt);
       this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
-      this.camera.y += (p.y - 35 - this.camera.y) * Math.min(1, dt * 7);
+      this.camera.y +=
+        (p.y - 35 - (p.halfpipeFlight ? p.z * 0.6 : 0) - this.camera.y) *
+        Math.min(1, dt * 7);
     }
     /** Recovered normal-stance footprint and original scanline contact masks.
      * Pose-specific footprint selection and remaining response controllers are pending.
@@ -1459,6 +1656,18 @@
       const p = this.player,
         level = this.event?.level || this.city.level;
       if (p.dropFall) return;
+      const wall = p.halfpipeWall;
+      if (
+        this.event?.kind === "ramp" &&
+        !p.air &&
+        !p.bail &&
+        wall &&
+        wall.progress > 0.7 &&
+        level.sample(p.x, p.y).profile !== wall.rawProfile &&
+        (p.romGroundVertical?.velocity || 0) > 0
+      ) {
+        if (this.launchHalfpipe(wall)) return;
+      }
       if (!p.air && !p.bail && p.fallen <= 0 && p.terrainStepOrigin) {
         const slide = S.TerrainCollision.sweep(
           level,
