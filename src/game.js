@@ -1709,16 +1709,39 @@
           this.camera.y) *
         Math.min(1, dt * 7);
     }
-    /** Recovered normal-stance footprint and original scanline contact masks.
-     * Pose-specific footprint selection and remaining response controllers are pending.
+    /** Sprite-derived directional board outline against original actor masks.
+     * Special post-impact footprint/remaining response controllers are pending.
      */
     actorMaskContact(actor, pointer = actor.extraPointer) {
       if (!pointer) return false;
       const read = this.objectRegistry.readContactWord;
+      const footprint = this.boardFootprint?.(this.player);
+      if (footprint) {
+        const p = this.player,
+          shape = S.OriginalContact.readShape(pointer, read);
+        return S.BoardGeometry.touchesActor(
+          footprint,
+          {
+            x: p.x,
+            y:
+              p.y -
+              p.z -
+              S.Halfpipe.groundRise(this.event?.level, p) +
+              Math.min(Math.max(0, p.z), p.halfpipeFlight?.contactHeight || 0),
+          },
+          actor,
+          shape,
+          S.OriginalContact.maskCells(shape, read),
+        );
+      }
       return (
         S.OriginalContact.maskContact(
           S.OriginalContact.actorContact(actor, pointer, read),
-          S.OriginalContact.playerContact(this.player, read),
+          S.OriginalContact.playerContact(
+            this.player,
+            read,
+            S.OriginalGround.tables,
+          ),
           read,
         ) === true
       );
@@ -1863,7 +1886,11 @@
             p.lastOriginalContact !== contact.sprite &&
             p.invulnerable <= 0
           ) {
-            const player = S.OriginalContact.playerContact(p, read);
+            const player = S.OriginalContact.playerContact(
+              p,
+              read,
+              S.OriginalGround.tables,
+            );
             const actor = S.OriginalContact.actorContact(
               contact,
               contact.extraPointer,

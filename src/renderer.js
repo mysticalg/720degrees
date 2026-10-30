@@ -247,7 +247,7 @@
       }
       const read = game.objectRegistry?.readContactWord;
       if (!read) return;
-      const mask = (x, bottom, pointer, color) => {
+      const mask = (x, bottom, pointer, color, board = false) => {
         if (pointer < 0x4000 || pointer >= 0x7ff4) return;
         const shape = S.OriginalContact.readShape(pointer, read);
         if (shape.width >>> 8 > 48 || shape.height >>> 8 > 64) return;
@@ -262,11 +262,35 @@
           base - height > -this.offset.y + 384
         )
           return;
-        c.strokeStyle = "#eaffff99";
-        c.strokeRect(left, base - height, width, height);
+        if (!board) {
+          c.strokeStyle = "#eaffff99";
+          c.strokeRect(left, base - height, width, height);
+        }
         c.fillStyle = color;
-        for (const cell of S.OriginalContact.maskCells(shape, read))
+        const cells = S.OriginalContact.maskCells(shape, read);
+        for (const cell of cells)
           c.fillRect(left + cell.x, base - cell.y - 4, 4, 4);
+        if (board) {
+          const occupied = new Set(cells.map((p) => p.x + "," + p.y));
+          c.strokeStyle = "#b8fff3";
+          c.lineWidth = 0.65;
+          c.beginPath();
+          for (const cell of cells) {
+            const x = left + cell.x,
+              y = base - cell.y - 4;
+            for (const [dx, dy, ax, ay, bx, by] of [
+              [0, 4, 0, 0, 4, 0],
+              [4, 0, 4, 0, 4, 4],
+              [0, -4, 4, 4, 0, 4],
+              [-4, 0, 0, 4, 0, 0],
+            ])
+              if (!occupied.has(cell.x + dx + "," + (cell.y + dy))) {
+                c.moveTo(x + ax, y + ay);
+                c.lineTo(x + bx, y + by);
+              }
+          }
+          c.stroke();
+        }
       };
       if (!game.event) {
         for (const actor of [...game.cityActors, ...game.trafficActors])
@@ -279,19 +303,47 @@
         for (const crack of game.cracks)
           mask(crack.actorX, crack.actorY, 0x7a30, "#88ff5566");
       }
-      mask(
-        game.player.x - 40,
-        game.player.y +
-          11 -
-          game.player.z -
-          S.Halfpipe.groundRise(level, game.player) +
-          Math.min(
-            Math.max(0, game.player.z),
-            game.player.halfpipeFlight?.contactHeight || 0,
+      const footprint = game.boardFootprint?.(game.player);
+      if (!game.player.bail && footprint) {
+        const p = game.player,
+          originY =
+            p.y -
+            p.z -
+            S.Halfpipe.groundRise(level, p) +
+            Math.min(Math.max(0, p.z), p.halfpipeFlight?.contactHeight || 0);
+        c.beginPath();
+        for (let i = 0; i < footprint.polygon.length; i++) {
+          const a = footprint.polygon[i];
+          if (i) c.lineTo(p.x + a.x, originY + a.y);
+          else c.moveTo(p.x + a.x, originY + a.y);
+        }
+        c.closePath();
+        c.fillStyle = "#00ffcc44";
+        c.fill();
+        c.strokeStyle = "#b8fff3";
+        c.lineWidth = 0.7;
+        c.stroke();
+      } else if (!game.player.bail)
+        mask(
+          game.player.x - 40,
+          game.player.y +
+            11 -
+            game.player.z -
+            S.Halfpipe.groundRise(level, game.player) +
+            Math.min(
+              Math.max(0, game.player.z),
+              game.player.halfpipeFlight?.contactHeight || 0,
+            ),
+          S.OriginalContact.playerShapePointer(
+            S.OriginalContact.playerDirection(
+              game.player,
+              S.OriginalGround.tables,
+            ),
+            read,
           ),
-        0x7114,
-        "#00ffccb3",
-      );
+          "#00ffcc55",
+          true,
+        );
       c.fillStyle = "#ffffff";
       c.fillRect(
         game.player.x - 1,
@@ -364,6 +416,90 @@
           );
         }
       }
+    }
+    /** One board-directory selection shared by drawing and contact geometry. */
+    boardEntry(p, profile) {
+      if (p.bail) return 0x50fa;
+      if (p.rampAnimation?.currentBoard !== undefined)
+        return p.rampAnimation.currentBoard;
+      const frame = S.OriginalContact.playerDirection(
+          p,
+          S.OriginalGround.tables,
+        ),
+        dir = this.motionBanks[0];
+      const read = (a) => dir[a - 0x4000] | (dir[a - 0x4000 + 1] << 8);
+      const phase = p.jumpSequence
+        ? p.jumpSequence.phase
+        : p.air
+          ? Math.min(3, p.jumpAnimation?.phase || 0)
+          : p.jumpRecovery?.action === 9
+            ? 4
+            : null;
+      return phase === null
+        ? S.OriginalRoutines.groundPoseEntries(frame, profile, 0, read).board
+        : read(0x4f44 + frame * 2) + Math.max(0, Math.min(4, phase)) * 2;
+    }
+    /** Decode opaque pixels from the existing ROM atlas, once per pose.
+     * Row extrema suffice for a convex outline; no image readback per frame.
+     */
+    boardFootprint(p, profile) {
+      if (!this.ready) return null;
+      if (p.bail) return { entry: 0x50fa, polygon: [] };
+      const entry = this.boardEntry(p, profile);
+      this.boardFootprints ||= new Map();
+      if (this.boardFootprints.has(entry))
+        return this.boardFootprints.get(entry);
+      const [dir, low, high] = this.motionBanks,
+        index = entry - 0x4000,
+        offset = dir[index] | (dir[index + 1] << 8);
+      const read = (a) => (a < 0x6000 ? low : high)[a & 8191];
+      const records = S.OriginalRoutines.spriteDescriptor(
+        read,
+        0x4000 + offset,
+        2,
+        (-40 * 64) & 65535,
+        (-11 * 64) & 65535,
+      ).records;
+      const rows = new Map();
+      for (let column = 0; column < records.length; column++) {
+        const record = records[column],
+          height = ((record.code >> 11) & 7) + 1,
+          code = (record.code & 2047) + (record.y & 7) * 2048;
+        let top = (-(record.y >> 6) - height * 16) & 511;
+        top += Math.round((-40 - top) / 512) * 512;
+        let left = (records[0].x >> 6) + column * 16;
+        left += Math.round(-left / 1024) * 1024;
+        for (let row = 0; row < height; row++)
+          for (let py = 0; py < 16; py++)
+            for (let px = 0; px < 16; px++) {
+              const tile = code + row,
+                alpha =
+                  ((Math.floor(tile / 128) * 16 + py) * 2048 +
+                    (tile % 128) * 16 +
+                    px) *
+                    4 +
+                  3;
+              if (!this.motionIndices[alpha]) continue;
+              const x = left + (record.code & 0x4000 ? 15 - px : px),
+                y = top + row * 16 + py,
+                extents = rows.get(y) || [Infinity, -Infinity];
+              extents[0] = Math.min(extents[0], x);
+              extents[1] = Math.max(extents[1], x + 1);
+              rows.set(y, extents);
+            }
+      }
+      const points = [];
+      for (const [y, [left, right]] of rows)
+        points.push(
+          { x: left, y },
+          { x: right, y },
+          { x: left, y: y + 1 },
+          { x: right, y: y + 1 },
+        );
+      const polygon = S.BoardGeometry.hull(points),
+        footprint = { entry, polygon };
+      this.boardFootprints.set(entry, footprint);
+      return footprint;
     }
     skater(
       p,
@@ -451,10 +587,7 @@
         "board",
         jumpPhase,
         kickPhase,
-        p.bail
-          ? 0x50fa
-          : (p.rampAnimation?.currentBoard ??
-              (jumpPhase === null ? groundPose.board : null)),
+        this.boardEntry(p, profile),
         null,
         boardPalette,
       );

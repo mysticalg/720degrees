@@ -285,15 +285,45 @@
         : word(player.y + readWord(pp + 10) - actor.y - readWord(ap + 12));
     return signed(dy) >= 0 ? 1 : 0;
   }
-  /** Browser sprite anchors -> original fixed-point contact coordinates.
-   * Same -40X/+11Y anchor used by Renderer.descriptorSkater. Normal stance
-   * header7114 is recovered; full pose-dependent header selection is pending.
+  function playerDirection(player, tables) {
+    const facing = player.romFacingDirection ?? player.romDirection;
+    if (!player.air && facing !== undefined) return facing & 15;
+    if (!tables || player.angle === undefined) return (facing ?? 0) & 15;
+    let best = Infinity,
+      direction = 0;
+    for (let d = 0; d < 16; d++) {
+      const angle = Math.atan2(-tables.y[d], tables.x[d]);
+      const delta = Math.abs(
+        Math.atan2(
+          Math.sin(player.angle - angle),
+          Math.cos(player.angle - angle),
+        ),
+      );
+      if (delta < best) {
+        best = delta;
+        direction = d;
+      }
+    }
+    return direction;
+  }
+  /** E3F6-E402:01F8&7 indexes the eight original footprint pointers70F0.
+   * Opposite facings share one board axis.7114 is only the horizontal entry.
    */
-  function playerContact(player, readWord) {
+  function playerShapePointer(direction, readWord) {
+    return word(readWord(0x70f0 + (direction & 7) * 2));
+  }
+  /** Browser sprite anchors -> original fixed-point contact coordinates.
+   * Same -40X/+11Y anchor used by Renderer.descriptorSkater. A528's special
+   * post-impact7106 override is separate from this ordinary direction path.
+   */
+  function playerContact(player, readWord, tables) {
     return {
       x: word(Math.round((player.x - 40) * 64)),
       y: word(Math.round(-(player.y + 11 - (player.z || 0)) * 64)),
-      shape: readShape(0x7114, readWord),
+      shape: readShape(
+        playerShapePointer(playerDirection(player, tables), readWord),
+        readWord,
+      ),
     };
   }
   function actorContact(actor, pointer, readWord) {
@@ -351,6 +381,8 @@
     tickActorRecovery,
     impactSide,
     playerContact,
+    playerDirection,
+    playerShapePointer,
     actorContact,
   });
   if (typeof module !== "undefined") module.exports = api;

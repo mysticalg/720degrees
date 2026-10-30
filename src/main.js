@@ -6,6 +6,13 @@
     audio = new S.AudioSystem(),
     renderer = new S.Renderer(canvas),
     game = new S.Game(input, audio);
+  game.boardFootprint = (player) =>
+    renderer.boardFootprint(
+      player,
+      player.halfpipePoseProfile ??
+        (game.event?.level || game.city.level).contactSample(player.x, player.y)
+          .profile,
+    );
   const menu = document.querySelector("#menu"),
     pause = document.querySelector("#pause"),
     result = document.querySelector("#result");
