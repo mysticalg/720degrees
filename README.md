@@ -1,5 +1,11 @@
 # 720° — native JavaScript port in progress
 
+## Continuous diagonal fences (build70)
+
+Matching diagonal fence faces now join through marching-square saddles in both the barrier and support meshes. Repeated fence-post hexagons become a continuous diagonal strip, shared by swept collision and F8. Ordinary isolated obstacles, differently oriented faces and actual missing-panel gaps retain separate geometry. Original artwork is unchanged.
+
+Validation includes both isometric directions and an explicit missing panel, 505 swept contacts on the actual city fence mesh, the existing halfpipe fence-sliding regression, and all 25 portable suites.
+
 ## Optional skate sound pack and fakie tuning (build69)
 
 The local `local-skate-sfx` folder contains 21 MP3 clips converted from the user's installed THPS HD skateboard Wwise bank: four rolling materials, two grind materials, three pushes, three ollies, three landings, three board impacts a revert/skid and two dedicated free wheel-spin recordings. `sources.json` retains each original media ID and source name. Steam files are read only. This optional pack is separate from the recovered 720 audio and is excluded from the public repository.

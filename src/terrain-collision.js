@@ -74,18 +74,24 @@
     });
     let pairs = [];
     if (edges.length === 2) pairs = [[edges[0], edges[1]]];
-    // In the ambiguous saddle case, retain each solid corner as its own
-    // triangle. Do not join two diagonal solids into an invisible wall.
+    // In ambiguous saddles, separate ordinary obstacles into triangles.
+    // Continuous, matching curb/fence strips use the complementary join below.
     else if (edges.length === 4) {
       // Diagonal curb tiles meet corner-to-corner along a single painted
       // strip. Join matching curb profiles through the saddle, rather than
-      // producing a separate hexagon per stone. Solid walls retain the
-      // conservative corner rule, and different curb orientations stay apart.
+      // producing a separate hexagon per stone. Matching fence faces also
+      // meet diagonally: their post bases must form one continuous strip.
+      // Unrelated obstacles and different orientations remain separate.
       const occupied = samples.filter((_, i) => values[i]);
       const join =
-        barriersOnly === "curbs" &&
         occupied.length === 2 &&
-        occupied[0].profile === occupied[1].profile;
+        occupied[0].profile === occupied[1].profile &&
+        (barriersOnly === "curbs" ||
+          ((barriersOnly === true || barriersOnly === false) &&
+            samples.every(
+              (sample, i) =>
+                !values[i] || barrier(level, sample, points[i].x, points[i].y),
+            )));
       for (let i = 0; i < 4; i++)
         if (join ? !values[i] : values[i]) pairs.push([(i + 3) % 4, i]);
     }
