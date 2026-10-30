@@ -1,14 +1,14 @@
 # 720° — native JavaScript port in progress
 
-## Optional skate sound pack and fakie tuning (build68)
+## Optional skate sound pack and fakie tuning (build69)
 
-The local `local-skate-sfx` folder contains 19 MP3 clips converted from the user's installed THPS HD skateboard Wwise bank: four rolling materials, two grind materials, three pushes, three ollies, three landings, three board impacts and a revert/skid. `sources.json` retains each original media ID and source name. Steam files are read only. This optional pack is separate from the recovered 720 audio and is excluded from the public repository.
+The local `local-skate-sfx` folder contains 21 MP3 clips converted from the user's installed THPS HD skateboard Wwise bank: four rolling materials, two grind materials, three pushes, three ollies, three landings, three board impacts a revert/skid and two dedicated free wheel-spin recordings. `sources.json` retains each original media ID and source name. Steam files are read only. This optional pack is separate from the recovered 720 audio and is excluded from the public repository.
 
-Local file/localhost play uses the pack automatically. On GitHub Pages, choose **LOAD SKATE PACK** and select that folder; the browser plays the selected files through temporary object URLs. The selection must be repeated after a reload. **SKATE SFX** and **SKATE LEVEL** control these recordings independently of music. Master SOUND and pause stop the effects. Rolling follows speed, fades between surfaces and stops in the air; original map artwork supplies a native material approximation, with concrete fallback when a local browser prevents canvas pixel reads. Ramp coping uses the metal grind loop; concrete grind is available in the pack for future curb-grind integration. No online recordings are included.
+Local file/localhost play uses the pack automatically. On GitHub Pages, choose **LOAD SKATE PACK** and select that folder; the browser plays the selected files through temporary object URLs. The selection must be repeated after a reload. **SKATE SFX** and **SKATE LEVEL** control these recordings independently of music. Master SOUND and pause stop the effects. Rolling follows speed with a gentle pitch increase, fades between surfaces and gives way to quieter free wheel-spin recordings in the air; original map artwork supplies a native material approximation, with concrete fallback when a local browser prevents canvas pixel reads. Ramp coping uses the metal grind loop; concrete grind is available in the pack for future curb-grind integration. No online recordings are included.
 
 Point and rotate steering are reversed while fakie. Holding the facing direction preserves backward coasting; an exit kick keeps the body facing the same direction and starts forward propulsion. Requested native tuning adds a bounded 3% horizontal boost to fakie jumps and 5% speed-limit headroom, without changing jump height or the original coefficient tables.
 
-Validation: all 24 portable suites pass; browser checks cover twelve forward/fakie landings, mirrored controls and exit kicks, bounded jump assists, and all 19 audio clips decoding and playing through both HTTP and file URLs. Master mute, pause, independent music and folder import are checked.
+Validation: all 24 portable suites pass; browser checks cover twelve forward/fakie landings, mirrored controls and exit kicks, bounded jump assists, and all 21 audio clips decoding and playing through both HTTP and file URLs. Master mute, pause, independent music and folder import are checked.
 
 ## Slalom flags, session medals and fakie correction (build66)
 

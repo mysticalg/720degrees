@@ -88,20 +88,26 @@
       this.material = this.surface(game,p);
       // Also catches ramp transitions which bypass the ordinary jump/land cue.
       if (this.wasAir !== undefined && !!p.air !== this.wasAir) this.effect(p.air ? 'jump' : 'land');
+      const justLaunched = !!p.air && !this.wasAir;
       this.wasAir = !!p.air;
       const speed = Math.hypot(p.vx || 0, (p.vy || 0)*2);
+      if (justLaunched) { this.wheelSpeed = speed; this.airTime = 0; }
+      this.airTime = p.air ? (this.airTime || 0) + dt : 0;
+      const spinSpeed = Math.max(0, (this.wheelSpeed || speed) * Math.exp(-this.airTime * 0.08));
       const grind = p.halfpipeFlight?.trick === 'grind';
-      const desired = grind ? 'grind-metal' : (!p.air && this.material && speed > 12 ? `roll-${this.material}` : null);
+      const desired = grind ? 'grind-metal' : (p.air && spinSpeed > 12 ? (spinSpeed > 170 ? 'wheel-fast' : 'wheel-slow') : (!p.air && this.material && speed > 12 ? `roll-${this.material}` : null));
       if (desired && this.urls[desired] && !this.loops[desired]) {
         const audio = new Audio(this.urls[desired]);
         audio.loop = true; audio.volume = 0; audio.preservesPitch = false;
         this.loops[desired] = audio;
       }
       for (const [key,audio] of Object.entries(this.loops)) {
-        const target = key === desired ? this.volume * Math.min(0.65,speed/500) : 0;
+        const wheel = key.startsWith('wheel-');
+        const target = key === desired ? this.volume * (wheel ? Math.min(0.28,spinSpeed/900) : Math.min(0.65,speed/500)) : 0;
         audio.volume += (target-audio.volume)*Math.min(1,dt*10);
         if (target > 0) {
-          audio.playbackRate = Math.max(0.65,Math.min(1.65,0.65+speed/420));
+          // Small pitch rise with wheel speed; pitch preservation is disabled.
+          audio.playbackRate = Math.max(0.85,Math.min(1.2,0.9+(wheel ? spinSpeed : speed)/1600));
           if (audio.paused) audio.play().catch(() => {});
         } else if (audio.volume < 0.005) audio.pause();
       }
@@ -109,7 +115,7 @@
       if (!p.air && speed > 90 && game.input?.brake > 0.1) this.effect('skid');
     }
   }
-  SkateFoley.keys = ['roll-concrete','roll-asphalt','roll-wood','roll-ramp','grind-metal','grind-curb','skid',
+  SkateFoley.keys = ['wheel-slow','wheel-fast','roll-concrete','roll-asphalt','roll-wood','roll-ramp','grind-metal','grind-curb','skid',
     ...['jump','land','kick','crash'].flatMap(k => [1,2,3].map(n => `${k}-${n}`))];
   window.Skate720.SkateFoley = SkateFoley;
 })();
