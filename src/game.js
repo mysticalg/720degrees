@@ -2091,6 +2091,20 @@
             kind,
             p.fakie ? S.CONFIG.fakieTopSpeed : 1,
           );
+          // The original flat kick target can sit below downhill momentum.
+          // A fresh push still adds a small amount; holding A does not repeat it.
+          if (kind === 2 && kickPressed && scalar > 0) {
+            const limit =
+              (S.CONFIG.downhillKickLimit + gear * 128) *
+              (p.fakie ? S.CONFIG.fakieTopSpeed : 1);
+            scalar += Math.max(
+              0,
+              Math.min(
+                S.CONFIG.downhillKickImpulse,
+                Math.floor(limit - scalar),
+              ),
+            );
+          }
           // Fakie reverses the body pose, not the rolling vector. Selecting
           // coefficients from its facing angle reverses travel one frame
           // after landing. Keep movement tied to the retained travel heading.

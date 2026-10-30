@@ -1,5 +1,11 @@
 # 720° — native JavaScript port in progress
 
+## Progressive downhill kicks (build74)
+
+Each fresh grounded kick on downhill adds a small48-unit push, even when slope momentum is already above the original flat kick target. Holding A adds no repeated native pushes; the original held-input envelope still runs. Native push headroom is2400 plus128 per board upgrade, with the existing5% fakie adjustment; naturally faster momentum is never clamped down by this assist. Airborne presses and other parks retain their existing behavior. These are native playability settings in config.js, separate from the original coefficient tables.
+
+A real gamepad-input regression compares64 frames at the same downhill entry: coasting1464, holding A1512, eight A taps1848. Every tap increases speed, with no bail or airborne state. All25 portable suites and the downhill takeoff regression pass.
+
 ## Timed springboard jump bonus (build73)
 
 A fresh jump timed within roughly100ms of crack contact adds one normal shoe-jump impulse to the original pad-dependent spring impulse. Contact during jump anticipation or the first rising frames is admitted; a press just after spring contact receives the same bonus. Holding/repeating jump cannot stack the bonus, and late presses leave the spring flight unchanged. Normal automatic springboards retain their original pad impulses and minimum-speed threshold. This timing bonus is a native gameplay enhancement.

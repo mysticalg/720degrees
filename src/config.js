@@ -11,6 +11,9 @@ window.Skate720 = {};
     // User-requested native fakie assists, separate from original ROM tables.
     fakieJumpBoost: 1.03,
     fakieTopSpeed: 1.05,
+    // Small native downhill push per fresh press, above the flat kick envelope.
+    downhillKickImpulse: 48,
+    downhillKickLimit: 2400,
     cityTime: 45,
     beeGrace: 18,
     rounds: 4,
