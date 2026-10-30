@@ -479,7 +479,8 @@
                     px) *
                     4 +
                   3;
-              if (!this.motionIndices[alpha]) continue;
+              // The index atlas is opaque; original pen15 is transparent.
+              if (this.motionIndices[alpha - 3] === 15) continue;
               const x = left + (record.code & 0x4000 ? 15 - px : px),
                 y = top + row * 16 + py,
                 extents = rows.get(y) || [Infinity, -Infinity];
