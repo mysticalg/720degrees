@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "description": "Native JavaScript 720 port, translation in progress",
   "scripts": {
-    "test": "node tests/check-object-registry.cjs && node tests/check-route-choice.cjs && node tests/check-pending-route-clock.cjs && node tests/check-pending-traffic-cycle.cjs && node tests/check-original-contact.cjs && node tests/check-small-contact-masks.cjs && node tests/check-wide-contact-solid.cjs && node tests/check-wide-contact-holes.cjs && node tests/check-contact-response.cjs"
+    "test": "node tests/check-object-registry.cjs && node tests/check-route-choice.cjs && node tests/check-pending-route-clock.cjs && node tests/check-pending-traffic-cycle.cjs && node tests/check-original-contact.cjs && node tests/check-small-contact-masks.cjs && node tests/check-wide-contact-solid.cjs && node tests/check-wide-contact-holes.cjs && node tests/check-contact-response.cjs && node tests/check-pedestrian-contact.cjs && node tests/check-render-interpolation.cjs"
   }
 }

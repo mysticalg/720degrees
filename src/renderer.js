@@ -245,7 +245,10 @@
         "board",
         jumpPhase,
         kickPhase,
-        p.bail ? 0x50fa : jumpPhase === null ? groundPose.board : null,
+        p.bail
+          ? 0x50fa
+          : (p.rampAnimation?.currentBoard ??
+              (jumpPhase === null ? groundPose.board : null)),
       );
       this.descriptorSkater(
         p.x,
@@ -257,9 +260,11 @@
         kickPhase,
         p.bail
           ? p.bail.pointer
-          : jumpPhase === null && !kicking
-            ? groundPose.body
-            : null,
+          : p.rampAnimation
+            ? p.rampAnimation.currentBody
+            : jumpPhase === null && !kicking
+              ? groundPose.body
+              : null,
       );
       c.globalAlpha = 1;
       if (p.air && Math.abs(p.spin) > Math.PI)

@@ -1,8 +1,8 @@
 /** Original ramp animation setup, bank1A0005264-5376.
  * Data arrays preserve ROM table order from bank2C00 CPU7D12-7DF1.
  * Includes animation setup, action dispatch, segment markers and interruption
- * poses. Native terrain/actor integration is still pending; this module is
- * intentionally not loaded by the browser game yet.
+ * poses. Browser wall jumps use these sequences. Terrain contact still uses an
+ * explicit clearance adapter in game.js.
  */
 (() => {
   const tables = {

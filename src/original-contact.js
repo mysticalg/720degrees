@@ -193,6 +193,26 @@
       return null;
     return readByte(0x61da + kind) & 255;
   }
+  /** Research translation; pedestrian callers are not live yet.
+   * A60C-A64A: response6 excludes the attached actor, then compares
+   * the signed relative height against0380 (14 browser pixels). The upper
+   * branch has separate reward state and must not be treated as a bail.
+   */
+  function pedestrianKnockdown(relativeHeight, sprite, attachedSprite = 0) {
+    return sprite !== attachedSprite && signed(word(relativeHeight)) < 0x0380;
+  }
+  /** 4F24-4F3A followed by D498-D4BE: stop the struck actor and select
+   * its original6046 hit directory. Preserve unrelated flag bits.
+   */
+  function knockDownActor(actor, readWord) {
+    actor.duration = actor.extraPointer = actor.dx = actor.dy = 0;
+    actor.routeFlags = ((actor.routeFlags || 0) | 0x40) & 255;
+    actor.rate = actor.countdown = 8;
+    actor.pointer = readWord(0x6046 + actor.kind * 2) & 65535;
+    actor.flags = ((actor.flags || 0) | 0x18) & 255;
+    actor.phase = 0;
+    return actor;
+  }
   /** AD94-ADFE for player slot0 versus an ordinary actor. Shape words8,
    * 10 and12 determine the original left/right knockdown-side decision.
    * The attached-actor special case is supplied explicitly by the caller.
@@ -239,6 +259,8 @@
     wideMaskContact,
     maskContact,
     responseCode,
+    pedestrianKnockdown,
+    knockDownActor,
     impactSide,
     playerContact,
     actorContact,

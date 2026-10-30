@@ -31,6 +31,8 @@
   }
   game.changed = syncScreen;
   function start(practice) {
+    previousFrame = null;
+    accumulator = 0;
     game.start(practice);
     input.clear();
     canvas.focus();
@@ -38,6 +40,8 @@
   }
   function togglePause() {
     if (!["city", "event"].includes(game.mode)) return;
+    previousFrame = null;
+    accumulator = 0;
     game.paused = !game.paused;
     input.clear();
     game.paused ? audio.pauseMusic() : audio.playMusic();
@@ -148,7 +152,8 @@
   }
   let last = performance.now(),
     accumulator = 0,
-    manualClock = false;
+    manualClock = false,
+    previousFrame = null;
   function frame(now) {
     const delta = Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -157,6 +162,7 @@
       handleActions();
       accumulator += delta;
       while (accumulator >= S.CONFIG.step) {
+        previousFrame = S.RenderInterpolation.capture(game);
         game.update(S.CONFIG.step);
         accumulator -= S.CONFIG.step;
       }
@@ -166,13 +172,21 @@
       : "CONTROLLER: press a button on your pad to connect.";
     const status = document.querySelector("#pad-status");
     if (status.textContent !== padLabel) status.textContent = padLabel;
-    renderer.draw(game);
+    renderer.draw(
+      S.RenderInterpolation.view(
+        game,
+        previousFrame,
+        manualClock ? 1 : accumulator / S.CONFIG.step,
+      ),
+    );
     requestAnimationFrame(frame);
   }
   // Deterministic test hooks operate the same rules as the normal animation loop.
   // Automation enables manualClock explicitly; normal play never stops its clock.
   window.advanceTime = (ms) => {
     manualClock = true;
+    previousFrame = null;
+    accumulator = 0;
     input.poll();
     handleActions();
     const steps = Math.max(1, Math.round(ms / (1000 / 60)));
@@ -186,7 +200,7 @@
     audio,
     renderer,
     resumeClock() {
-      manualClock = false;
+      ((manualClock = false), (previousFrame = null));
       last = performance.now();
     },
   };
