@@ -16,7 +16,7 @@ F8 shows these rideable curb regions in translucent green, with complete outline
 
 The curved walls now progress through the recovered inclination poses instead of using a shallow pose all the way to the coping. Jump near the lip with B; use a shoulder button or the right stick to spin. Build speed with A first: low speed gives a shorter aerial. Successful aerials land at the same coping and turn back down that wall.
 
-The native implementation uses the original slope coefficients, shoe boost/caps, ramp animation controller, sprite frames and scoring. A missing doubled orientation-table offset in the coping coefficient translation is corrected for the opposite wall. The decoded map still needs an explicit browser geometry adapter: it scans each lane for floor/coping, projects the curve into the original artwork, and holds the return heading until clear of the steep wall. These geometry and contact transitions are improvements to the port, rather than a claim of complete instruction-for-instruction original halfpipe behavior.
+The native implementation uses the original slope coefficients, shoe boost/caps, ramp animation controller, sprite frames and scoring. A missing doubled orientation-table offset in the coping coefficient translation is corrected for the opposite wall. The decoded map still needs an explicit browser geometry adapter: it scans each lane for floor/coping, projects the curve into the original artwork, and holds the return heading until clear of the curved wall. These geometry and contact transitions are improvements to the port, rather than a claim of complete instruction-for-instruction original halfpipe behavior.
 
 ## Run
 
@@ -71,3 +71,9 @@ Upgrade purchasing now uses recovered price/availability routines and tables. Th
 Low-height response6 now uses A60C impact-side/direction and player bail, followed by bank1E000:4ECC-4F40 motion save/stop, D498 hit animation selection and BF18 route reservation release. CB26-CB4A and4F42-4F96 restore the six saved motion fields at180 ticks. The original single global snapshot and sprite6/companion5 special branch are retained. Countdown is intentionally not saved. Original hit frames render through the existing ROM sprite directory.
 
 A controlled kind50 pedestrian integration fixture verifies original scanline-mask contact, transparent clearance, player impact, stopped actor animation and restoration of nonzero motion at tick180. This fixture does not prove natural population spawning: full dynamic NPC activation, the A64C airborne reward branch and hit sound decoding still need translation/integration.
+
+## Halfpipe descent correction (build 53)
+
+The same-wall return now finishes the entire curved descent before steering resumes. Previously steering unlocked at30% wall height; holding the uphill stick reversed the skater before reaching the floor. Rotate-mode dial state is also restored in the unprojected control plane rather than using the isometric screen angle. All curved-wall inclination bands retain their original terrain poses while kicking, so the shallow descending poses are no longer hidden by road kick frames. This steering guard remains an explicit native geometry adaptation.
+
+Browser regressions cover both walls in point and rotate mode, with the uphill stick held throughout and A held after landing: each completes720, lands and reaches the floor without bailing or reversing on the wall. Twelve original descent pose selections were checked against the recovered directory and visually inspected. This does not establish full halfpipe contact/animation fidelity.

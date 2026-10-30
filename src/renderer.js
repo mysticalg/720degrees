@@ -348,7 +348,9 @@
       const kicking =
         !p.air &&
         !!p.kickAnimation &&
-        !(p.halfpipePoseProfile && (p.halfpipePoseProfile & 7) >= 4);
+        // Every curved-wall band needs its original inclined stance, including
+        // the shallow descent. A held kick must not replace it with road art.
+        !p.halfpipePoseProfile;
       const kickPhase = p.kickAnimation?.phase ?? 0;
       const jumpPhase = p.jumpSequence
         ? p.jumpSequence.phase

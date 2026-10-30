@@ -710,7 +710,12 @@
         -S.OriginalGround.tables.y[p.romDirection],
         S.OriginalGround.tables.x[p.romDirection],
       );
-      p.romDialAngle = p.angle;
+      // The analog dial lives in an unprojected plane. Feeding it the screen
+      // angle selects the adjacent heading when rotate mode resumes.
+      p.romDialAngle = Math.atan2(
+        -S.OriginalGround.tables.y[p.romDirection] * 2,
+        S.OriginalGround.tables.x[p.romDirection],
+      );
       p.jumpSequence = p.jumpRecovery = p.jumpAnimation = null;
       p.halfpipeReturning = true;
       p.halfpipePoseProfile = flight.wall.profile;
@@ -1241,11 +1246,10 @@
         p.halfpipeWall =
           e?.kind === "ramp" ? S.Halfpipe.wallAt(e.level, p.x, p.y) : null;
         p.halfpipePoseProfile = p.halfpipeWall?.profile;
-        if (
-          p.halfpipeReturning &&
-          (!p.halfpipeWall || p.halfpipeWall.progress < 0.3)
-        )
-          p.halfpipeReturning = false;
+        // Complete the descent before handing steering back. Releasing this
+        // midway down lets a still-held uphill stick reverse the skater on
+        // the curve, repeatedly swapping poses without reaching the floor.
+        if (p.halfpipeReturning && !p.halfpipeWall) p.halfpipeReturning = false;
         if (p.halfpipeWall)
           surface = { ...surface, profile: p.halfpipeWall.profile };
         // Recovered surface coefficients and grounded arithmetic apply to flag0.
