@@ -96,9 +96,11 @@
   }
   function groundRise(level, player) {
     if (level?.name !== "ramp-1") return 0;
+    if (player.copingReturn)
+      return player.copingReturn.rise * (1 - player.copingReturn.t);
     const flight = player.halfpipeFlight;
     return flight
-      ? riseForWall(level, flight.wall, 1)
+      ? (flight.projectedRise ?? riseForWall(level, flight.wall, 1))
       : riseForWall(level, wallAt(level, player.x, player.y));
   }
   function projectSlopePoint(level, point) {
@@ -136,12 +138,111 @@
     const progress = (q - floorQ) / (lipQ - floorQ);
     return { ...point, y: point.y - riseForWall(level, wall, progress) };
   }
+  /** Recover the whole available lip from the decoded wall, including its
+   * staircase corners. Tangential travel is bounded by the real ramp ends.
+   */
+  function copingAt(level, x, y, profile) {
+    const sign = profile === 1 ? -1 : 1;
+    for (let inset = 0; inset <= 16; inset += 2) {
+      const wall = wallAt(level, x + sign * inset, y - sign * inset * 0.5);
+      if (wall?.rawProfile === profile && wall.progress > 0.5) return wall;
+    }
+    return null;
+  }
+  function copingSpan(level, wall) {
+    const { x, y } = wall.lip;
+    // Full original-art white cap extents. Floor-ray admission is narrower
+    // near the foreground/brick ends and must not truncate a grind's rail.
+    if (level.name === "ramp-1")
+      return {
+        minX: wall.rawProfile === 1 ? 712 : 424,
+        maxX: wall.rawProfile === 1 ? 928 : 640,
+        q: y - x * 0.5,
+      };
+    const end = (sign) => {
+      let lo = 0,
+        hi = 4;
+      while (
+        hi < 1024 &&
+        copingAt(level, x + sign * hi, y + sign * hi * 0.5, wall.rawProfile)
+      ) {
+        lo = hi;
+        hi += 4;
+      }
+      for (let i = 0; i < 8; i++) {
+        const mid = (lo + hi) * 0.5;
+        if (
+          copingAt(level, x + sign * mid, y + sign * mid * 0.5, wall.rawProfile)
+        )
+          lo = mid;
+        else hi = mid;
+      }
+      return x + sign * lo;
+    };
+    return { minX: end(-1), maxX: end(1), q: y - x * 0.5 };
+  }
+  function returnPath(level, point, wall, rise) {
+    let floor = null,
+      distance = Infinity;
+    const sign = wall.rawProfile === 1 ? -1 : 1;
+    for (let dy = -256; dy <= 256; dy += 8)
+      for (let dx = -256; dx <= 256; dx += 8) {
+        if (sign * (dx - dy * 0.5) <= 0) continue;
+        const d = dx * dx + dy * dy;
+        if (d >= distance) continue;
+        const x = Math.floor((point.x + dx) / 8) * 8 + 4,
+          y = Math.floor((point.y + dy) / 8) * 8 + 4;
+        if (
+          [
+            [0, 0],
+            [-4, 0],
+            [4, 0],
+            [0, -4],
+            [0, 4],
+          ].every(([a, b]) => {
+            const s = level.sample(x + a, y + b);
+            return (
+              s.profile === 24 && !level.contactSample(x + a, y + b).blocked
+            );
+          })
+        ) {
+          floor = { x, y };
+          distance = d;
+        }
+      }
+    if (!floor) return null;
+    return {
+      from: { ...point },
+      floor,
+      control: { x: point.x, y: floor.y },
+      rise,
+      t: 0,
+      length: Math.max(1, Math.hypot(floor.x - point.x, floor.y - point.y)),
+      rawProfile: wall.rawProfile,
+    };
+  }
+  function returnPoint(path, t) {
+    return {
+      x:
+        (1 - t) ** 2 * path.from.x +
+        2 * (1 - t) * t * path.control.x +
+        t * t * path.floor.x,
+      y:
+        (1 - t) ** 2 * path.from.y +
+        2 * (1 - t) * t * path.control.y +
+        t * t * path.floor.y,
+    };
+  }
   const api = Object.freeze({
     wallAt,
     heading,
     groundRise,
     riseForWall,
     projectSlopePoint,
+    copingAt,
+    copingSpan,
+    returnPath,
+    returnPoint,
   });
   if (typeof module !== "undefined") module.exports = api;
   else window.Skate720.Halfpipe = api;

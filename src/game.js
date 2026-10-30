@@ -209,7 +209,7 @@
         this.objectRegistry,
         this.actorMemory.readSpriteByte,
       );
-      this.tell("SKATE CITY Ã‚Â· JUMP + C TO SPIN Ã‚Â· E AT A PARK", 7);
+      this.tell("SKATE CITY \u00b7 JUMP + C TO SPIN \u00b7 E AT A PARK", 7);
       this.audio.unlock();
       this.audio.playStartCue();
       this.changed?.();
@@ -282,7 +282,7 @@
     interact(target = this.nearestInteraction()) {
       if (this.mode !== "city") return;
       if (!target) {
-        this.tell("FOLLOW A PARK ARROW Ã‚Â· E TO ENTER", 2);
+        this.tell("FOLLOW A PARK ARROW \u00b7 E TO ENTER", 2);
         return;
       }
       if (target.type === "shop") {
@@ -314,11 +314,11 @@
             (this.shopState.visitMask || 0) | (1 << index);
           this.audio.effect("coin");
           this.tell(
-            `${shop.label} LEVEL ${result.level} Ã‚Â· $${result.cost}`,
+            `${shop.label} LEVEL ${result.level} \u00b7 $${result.cost}`,
             3,
           );
         } else if (result.status === "funds")
-          this.tell(`NEED $${result.cost} Ã‚Â· WIN MEDALS TO EARN CASH`, 3);
+          this.tell(`NEED $${result.cost} \u00b7 WIN MEDALS TO EARN CASH`, 3);
         return;
       }
       if (!this.available(target.kind)) {
@@ -326,7 +326,7 @@
         return;
       }
       if (this.tickets < 1) {
-        this.tell("NEED A TICKET Ã‚Â· JUMP AND SPIN TO EARN POINTS", 3);
+        this.tell("NEED A TICKET \u00b7 JUMP AND SPIN TO EARN POINTS", 3);
         return;
       }
       if (!this.practice) this.tickets--;
@@ -345,10 +345,10 @@
       this.camera = { x: this.player.x, y: this.player.y };
       this.audio.effect("coin");
       const help = {
-        ramp: "HALF PIPE Ã‚Â· KICK TOWARD EITHER LIP Ã‚Â· JUMP + SPIN",
-        downhill: "RACE DOWNHILL Ã‚Â· STAY ON THE ROAD",
-        jump: "JUMP AT THE RAMP Ã‚Â· LAND INSIDE THE TARGET",
-        slalom: "PASS BETWEEN THE FLAGS Ã‚Â· KICK FOR SPEED",
+        ramp: "HALF PIPE \u00b7 ANGLE INTO COPING TO GRIND \u00b7 JUMP + SPIN",
+        downhill: "RACE DOWNHILL \u00b7 STAY ON THE ROAD",
+        jump: "JUMP AT THE RAMP \u00b7 LAND INSIDE THE TARGET",
+        slalom: "PASS BETWEEN THE FLAGS \u00b7 KICK FOR SPEED",
       };
       this.tell(help[target.kind], 6);
       this.changed?.();
@@ -598,8 +598,9 @@
         rom = S.OriginalGround,
         reader = rom.terrainTableReader(S.TERRAIN_TABLES);
       const speed = Math.abs(p.romSpeed || 0);
+      const entryDirection = p.romDirection ?? wall.upDirection;
       const coefficients = rom.surfaceCoefficients(
-        wall.upDirection,
+        entryDirection,
         wall.copingProfile,
         1,
         3,
@@ -627,7 +628,7 @@
       const setup = S.OriginalRampAnimation.setupRampAnimation(
         vertical,
         ground,
-        wall.upDirection,
+        entryDirection,
         jumping ? 128 : 0,
         wall.copingProfile,
       );
@@ -636,20 +637,56 @@
         wall,
         baseHeight: setup.targetHeight,
         jumping,
+        entryDirection,
+        trick:
+          setup.action === 0x4f
+            ? "grind"
+            : setup.action === 0x4d
+              ? "rock"
+              : null,
+        projectedRise: S.Halfpipe.riseForWall(this.event.level, wall, 1),
       };
+      const flight = p.halfpipeFlight;
+      if (flight.trick === "grind")
+        this.tell(
+          "GRIND \u00b7 RIDE THE COPING \u00b7 AUTO DROP AT THE END",
+          3,
+        );
+      else if (flight.trick === "rock")
+        this.tell("ROCK \u00b7 SPIN A HALF TURN OR RETURN FAKIE", 3);
+      if (flight.trick === "grind")
+        flight.coping = S.Halfpipe.copingSpan(this.event.level, wall);
       p.x = wall.lip.x;
       p.y = wall.lip.y;
-      p.z = 1;
+      // Original4D/4F raise the contact target by4/8px. Admit those poses
+      // above that target, rather than immediately taking the failed-contact
+      // branch at the native adapter's old one-pixel takeoff height.
+      p.z = flight.trick === "grind" ? 9 : flight.trick === "rock" ? 5 : 1;
       p.air = true;
       p.fromRamp = true;
       p.airTime = 0;
       p.spin = 0;
-      p.romDirection = wall.upDirection;
+      p.romDirection = entryDirection;
       p.angle = p.takeoffAngle = Math.atan2(
-        -rom.tables.y[wall.upDirection],
-        rom.tables.x[wall.upDirection],
+        -rom.tables.y[entryDirection],
+        rom.tables.x[entryDirection],
       );
       p.vx = p.vy = 0;
+      const motion = rom.airborneTransition(
+        speed,
+        entryDirection,
+        wall.copingProfile,
+        3,
+        this.gear.board,
+        reader,
+      );
+      const tangent = flight.trick === "grind";
+      const velocityX = tangent ? motion.dx : 0,
+        velocityY = tangent ? motion.dy : 0;
+      if (tangent) {
+        p.vx = ((velocityX + motion.fractionX / 256) * 60) / 64;
+        p.vy = (-(velocityY + motion.fractionY / 256) * 60) / 64;
+      }
       p.romVerticalVelocity = vertical;
       p.jumpLaunchVelocity = vertical;
       p.romGravity = 12;
@@ -679,8 +716,10 @@
               heightGauge: 0x6000,
               actorX: 0,
               actorY: 0,
-              velocityX: 0,
-              velocityY: 0,
+              velocityX: velocityX & 65535,
+              velocityY: velocityY & 65535,
+              fractionX: tangent ? motion.fractionX : 0,
+              fractionY: tangent ? motion.fractionY : 0,
             }
           : null;
       return true;
@@ -703,10 +742,29 @@
       state.height = (flight.baseHeight + Math.round(p.z * 64)) & 65535;
       state.actorX = 0;
       state.actorY =
-        ((state.profile === 7 ? 0x2600 : 0xe000) - 256 - Math.round(p.z * 64)) &
+        ((state.profile === 7 ? 0x2600 : 0xe000) -
+          256 +
+          state.targetHeight -
+          flight.baseHeight -
+          Math.round(p.z * 64)) &
         65535;
       state.vertical = p.romVerticalVelocity & 65535;
       state.direction = S.Halfpipe.heading(p.angle, S.OriginalGround.tables);
+      if (
+        flight.trick === "rock" &&
+        Math.abs(p.spin) > 0 &&
+        Math.abs(p.spin) < Math.PI
+      ) {
+        // A deliberate rock turn must finish its half turn before facing
+        // input can interrupt the recovered stall/release sequence.
+        state.direction = flight.entryDirection;
+      }
+      if (flight.trick === "grind" && state.action === 0x44) {
+        // Native playability extension: keep the recovered hold pose while
+        // rail remains, then run its original release automatically at the end.
+        if (flight.exitRequested) state.hold = 1;
+        else if (state.hold <= 1) state.hold = 40;
+      }
       S.OriginalRampAnimation.tickRampController(
         state,
         this.gear.shoes,
@@ -722,6 +780,21 @@
       p.z = (((state.height - flight.baseHeight) << 16) >> 16) / 64;
       p.romVerticalVelocity = (state.vertical << 16) >> 16;
       p.romGravity = state.gravity;
+      if (
+        (flight.trick === "grind" || flight.trick === "rock") &&
+        state.gravity === 0
+      )
+        flight.contactHeight = p.z;
+      if (flight.trick === "grind" && !flight.exitRequested) {
+        p.vx =
+          ((((state.velocityX << 16) >> 16) + (state.fractionX || 0) / 256) *
+            60) /
+          64;
+        p.vy =
+          (-(((state.velocityY << 16) >> 16) + (state.fractionY || 0) / 256) *
+            60) /
+          64;
+      }
       S.OriginalRampAnimation.tickRampClocks(
         state,
         this.objectRegistry.readTypeWord,
@@ -731,17 +804,29 @@
     landHalfpipe() {
       const p = this.player,
         flight = p.halfpipeFlight;
+      const rockToFakie =
+        flight.trick === "rock" && Math.abs(p.spin) < Math.PI * 0.5;
       this.land();
       p.halfpipeFlight = p.rampAnimation = null;
       if (p.bail) return;
       // A128-A14A's FCD0 heading aligns the steep wall before descending.
       p.x = flight.wall.lip.x;
       p.y = flight.wall.lip.y;
+      if (flight.trick === "grind" && flight.exitPoint) {
+        p.x = flight.exitPoint.x;
+        p.y = flight.exitPoint.y;
+        p.copingReturn = S.Halfpipe.returnPath(
+          this.event.level,
+          { x: p.x, y: p.y },
+          flight.wall,
+          flight.projectedRise,
+        );
+      }
       // A contour may cut a few pixels into a raster lip. Start the wheels on
       // its rideable side, rather than inside the fence mesh on landing.
       const level = this.event.level,
         sign = flight.wall.rawProfile === 1 ? -1 : 1;
-      for (let inset = 0; inset <= 16; inset += 2) {
+      for (let inset = 0; !p.copingReturn && inset <= 16; inset += 2) {
         const x = flight.wall.lip.x + sign * inset,
           y = flight.wall.lip.y - sign * inset * 0.5;
         if (!level.contactSample(x, y).blocked) {
@@ -752,6 +837,9 @@
       }
       p.romSpeed = flight.speed;
       p.romDirection = p.romMovementDirection = flight.wall.returnDirection;
+      // Facing and travel are separate for fakie. Keep the recovered reverse
+      // pose while the positive drive scalar follows the descent coefficients.
+      p.romFacingDirection = rockToFakie ? flight.wall.upDirection : undefined;
       p.angle = Math.atan2(
         -S.OriginalGround.tables.y[p.romDirection],
         S.OriginalGround.tables.x[p.romDirection],
@@ -765,6 +853,33 @@
       p.jumpSequence = p.jumpRecovery = p.jumpAnimation = null;
       p.halfpipeReturning = true;
       p.halfpipePoseProfile = flight.wall.profile;
+    }
+    updateCopingTravel() {
+      const p = this.player,
+        flight = p.halfpipeFlight,
+        state = p.rampAnimation;
+      if (flight?.trick !== "grind" || !state) return;
+      const span = flight.coping;
+      if (p.x <= span.minX || p.x >= span.maxX) {
+        p.x = S.clamp(p.x, span.minX, span.maxX);
+        p.y = p.x * 0.5 + span.q;
+        flight.exitRequested = true;
+        flight.exitPoint = { x: p.x, y: p.y };
+        p.vx =
+          p.vy =
+          state.velocityX =
+          state.velocityY =
+          state.fractionX =
+          state.fractionY =
+            0;
+      }
+      const wall = S.Halfpipe.copingAt(
+        this.event.level,
+        p.x,
+        p.y,
+        flight.wall.rawProfile,
+      );
+      if (wall) flight.wall = wall;
     }
     launchJump() {
       const p = this.player;
@@ -959,6 +1074,8 @@
       p.air = false;
       p.rampAnimation = p.halfpipeFlight = null;
       p.halfpipeReturning = false;
+      p.copingReturn = null;
+      p.romFacingDirection = undefined;
       p.dropFall = null;
       p.romVerticalVelocity = p.bail.vertical;
       p.spin = 0;
@@ -1065,7 +1182,7 @@
       }
       this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
       this.resetCityClock();
-      this.tell(`THE BEES GOT YOU Ã‚Â· ${this.lives} BOARDS LEFT`, 4);
+      this.tell(`THE BEES GOT YOU \u00b7 ${this.lives} BOARDS LEFT`, 4);
     }
     finishEvent() {
       if (this.mode !== "event") return;
@@ -1142,7 +1259,7 @@
       this.shopState.stockMask = S.OriginalEquipment.stockMask(this.gear, 3);
       this.shopState.attemptMask = 0;
       this.resetCityClock();
-      this.tell("MEDAL CASH BUYS GEAR Ã‚Â· FIND THE NEXT PARK", 5);
+      this.tell("MEDAL CASH BUYS GEAR \u00b7 FIND THE NEXT PARK", 5);
       this.changed?.();
     }
     /** Original pending route clock followed by active traffic scheduling. */
@@ -1245,6 +1362,7 @@
         kick = this.input.held("kick");
       const kickAnimationSpeed = p.romSpeed || 0; // Previous frame's0331 speed band.
       const kickPressed = kick && !p.kickWasHeld;
+      if (kickPressed && !p.halfpipeReturning) p.romFacingDirection = undefined;
       p.kickWasHeld = kick;
       const stick = this.input.stick,
         rotating = this.input.controlMode === "rotate";
@@ -1261,6 +1379,13 @@
             S.OriginalGround.tables.x[index],
           );
         if (rotating && !p.halfpipeReturning) {
+          if (
+            stick.active ||
+            this.input.held("left") ||
+            this.input.held("right") ||
+            kickPressed
+          )
+            p.romFacingDirection = undefined;
           // Continuous analog dial adapter, followed by the original lookup.
           p.romDialAngle =
             (p.romDialAngle ?? p.angle) +
@@ -1275,6 +1400,7 @@
           p.angle = isoAngle(p.romDirection);
         }
         if (direction.active && !rotating && !p.halfpipeReturning) {
+          p.romFacingDirection = undefined;
           const dial = dialFromAngle(Math.atan2(direction.y * 2, direction.x));
           const target = S.OriginalGround.dialDirection(dial);
           let current = p.romDirection;
@@ -1298,8 +1424,17 @@
             ? Math.max(0, -stick.y)
             : 0;
         let surface = (e?.level || this.city.level).contactSample(p.x, p.y);
-        p.halfpipeWall =
-          e?.kind === "ramp" ? S.Halfpipe.wallAt(e.level, p.x, p.y) : null;
+        p.halfpipeWall = p.copingReturn
+          ? {
+              rawProfile: p.copingReturn.rawProfile,
+              profile:
+                (p.copingReturn.rawProfile & 56) +
+                Math.max(1, Math.ceil((1 - p.copingReturn.t) * 6)),
+              progress: 1 - p.copingReturn.t,
+            }
+          : e?.kind === "ramp"
+            ? S.Halfpipe.wallAt(e.level, p.x, p.y)
+            : null;
         p.halfpipePoseProfile = p.halfpipeWall?.profile;
         // Complete the descent before handing steering back. Releasing this
         // midway down lets a still-held uphill stick reverse the skater on
@@ -1431,6 +1566,19 @@
             p.vx = ((along + across) * 60) / 64;
             p.vy = ((along - across) * 30) / 64;
           }
+          if (p.copingReturn) {
+            const path = p.copingReturn;
+            const travel =
+              Math.hypot(
+                motion.dx + motion.fractionX / 256,
+                motion.dy + motion.fractionY / 256,
+                groundY,
+              ) / 64;
+            path.t = Math.min(1, path.t + travel / path.length);
+            const next = S.Halfpipe.returnPoint(path, path.t);
+            p.vx = (next.x - p.x) * 60;
+            p.vy = (next.y - p.y) * 60;
+          }
           p.romSpeed = scalar;
           p.romKicking = kick;
           p.romGroundActive = true;
@@ -1539,6 +1687,14 @@
       // 45/75 pixels of valid scenery with the course camera margin.
       p.x = S.clamp(p.x, e ? 35 : 4, width - (e ? 35 : 4));
       p.y = S.clamp(p.y, e ? 75 : 4, height - (e ? 45 : 4));
+      this.updateCopingTravel();
+      if (p.copingReturn?.t >= 1) {
+        p.x = p.copingReturn.floor.x;
+        p.y = p.copingReturn.floor.y;
+        p.lastSafe = { x: p.x, y: p.y };
+        p.copingReturn = null;
+        p.halfpipeReturning = false;
+      }
       if (e?.kind === "jump" && p.air) this.updateCourseShadow();
       if (p.dropFall) this.updateDropContact();
       this.collideWithRecoveredTerrain();
@@ -1666,7 +1822,7 @@
       if (this.cityTimer <= 0 && !this.warned) {
         this.warned = true;
         this.bees = { x: p.x - 230, y: p.y - 120, born: this.elapsed };
-        this.tell("SKATE OR DIE! Ã‚Â· GET TO A PARK!", 6);
+        this.tell("SKATE OR DIE! \u00b7 GET TO A PARK!", 6);
         this.audio.clip("bees");
       }
       if (this.bees) {
@@ -1756,6 +1912,11 @@
       const p = this.player,
         level = this.event?.level || this.city.level;
       if (p.dropFall) return;
+      if (p.copingReturn) {
+        p.terrainStepOrigin = null;
+        p.edgeContact = false;
+        return;
+      }
       const wall = p.halfpipeWall;
       if (
         this.event?.kind === "ramp" &&
@@ -1878,7 +2039,7 @@
               Math.abs(p.x - ramp.x) < 125 &&
               !p.air
             )
-              this.tell("JUMP AT THE LIP Ã‚Â· LAND ON THE NEXT PLATFORM", 2);
+              this.tell("JUMP AT THE LIP \u00b7 LAND ON THE NEXT PLATFORM", 2);
           }
         }
         if (e.level.contactSample(p.x, p.y).type === 10 && !p.air) {

@@ -6,6 +6,16 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Coping tricks (build 59)
+
+- Approach the coping at an angle without jumping to select the recovered grind sequence. Approach speed and heading still choose the original animation band. The skater can traverse the full cap in either direction, then releases and descends automatically from the end reached.
+- A slow straight-on entry without jumping selects the rock/stall sequence. Leave spin neutral to return fakie; use the spin control for a half turn, then release it, to return facing downhill (rock 'n' roll).
+- B still selects an aerial. Existing handplants and720s remain available through their original speed/angle selection.
+
+The native caller now preserves the actual entry heading instead of forcing2/10, and carries original91A6/9FB4 tangential motion into the recovered4F->40->50->44->43 grind path. Action50 retains its original40-tick hold setup and1.5x velocity update. Existing original airtime scoring awards points once on landing; no new trick-score table or replacement graphics/sounds was added.
+
+Full-length hold renewal, endpoint admission from original white-cap artwork (north712..928, south424..640), contact-height anchoring, separate fakie facing and a bounded curved return to decoded floor are intentional native playability adapters. The turn-input gate allows a half turn before interruption. These changes do not prove the original game named or controlled the tricks identically, or that its full height/contact controller is complete. Also repaired corrupted HUD separator/degree/infinity labels and stored them as Unicode escapes.
+
 ## Raised ramps with multiple faces (build 58)
 
 Raised city ramps now decode their secondary face profiles using original94BA-94D4 mode2 semantics. The pictured blue ramp has primary material48, while flag0x84 supplies front incline4, flag0x92 supplies opposite incline18, and flag0xF8 supplies the flat120 crest. These profiles now drive native coefficients, speed changes, slope-jump admission and original poses, rather than treating both faces as flat material48. Inclined poses take priority over road kick frames. F8 includes the secondary slopes and internal incline divisions, which are diagnostic lines, not extra walls.

@@ -284,12 +284,21 @@
         game.player.y +
           11 -
           game.player.z -
-          S.Halfpipe.groundRise(level, game.player),
+          S.Halfpipe.groundRise(level, game.player) +
+          Math.min(
+            Math.max(0, game.player.z),
+            game.player.halfpipeFlight?.contactHeight || 0,
+          ),
         0x7114,
         "#00ffccb3",
       );
       c.fillStyle = "#ffffff";
-      c.fillRect(game.player.x - 1, game.player.y - 1, 2, 2);
+      c.fillRect(
+        game.player.x - 1,
+        game.player.y - S.Halfpipe.groundRise(level, game.player) - 1,
+        2,
+        2,
+      );
     }
     city(game) {
       const c = this.ctx,
@@ -365,10 +374,14 @@
     ) {
       const c = this.ctx;
       if (p.invulnerable > 0 && Math.floor(time * 14) % 2) c.globalAlpha = 0.35;
-      const y = p.y - p.z - groundRise;
+      const contactHeight = Math.min(
+        Math.max(0, p.z),
+        p.halfpipeFlight?.contactHeight || 0,
+      );
+      const y = p.y - p.z - groundRise + contactHeight;
       // Use the same original direction index as movement. Canvas angles are
       // isometric: reversing/quantizing them again selects the wrong pose.
-      let frame = p.romDirection;
+      let frame = p.romFacingDirection ?? p.romDirection;
       if (p.air || frame === undefined) {
         let best = Infinity;
         for (let i = 0; i < 16; i++) {
@@ -481,7 +494,7 @@
       c.globalAlpha = 1;
       if (p.air && Math.abs(p.spin) > Math.PI)
         this.text(
-          `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}Ãƒâ€šÃ‚Â°`,
+          `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}\u00b0`,
           p.x,
           y - 73,
           "#fff637",
@@ -665,7 +678,7 @@
       c.fillStyle = "#052435e8";
       c.fillRect(388, 8, 116, 48);
       this.text(
-        `TICKETS ${game.practice ? "ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â Ãƒâ€¦Ã‚Â¾" : game.tickets}`,
+        `TICKETS ${game.practice ? "\u221e" : game.tickets}`,
         496,
         12,
         "#ffeb57",
@@ -687,7 +700,7 @@
       );
       if (event) {
         this.text(
-          `${event.kind.toUpperCase()} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· CLASS ${event.difficulty}`,
+          `${event.kind.toUpperCase()} \u00b7 CLASS ${event.difficulty}`,
           256,
           65,
           S.COLORS[event.kind],
@@ -705,7 +718,7 @@
       const near = game.nearestInteraction();
       let message = game.messageTime > 0 ? game.message : "";
       if (near) {
-        message = `E / Y: ${near.kind.toUpperCase()} Ãƒâ€šÃ‚Â· ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
+        message = `E / Y: ${near.kind.toUpperCase()} \u00b7 ${game.available(near.kind) ? "SKATE ONTO ENTRY PAD" : "COMPLETE OTHER PARKS"}`;
       }
       if (message) {
         c.fillStyle = "#05154de8";
@@ -715,7 +728,7 @@
         this.text(message, 256, 362, "#fff9ba", 8, "center");
       } else {
         this.text(
-          `NEXT TICKET ${S.format(game.nextTicket || 3000)} ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· TAB FOR MAP`,
+          `NEXT TICKET ${S.format(game.nextTicket || 3000)} \u00b7 TAB FOR MAP`,
           12,
           365,
           "#132d42",
@@ -765,7 +778,7 @@
           "center",
         );
       this.text(
-        "BLUE SHOPS = EQUIPMENT ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· WHITE DOT = YOU",
+        "BLUE SHOPS = EQUIPMENT \u00b7 WHITE DOT = YOU",
         256,
         290,
         "#cad6e7",
