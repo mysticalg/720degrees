@@ -900,11 +900,12 @@
         p.y + Math.sin(p.angle) * 24,
       );
       p.fromRamp =
-        !p.jumpSequence &&
-        !surface.blocked &&
-        (surface.type === 16 ||
-          ![24, 32, 120].includes(surface.profile) ||
-          ahead.blocked);
+        !!p.jumpSequence?.risingSurface ||
+        (!p.jumpSequence &&
+          !surface.blocked &&
+          (surface.type === 16 ||
+            ![24, 32, 120].includes(surface.profile) ||
+            ahead.blocked));
       if (!p.jumpSequence && this.event?.kind === "ramp") p.fromRamp = true;
       if (p.fromRamp) boost = 1.45;
       p.kickAnimation = null;
@@ -936,6 +937,26 @@
         const rate = S.OriginalRoutines.jumpAnimationRate(p.romSpeed || 0);
         p.jumpAnimation = { rate, countdown: rate, phase: 0 };
       }
+      // Native artwork adapter: the descending approach is already projected
+      // into this map. Preserve that travel line through the curved launch
+      // face instead of applying its terrain-axis skew a second time in air.
+      // No target attraction or airborne steering is applied.
+      const approach = p.courseApproach;
+      if (
+        this.event?.kind === "jump" &&
+        approach &&
+        Math.hypot(p.x - approach.x, p.y - approach.y) < 256 &&
+        approach.direction === (p.romDirection & 15) &&
+        (((surface.profile & 7) >= 1 &&
+          (surface.profile & 7) <= 6 &&
+          (p.romGroundVertical?.velocity || 0) > 0) ||
+          surface.type === 16)
+      ) {
+        const speed = Math.hypot(p.vx, p.vy);
+        p.vx = approach.vx * speed;
+        p.vy = approach.vy * speed;
+        p.courseFlightHeading = { x: approach.vx, y: approach.vy };
+      }
       p.air = true;
       p.edgeContact = false;
       p.spin = 0;
@@ -965,7 +986,9 @@
       this.audio.effect("jump");
       if (this.event?.kind === "jump" && p.fromRamp) {
         const launch = this.event.ramps.find(
-          (r) => Math.abs(r.y - p.y) < 100 && Math.abs(r.x - p.x) < 170,
+          // Decoded marker centres sit beyond the start of the curved face.
+          // Admit the whole approach so a rising-surface jump still arms it.
+          (r) => Math.abs(r.y - p.y) < 192 && Math.abs(r.x - p.x) < 256,
         );
         if (launch)
           p.jumpTarget = this.event.targets.findIndex(
@@ -1429,7 +1452,7 @@
               rawProfile: p.copingReturn.rawProfile,
               profile:
                 (p.copingReturn.rawProfile & 56) +
-                Math.max(1, Math.ceil((1 - p.copingReturn.t) * 6)),
+                S.Halfpipe.inclination(1 - p.copingReturn.t),
               progress: 1 - p.copingReturn.t,
             }
           : e?.kind === "ramp"
@@ -1678,6 +1701,24 @@
         p.vy *= maxSpeed / speed;
       }
       p.terrainStepOrigin = { x: p.x, y: p.y };
+      if (
+        !p.air &&
+        e?.kind === "jump" &&
+        p.romGroundActive &&
+        p.romGroundVertical?.velocity < 0 &&
+        (p.romSurfaceProfile & 7) >= 1 &&
+        (p.romSurfaceProfile & 7) <= 6
+      ) {
+        const length = Math.hypot(p.vx, p.vy);
+        if (length > 1)
+          p.courseApproach = {
+            x: p.x,
+            y: p.y,
+            vx: p.vx / length,
+            vy: p.vy / length,
+            direction: p.romDirection & 15,
+          };
+      }
       p.x += p.vx * dt * S.CONFIG.skatingPace;
       p.y += p.vy * dt * S.CONFIG.skatingPace;
       const width = e ? e.width : this.city.width,

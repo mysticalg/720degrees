@@ -221,6 +221,15 @@
         c.lineTo(b.x, b.y);
       }
       c.stroke();
+      // Highlight the same curve-to-vert join used by halfpipe physics.
+      c.strokeStyle = "#ffe790";
+      c.lineWidth = 1.1;
+      c.beginPath();
+      for (const edge of S.Halfpipe.transitionSegments(level)) {
+        c.moveTo(edge.a.x, edge.a.y);
+        c.lineTo(edge.b.x, edge.b.y);
+      }
+      c.stroke();
       // Curbs are shallow, rideable terrain rather than solid fences. Show
       // their full width and both ends using the exact physics contour.
       if (level.name === "city") {

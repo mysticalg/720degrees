@@ -3,6 +3,28 @@
  * The original slope/pose tables then supply its seven inclination bands.
  */
 (() => {
+  // Native geometry adapter: the original map marks an entire wall with one
+  // profile. Separate its curved approach from its short upper vert section.
+  // Keep the original six coefficient/pose entries; only their coverage changes.
+  const VERT_START = 0.7;
+  function inclination(progress) {
+    const p = Math.max(0, Math.min(1, progress));
+    return p < VERT_START
+      ? Math.min(4, 1 + Math.floor((p / VERT_START) * 4))
+      : Math.min(6, 5 + Math.floor(((p - VERT_START) / (1 - VERT_START)) * 2));
+  }
+  // Integrate a rising gradient through the lower curve, then maintain the
+  // upper vert gradient. Position and tangent meet continuously at the join.
+  // The endpoints stay pinned to the decoded floor and original white coping.
+  function heightProgress(progress) {
+    const p = Math.max(0, Math.min(1, progress)),
+      initial = 0.6;
+    const curvature = (1 - initial) / (2 * VERT_START - VERT_START ** 2);
+    const join = initial * VERT_START + curvature * VERT_START ** 2;
+    return p < VERT_START
+      ? initial * p + curvature * p * p
+      : join + (initial + 2 * curvature * VERT_START) * (p - VERT_START);
+  }
   function wallAt(level, x, y) {
     const raw = level.sample(x, y).profile;
     // Southern foreground rail tiles can occlude short pieces of the curve.
@@ -53,21 +75,65 @@
       !(lip.profile === 120 || (lip.profile & 7) === 7)
     )
       return null;
-    const progress = Math.max(
+    let progress = Math.max(
       0,
       Math.min(1, -behind.inside / (ahead.inside - behind.inside)),
     );
+    let floorPoint = { x: x + dx * behind.inside, y: y + dy * behind.inside },
+      lipPoint = { x: x + dx * ahead.inside, y: y + dy * ahead.inside },
+      distance = ahead.inside;
+    if (level.name === "ramp-1") {
+      // The ROM grid stair-steps each lane by up to8px. Use continuous
+      // diagonal planes through those decoded boundaries for the rideable
+      // wall, retaining the scans above for finite-wall/fence admission.
+      const q = y - x * 0.5,
+        floorQ = profile === 1 ? 272 : 400,
+        lipQ = profile === 1 ? 96 : 448,
+        rate = dy - dx * 0.5,
+        toFloor = (floorQ - q) / rate,
+        toLip = (lipQ - q) / rate;
+      progress = Math.max(0, Math.min(1, (q - floorQ) / (lipQ - floorQ)));
+      floorPoint = { x: x + dx * toFloor, y: y + dy * toFloor };
+      lipPoint = { x: x + dx * toLip, y: y + dy * toLip };
+      distance = Math.max(0, toLip);
+    }
     return {
       rawProfile: profile,
-      profile: (profile & 56) + Math.min(6, 1 + Math.floor(progress * 6)),
+      profile: (profile & 56) + inclination(progress),
+      stage: progress < VERT_START ? "curve" : "vert",
       progress,
       upDirection: profile === 1 ? 2 : 10,
       returnDirection: profile === 1 ? 10 : 2,
       copingProfile: (profile & 56) | 7,
-      distance: ahead.inside,
-      floor: { x: x + dx * behind.inside, y: y + dy * behind.inside },
-      lip: { x: x + dx * ahead.inside, y: y + dy * ahead.inside },
+      distance,
+      floor: floorPoint,
+      lip: lipPoint,
     };
+  }
+  const transitionCache = new WeakMap();
+  function transitionSegments(level) {
+    if (level.name !== "ramp-1") return [];
+    if (transitionCache.has(level)) return transitionCache.get(level);
+    const segments = [];
+    for (const raw of [1, 17]) {
+      const floorQ = raw === 1 ? 272 : 400,
+        lipQ = raw === 1 ? 96 : 448,
+        q = floorQ + (lipQ - floorQ) * VERT_START;
+      let previous = null;
+      for (let x = 0; x <= level.width; x += 2) {
+        const y = x * 0.5 + q,
+          wall = wallAt(level, x, y);
+        if (wall?.rawProfile !== raw) {
+          previous = null;
+          continue;
+        }
+        const point = { x, y: y - riseForWall(level, wall, VERT_START) };
+        if (previous) segments.push({ a: previous, b: point });
+        previous = point;
+      }
+    }
+    transitionCache.set(level, segments);
+    return segments;
   }
   function heading(angle, tables) {
     let best = Infinity,
@@ -92,12 +158,14 @@
   function riseForWall(level, wall, progress = wall?.progress) {
     if (level?.name !== "ramp-1" || wall?.rawProfile !== 17) return 0;
     const height = Math.max(0, wall.lip.y - wall.lip.x * 0.5 - 382);
-    return height * Math.max(0, Math.min(1, progress));
+    return height * heightProgress(progress);
   }
   function groundRise(level, player) {
     if (level?.name !== "ramp-1") return 0;
     if (player.copingReturn)
-      return player.copingReturn.rise * (1 - player.copingReturn.t);
+      return (
+        player.copingReturn.rise * heightProgress(1 - player.copingReturn.t)
+      );
     const flight = player.halfpipeFlight;
     return flight
       ? (flight.projectedRise ?? riseForWall(level, flight.wall, 1))
@@ -235,6 +303,10 @@
   }
   const api = Object.freeze({
     wallAt,
+    inclination,
+    heightProgress,
+    VERT_START,
+    transitionSegments,
     heading,
     groundRise,
     riseForWall,

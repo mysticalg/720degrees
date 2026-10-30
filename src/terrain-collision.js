@@ -494,7 +494,9 @@
       const sample = level.sample(x, y);
       return sample.blocked
         ? -1
-        : (level.surfaceProfile?.(sample) ?? sample.profile);
+        : (level.halfpipeWallAt?.(x, y)?.profile ??
+            level.surfaceProfile?.(sample) ??
+            sample.profile);
     };
     for (let row = 0; row < level.rows - 1; row++)
       for (let col = 0; col < level.columns - 1; col++) {

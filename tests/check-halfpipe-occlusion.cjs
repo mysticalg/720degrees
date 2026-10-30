@@ -54,10 +54,10 @@ const artwork = {
   name: "ramp-1",
   sample(x, y) {
     const q = y - x * 0.5;
-    return { profile: q < 400 ? 24 : q < 450 ? 17 : 7 };
+    return { profile: q < 400 ? 24 : q < 448 ? 17 : 7 };
   },
 };
-const point = { x: 550, y: 725 - 0.001 },
+const point = { x: 550, y: 723 - 0.001 },
   projectedWall = pipe.wallAt(artwork, point.x, point.y);
 assert(projectedWall && projectedWall.rawProfile === 17);
 const top = pipe.projectSlopePoint(artwork, point);

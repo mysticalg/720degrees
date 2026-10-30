@@ -57,3 +57,31 @@ for (let direction = 0; direction < 16; direction++) {
 console.log(
   "PASS original coping coefficient indices on both walls, decoded-wall inclination and sixteen sprite headings",
 );
+
+// Two-stage native coverage preserves all six original incline entries.
+assert.equal(pipe.inclination(0), 1);
+assert.equal(pipe.inclination(pipe.VERT_START - 1e-6), 4);
+assert.equal(pipe.inclination(pipe.VERT_START), 5);
+assert.equal(pipe.inclination(1), 6);
+assert.equal(pipe.heightProgress(0), 0);
+assert(Math.abs(pipe.heightProgress(1) - 1) < 1e-12);
+const join = pipe.VERT_START,
+  eps = 1e-5;
+const left =
+  (pipe.heightProgress(join) - pipe.heightProgress(join - eps)) / eps;
+const right =
+  (pipe.heightProgress(join + eps) - pipe.heightProgress(join)) / eps;
+assert(
+  Math.abs(left - right) < 1e-4,
+  "no slope/height seam at curve-to-vert join",
+);
+assert(
+  right > ((pipe.heightProgress(eps) - pipe.heightProgress(0)) / eps) * 1.8,
+);
+for (let n = 1; n <= 100; n++)
+  assert(pipe.heightProgress(n / 100) > pipe.heightProgress((n - 1) / 100));
+assert.equal(pipe.wallAt(level, 69, 0).stage, "curve");
+assert.equal(pipe.wallAt(level, 71, 0).stage, "vert");
+console.log(
+  "PASS two-stage halfpipe: curved approach, upper vert, continuous join and exact floor/coping endpoints",
+);
