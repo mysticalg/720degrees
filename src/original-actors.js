@@ -21,8 +21,9 @@
       actor.flags = actor.flags & ~1 & 255;
     }
     const variant = signedByte(memory.readTypeByte(0x65cc + actor.kind));
-    // C296-C2A2 clears the rate's low seven bits while retaining pause.
-    actor.rate &= 128;
+    // C296-C2A2 saves rate&007F, clears the rate byte, then restores
+    // those low bits. The source (sp)+ pops before destination addressing.
+    actor.rate &= 127;
     if (!stationary) {
       const index = word(direction * 8 + variant);
       actor.dx = signed(memory.readMotionWord(word(0x4138 + index * 2)));
@@ -146,8 +147,34 @@
     }
     return { dx, dy, dz: signed(word(actor.vertical || 0)), changed };
   }
+  /** C352-C3DE: intermediate turn pose moves toward the current cell's
+   * original BF5E coordinate plus type offsets. Word subtraction wraps
+   * before arithmetic shift, preserving turns across coordinate seams.
+   */
+  function reprojectTurn(actor, position, memory) {
+    const x = word(position.x + memory.readTypeWord(0x62a4 + actor.kind * 2));
+    const y = word(position.y + memory.readTypeWord(0x636e + actor.kind * 2));
+    actor.dx = signed(word(x - actor.x)) >> 4;
+    actor.dy = signed(word(y - actor.y)) >> 4;
+    actor.duration = 6;
+    actor.rate = ((actor.rate || 0) | 128) & 255;
+    actor.routeFlags = ((actor.routeFlags || 0) | 1) & 255;
+    return actor;
+  }
+  /** CB64-CB9E category1's route deadline gate. Zero is inactive;
+   * positive duration only waits while route flags0C permit it.
+   */
+  function trafficRouteDue(actor) {
+    if (!(actor.duration & 65535)) return false;
+    actor.duration = word(actor.duration - 1);
+    if (signed(actor.duration) > 0 && actor.routeFlags & 12) return false;
+    actor.routeFlags = ((actor.routeFlags || 0) | 8) & 255;
+    return true;
+  }
   const api = Object.freeze({
     stepMotionActor,
+    reprojectTurn,
+    trafficRouteDue,
     tickDescriptor,
     configureMotion,
     selectRouteAnimation,

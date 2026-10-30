@@ -133,8 +133,75 @@
     state.completedStrips = ((state.completedStrips || 0) + 1) & 255;
     return blocks;
   }
+  /** Bank2800:5B82-5C78 updates actor visibility bounds from01AC/01AE.
+   * The original byte row phase follows city seams; coordinate cutoffs stay
+   * separate from scenery-strip state and actor screen projection.
+   */
+  function updateActorViewport(memory) {
+    const read = (a) =>
+      memory.readRamByte(a) | (memory.readRamByte(a + 1) << 8);
+    const write = (a, n) => {
+      memory.writeRamByte(a, n);
+      memory.writeRamByte(a + 1, n >> 8);
+    };
+    const add = (a, n) => write(a, word(read(a) + n));
+    const dirty = () =>
+      memory.writeRamByte(0x0e99, memory.readRamByte(0x0e99) + 1);
+    const cameraX = read(0x01ac);
+    let cutoffX = word(cameraX - read(0x09a0));
+    write(0x09a4, cutoffX);
+    if (cutoffX >= 0x4000) {
+      const step = signed(cutoffX) > 0 ? 16 : -16;
+      add(0x0996, step);
+      add(0x0998, step);
+      write(0x09a0, cameraX & 0xc000);
+      cutoffX = word(cameraX - read(0x09a0));
+      write(0x09a4, cutoffX);
+      dirty();
+    }
+    const cameraY = read(0x01ae);
+    let cutoffY = word(read(0x09a2) - cameraY + 0x3fff);
+    write(0x09a6, cutoffY);
+    if (cutoffY >= 0x4000) {
+      if (signed(cutoffY) < 0) {
+        add(0x099a, 1);
+        add(0x099c, 1);
+        if (signed(read(0x099c)) > signed(read(0x099e))) {
+          add(0x099a, -12);
+          add(0x099c, -12);
+          add(0x0996, 80);
+          add(0x0998, 80);
+          memory.writeRamByte(0x0e9b, memory.readRamByte(0x0e9b) - 1);
+        }
+      } else {
+        add(0x099a, -1);
+        add(0x099c, -1);
+        if (signed(read(0x099c)) < 0) {
+          add(0x099a, 12);
+          add(0x099c, 12);
+          add(0x0996, -80);
+          add(0x0998, -80);
+          memory.writeRamByte(0x0e9b, memory.readRamByte(0x0e9b) + 1);
+        }
+      }
+      write(0x09a2, cameraY & 0xc000);
+      cutoffY = word(read(0x09a2) - cameraY + 0x3fff);
+      write(0x09a6, cutoffY);
+      dirty();
+    }
+    return {
+      left: read(0x0996),
+      right: read(0x0998),
+      top: read(0x099a),
+      bottom: read(0x099c),
+      cutoffX,
+      cutoffY,
+      rowPhase: memory.readRamByte(0x0e9b),
+    };
+  }
   const api = Object.freeze({
     beginMapState,
+    updateActorViewport,
     verticalStrip,
     horizontalStrip,
     consumeStrip,

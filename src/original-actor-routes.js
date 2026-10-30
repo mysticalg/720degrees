@@ -183,8 +183,54 @@
     else actor.routeFlags = ((actor.routeFlags || 0) | 2) & 255;
     return result;
   }
+  /** C0D8-C112: successful off-screen route preparation schedules the
+   * next static update from the signed type variant's original FD82 byte.
+   */
+  function preparePending(slot, kind, memory) {
+    const variant = (memory.readTypeByte(0x65cc + kind) << 24) >> 24;
+    const delay = memory.readFixedByte(word(0xfd82 + variant)) & 255;
+    memory.writeRamByte(0x0ab8 + slot, delay + memory.readRamByte(0x0e9a));
+    return 0;
+  }
+  /** Compose C850/C868/BFBC for a pending static registry record. Active
+   * actors require C114's pose/motion stage and must use its separate path.
+   */
+  function advancePending(slot, recordAddress, alternate, memory, resolve) {
+    const address = 0x0af8 + slot * 2;
+    const packed =
+      memory.readRamByte(address) | (memory.readRamByte(address + 1) << 8);
+    if (packed & 32768)
+      throw new Error("Pending route callback received active actor");
+    const kind = memory.readRamByte(0x09b8 + slot);
+    const old = resolve(packed, slot, memory.readObjectWord);
+    const actor = { slot, kind, packed, paletteFlags: 0 };
+    const selected = word(recordAddress + (alternate ? 4 : 0));
+    memory.writeRamByte(0x09b2, selected);
+    memory.writeRamByte(0x09b3, selected >> 8);
+    const prepare = (next) => {
+      memory.writeRamByte(0x09b4, next.bitmapIndex);
+      memory.writeRamByte(0x09b5, next.bitmapIndex >> 8);
+      return preparePending(slot, kind, memory);
+    };
+    const result = alternate
+      ? tryAlternate(actor, recordAddress, old.bitmapIndex, memory, prepare)
+      : tryAdvance(
+          actor,
+          memory.readObjectWord(selected),
+          old.bitmapIndex,
+          memory,
+          prepare,
+        );
+    if (result.advanced) {
+      memory.writeRamByte(address, actor.packed);
+      memory.writeRamByte(address + 1, actor.packed >> 8);
+    }
+    return result;
+  }
   const api = Object.freeze({
     inspect,
+    preparePending,
+    advancePending,
     release,
     commit,
     tryAdvance,

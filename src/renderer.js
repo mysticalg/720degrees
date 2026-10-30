@@ -151,7 +151,7 @@
               S.CITY_CRACK_DATA.columns,
             ),
         })),
-        ...game.cityActors.map((actor) => ({
+        ...[...game.cityActors, ...(game.trafficActors || [])].map((actor) => ({
           y: actor.actorY,
           draw: () =>
             this.descriptorSkater(

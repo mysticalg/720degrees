@@ -10,7 +10,7 @@ def enc(start,size):return base64.b64encode(r[start:start+size]).decode()
 data={'source':'Original actor type, object/coordinate, motion and fixed tables',
  'types':[enc(0x28000,8192),enc(0x20000,8192)],
  'coordinates':enc(0x2a000,8192),'objects':enc(0x22000,8192),
- 'motion':enc(0x23ff8,0x408),'fixed':enc(0xfd8a,0x46)}
+ 'motion':enc(0x23ff8,0x408),'fixed':enc(0xfd80,0x50),'fixedBase':0xfd80}
 def tb(a):return r[(0x28000+a-0x4000) if a<0x6000 else (0x20000+a-0x6000)]
 def tw(a):return tb(a)|(tb(a+1)<<8)
 data['trafficInitial']={}

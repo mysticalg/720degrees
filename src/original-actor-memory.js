@@ -29,10 +29,10 @@
       readCoordinateWord: (a) => word(coordinateByte, a),
       readMotionByte: motionByte,
       readMotionWord: (a) => word(motionByte, a),
-      readFixedByte: (a) => at(fixed, a - 0xfd8a),
+      readFixedByte: (a) => at(fixed, a - (data.fixedBase ?? 0xfd8a)),
       readCoordinateOrFixedWord: (a) =>
         a >= 0x8000
-          ? word((b) => at(fixed, b - 0xfd8a), a)
+          ? word((b) => at(fixed, b - (data.fixedBase ?? 0xfd8a)), a)
           : word(coordinateByte, a),
     };
   }

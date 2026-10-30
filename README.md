@@ -25,7 +25,7 @@ From this directory, run `python -m http.server 8722`, then open http://localhos
 
 The game includes recovered city and park scenery, original skater/board/shadow graphics, kick/jump/bail and landing-point sequences, springboard cracks, park access, music controls, and translated portions of fixed-point movement and scoring.
 
-Fixed city actor positions, animation entries and rates now initialize through the translated original routines and extracted tables. Original route selection, population requests, sprite allocation, activation and retirement routines are present, with tests, but moving traffic and its visibility scheduler are **not yet connected to live gameplay**.
+Fixed city actor positions, animation entries and rates now initialize through the translated original routines and extracted tables. Original route selection, population requests, sprite allocation, activation and retirement routines are present, with tests. The 18 original initial routed actors now advance as pending records on the live city clock. Camera-driven activation, visible cars/scooters/cyclists, route turns, retirement and traffic replacement requests now run in the live city loop using these routines. Browser camera conversion and the separate fixed-actor renderer remain adapters; player/traffic collisions and traffic SFX are not yet implemented.
 
 Terrain contact, halfpipe coping, some scoring/event rules, enemies, powerups and full population behaviour remain incomplete or provisional. This is not yet a fully faithful port.
 

@@ -31,6 +31,7 @@
       this.city = S.makeCity();
       this.cracks = [];
       this.cityActors = [];
+      this.trafficActors = [];
       this.mode = "title";
       this.practice = false;
       this.camera = { x: 3072, y: 1660 };
@@ -153,6 +154,23 @@
           actor.phase = 0;
         }
       }
+      // D2AE queues the original difficulty1 category1 placements. These
+      // pending records now advance through C8AA/C850/C868/C0D8 off-screen.
+      // Visibility-to-sprite activation remains a separate integration stage.
+      this.pendingTrafficSlots = [];
+      for (const object of S.ACTOR_TABLE_DATA.trafficInitial["1"]) {
+        const placement = S.OriginalObjectRegistry.enqueue(
+          object.packed,
+          object.kind,
+          false,
+          this.objectRegistry,
+          registryServices,
+        );
+        if (placement.status !== 0)
+          throw new Error("Original initial traffic placement is unavailable");
+        this.pendingTrafficSlots.push(placement.slot);
+      }
+      this.pendingTrafficMoves = 0;
       this.mode = "city";
       this.event = null;
       this.paused = false;
@@ -171,6 +189,12 @@
       this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
       this.resetCityClock();
       this.camera = { x: 3072, y: 1660 };
+      this.trafficActors = [];
+      this.trafficRuntime = new S.TrafficRuntime(
+        S,
+        this.objectRegistry,
+        this.actorMemory.readSpriteByte,
+      );
       this.tell("SKATE CITY · JUMP + C TO SPIN · E AT A PARK", 7);
       this.audio.unlock();
       this.audio.playStartCue();
@@ -855,6 +879,32 @@
       this.tell("MEDAL CASH BUYS GEAR · FIND THE NEXT PARK", 5);
       this.changed?.();
     }
+    /** Original pending route clock followed by active traffic scheduling. */
+    updatePendingTraffic() {
+      const memory = this.objectRegistry;
+      const resolve = S.OriginalRoutines.resolveObjectPlacement;
+      const advance = (slot, placement, alternate) => {
+        const result = S.OriginalActorRoutes.advancePending(
+          slot,
+          placement.recordPointer,
+          alternate,
+          memory,
+          resolve,
+        );
+        if (result.advanced) this.pendingTrafficMoves++;
+        return result.status;
+      };
+      S.OriginalActorSpawning.tickPendingRoutes(memory, {
+        resolve,
+        primary: (slot, placement) => advance(slot, placement, false),
+        alternate: (slot, placement) => advance(slot, placement, true),
+      });
+      this.trafficActors = this.trafficRuntime.frame(
+        this.camera,
+        this.city.width,
+        this.city.height,
+      );
+    }
     update(dt) {
       if (this.paused || !["city", "event"].includes(this.mode)) return;
       if (!(this.event?.level || this.city.level).ready) return;
@@ -872,6 +922,7 @@
           actor.actorY -= motion.dy / 64;
           actor.height = ((actor.height || 0) + motion.dz) & 65535;
         }
+      if (this.mode === "city") this.updatePendingTraffic();
       this.messageTime = Math.max(0, this.messageTime - dt);
       for (const popup of this.floats) {
         if (popup.originalLanding)
@@ -1479,6 +1530,21 @@
                   phase: actor.phase,
                 }))
             : [],
+        traffic: {
+          active: this.trafficActors?.length || 0,
+          pendingRequests: this.trafficRuntime?.population.total || 0,
+          nearby: (this.trafficActors || [])
+            .filter((a) => Math.hypot(p.x - a.actorX, p.y - a.actorY) < 500)
+            .map((a) => ({
+              kind: a.kind,
+              slot: a.slot,
+              sprite: a.sprite,
+              x: +a.actorX.toFixed(1),
+              y: +a.actorY.toFixed(1),
+              direction: a.direction,
+              pointer: a.pointer,
+            })),
+        },
         cracks:
           this.mode === "city"
             ? this.cracks
