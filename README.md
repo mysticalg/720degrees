@@ -1,5 +1,13 @@
 # 720° — native JavaScript port in progress
 
+## Downhill takeoff continuity and X grind (build72)
+
+Downhill jumps and ledge drops keep the original grounded surface projection at takeoff. Previously the adapter removed the slope's vertical contribution from screen Y while retaining X, abruptly turning the projected travel vector sideways. The source coefficient tables and jump-course flight routine are unchanged; this is a native downhill continuity adjustment.
+
+Controller X now requests a coping grind; keyboard G supplies the same action. A remains kick and B jump. LB/RB and the right stick retain spin; keyboard C still spins and keyboard X still kicks. At the coping, a requested grind selects the nearest tangent and the recovered grind animation even at high entry speeds. The existing full-coping traversal and automatic descent remain active. Jump takes priority when B is also held.
+
+Browser checks cover six downhill forward/fakie takeoffs at three speeds with unchanged flight direction and clean landings, six explicit X-grind entries on both walls through automatic descent, six natural angled grinds, twelve existing city/course forward/fakie landings and six jump-course lower-shadow flights. All25 portable suites pass.
+
 ## Halfpipe containment and touchdown alignment (build71)
 
 The halfpipe barrier mesh now applies during airborne and bail movement, closing the outer roof-edge escape without treating support gaps as airborne walls. Ground, air and F8 use the same continuous diagonal boundary.

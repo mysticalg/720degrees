@@ -533,6 +533,15 @@
         Math.min(3, this.gear.board),
         rom.terrainTableReader(S.TERRAIN_TABLES),
       );
+      if (this.event.kind === "downhill")
+        Object.assign(
+          p,
+          this.downhillTakeoffMotion(
+            motion.savedSpeed,
+            motion.direction,
+            profile,
+          ),
+        );
       p.romSpeed = motion.mainSpeed;
       p.romMovementDirection = motion.direction;
       p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
@@ -748,12 +757,58 @@
       }
     }
 
+    /** Native downhill adapter: retain the visible slope travel direction
+     * at takeoff. Dropping its terrain-height component abruptly turns the
+     * projected vector sideways, despite unchanged original XY coefficients. */
+    downhillTakeoffMotion(speed, direction, profile) {
+      const rom = S.OriginalGround,
+        reader = rom.terrainTableReader(S.TERRAIN_TABLES);
+      const coefficient = rom.surfaceCoefficients(
+        direction,
+        profile,
+        1,
+        2,
+        speed,
+        Math.min(3, this.gear.board),
+        reader.readByte,
+        reader.readWord,
+      );
+      const x = Math.imul(speed, coefficient.x),
+        y = Math.imul(speed, coefficient.y);
+      return this.projectGroundMotion(
+        {
+          dx: x >> 16,
+          dy: y >> 16,
+          fractionX: (x >>> 8) & 255,
+          fractionY: (y >>> 8) & 255,
+        },
+        rom.surfaceVerticalMotion(speed, coefficient.vertical),
+        null,
+        null,
+      );
+    }
     launchHalfpipe(wall) {
       const p = this.player,
         rom = S.OriginalGround,
         reader = rom.terrainTableReader(S.TERRAIN_TABLES);
       const speed = Math.abs(p.romSpeed || 0);
-      const entryDirection = p.romDirection ?? wall.upDirection;
+      const jumping = this.input.held("jump") || p.halfpipeJumpQueued > 0;
+      let entryDirection = p.romDirection ?? wall.upDirection;
+      const requestedGrind = this.input.held("grind") && !jumping;
+      if (requestedGrind) {
+        // X requests the nearest coping tangent. The existing finite grind
+        // controller still owns the original pose, full rail and automatic exit.
+        const tangents = [
+          (wall.upDirection + 14) & 15,
+          (wall.upDirection + 2) & 15,
+        ];
+        entryDirection = tangents.reduce((best, d) =>
+          Math.abs(((d - entryDirection + 24) & 15) - 8) <
+          Math.abs(((best - entryDirection + 24) & 15) - 8)
+            ? d
+            : best,
+        );
+      }
       const coefficients = rom.surfaceCoefficients(
         entryDirection,
         wall.copingProfile,
@@ -769,7 +824,6 @@
         coefficients.vertical,
       ).velocity;
       let vertical = ground;
-      const jumping = this.input.held("jump") || p.halfpipeJumpQueued > 0;
       if (jumping) {
         const boost = {
           action: 0x4a,
@@ -780,9 +834,11 @@
         vertical = (boost.vertical << 16) >> 16;
       }
       if (vertical <= 0) return false;
+      // An explicit grind request selects the original low-band grind pose
+      // instead of a high-speed aerial trick. Physical entry speed is retained.
       const setup = S.OriginalRampAnimation.setupRampAnimation(
-        vertical,
-        ground,
+        requestedGrind ? Math.min(vertical, 287) : vertical,
+        requestedGrind ? Math.min(ground, 287) : ground,
         entryDirection,
         jumping ? 128 : 0,
         wall.copingProfile,
@@ -1171,6 +1227,15 @@
         p.jumpSequence.savedSpeed = motion.savedSpeed & 65535;
         p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
         p.vy = (-(motion.dy + motion.fractionY / 256) * 60) / 64;
+        if (this.event?.kind === "downhill")
+          Object.assign(
+            p,
+            this.downhillTakeoffMotion(
+              motion.savedSpeed,
+              motion.direction,
+              flightProfile,
+            ),
+          );
         p.jumpAnimation = p.jumpSequence;
       } else {
         const rate = S.OriginalRoutines.jumpAnimationRate(p.romSpeed || 0);

@@ -9,6 +9,7 @@
     kick: ["KeyX", "ShiftLeft", "ShiftRight"],
     jump: ["Space", "KeyZ"],
     spin: ["KeyC"],
+    grind: ["KeyG"],
     enter: ["KeyE", "Enter"],
     pause: ["KeyP", "Escape"],
     mute: ["KeyM"],
@@ -39,7 +40,7 @@
       window.addEventListener("keydown", (event) => {
         if (event.code === "F8") {
           event.preventDefault();
-          if(!event.repeat)this.queuedCollisionToggles++;
+          if (!event.repeat) this.queuedCollisionToggles++;
           return;
         }
         // Let sliders, buttons and text fields keep their normal keyboard use.
@@ -127,7 +128,7 @@
         this.actions.down ||= pressed(13);
         this.actions.jump ||= pressed(1);
         this.actions.kick ||= pressed(0);
-        this.actions.spin ||= pressed(2);
+        this.actions.grind ||= pressed(2);
         this.actions.enter ||= pressed(3);
         this.actions.pause ||= pressed(9);
         this.actions.map ||= pressed(8);
