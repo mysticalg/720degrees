@@ -1,11 +1,12 @@
 /** The music/voice files were rendered offline from the user's sound ROM.
  * The delivered game plays ordinary local MP3s: no sound CPU or chip emulator.
- * Unrecovered cues are silent rather than replaced with invented effects.
+ * Optional user-supplied skate recordings live in a separate enhancement layer.
  */
 (() => {
   class AudioSystem {
     constructor() {
       this.muted = false;
+      this.foley = new window.Skate720.SkateFoley(this);
       this.musicMuted = false;
       this.musicVolume = 0.38;
       try {
@@ -55,11 +56,13 @@
       if (!this.muted) track.play().catch(() => {});
     }
     pauseMusic() {
+      this.foley.stop();
       this.musicPaused = true;
       this.music.pause();
       this.clips.start.pause();
     }
     stop() {
+      this.foley.stop();
       this.pauseMusic();
       this.introActive = false;
       this.music.currentTime = 0;
@@ -77,6 +80,7 @@
     }
     toggle() {
       this.muted = !this.muted;
+      if (this.muted) this.foley.stop();
       this.music.muted = this.muted || this.musicMuted;
       for (const a of Object.values(this.clips)) a.muted = this.muted;
       this.clips.start.muted = this.muted || this.musicMuted;
@@ -100,15 +104,16 @@
       return this.musicMuted;
     }
     /** Verified original command captures play independently of music.
-     * Unrecovered effects remain silent; no synthetic or unrelated substitutes.
+     * Optional imported skate cues are routed separately from ROM captures.
      * Credit still supplies the provisional shared ticket/park-entry cue.
      */
     effect(name) {
+      const enhanced = this.foley.effect(name);
       if (
         !["coin", "purchase", "takedown", "springboard"].includes(name) ||
         this.muted
       )
-        return false;
+        return enhanced;
       this.clip(name);
       return true;
     }

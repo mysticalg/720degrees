@@ -3,3 +3,6 @@ __pycache__/
 node_modules/
 work/
 *.zip
+
+# Optional audio imported from the user's local Steam installation.
+local-skate-sfx/

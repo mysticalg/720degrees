@@ -6,6 +6,20 @@
     audio = new S.AudioSystem(),
     renderer = new S.Renderer(canvas),
     game = new S.Game(input, audio);
+  document.querySelector('#skate-status').textContent = Object.keys(audio.foley.urls).length ? 'LOCAL PACK READY' : 'SELECT LOCAL SOUND PACK';
+  const foleyInput = document.querySelector('#skate-pack');
+  document.querySelector('#skate-load').onclick = () => foleyInput.click();
+  foleyInput.onchange = () => {
+    const count = audio.foley.load(foleyInput.files);
+    document.querySelector('#skate-status').textContent = count ? `${count} CLIPS LOADED` : 'NO MATCHING CLIPS';
+  };
+  document.querySelector('#skate-mute').onclick = (event) => {
+    audio.foley.enabled = !audio.foley.enabled;
+    if (!audio.foley.enabled) audio.foley.stop();
+    event.target.textContent = audio.foley.enabled ? 'SKATE SFX ON' : 'SKATE SFX OFF';
+    event.target.setAttribute('aria-pressed', String(!audio.foley.enabled));
+  };
+  document.querySelector('#skate-volume').oninput = event => audio.foley.volume = Number(event.target.value)/100;
   game.boardFootprint = (player) =>
     renderer.boardFootprint(
       player,
@@ -253,6 +267,7 @@
         accumulator -= S.CONFIG.step;
       }
     }
+    audio.foley.update(game, delta);
     const padLabel = input.padName
       ? `${input.padName} · ${input.controlMode.toUpperCase()} MODE`
       : "CONTROLLER: press a button on your pad to connect.";

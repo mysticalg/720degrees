@@ -373,6 +373,71 @@
       this.tell(help[target.kind], 6);
       this.changed?.();
     }
+    /** Small backward-kick assist requested for fakie jumps. Scale only XY
+     * travel and its saved landing speed; vertical impulse/gravity stay intact.
+     * The5% headroom caps repeated boosts, without clamping naturally faster
+     * downhill or towed momentum back down to an artificial flat-ground limit.
+     */
+    boostFakieJump(profile) {
+      const p = this.player;
+      if (!p.fakie) return;
+      const tables = S.OriginalGround.tables,
+        speed = Math.abs(
+          p.halfpipeFlight?.speed ?? p.courseFlightSpeed ?? p.romSpeed ?? 0,
+        );
+      if (speed <= 0) return;
+      const ceiling =
+        Math.max(
+          tables.kickCeiling[Math.min(3, this.gear.shoes)] + 128,
+          tables.limit[(profile & 7) * 4 + Math.min(3, this.gear.board)],
+          this.event?.kind === "ramp"
+            ? tables.rampLimit[Math.min(3, this.gear.board)]
+            : 0,
+        ) * S.CONFIG.fakieTopSpeed;
+      const scale = Math.max(
+        1,
+        Math.min(S.CONFIG.fakieJumpBoost, ceiling / speed),
+      );
+      p.vx *= scale;
+      p.vy *= scale;
+      p.romSpeed = Math.round((p.romSpeed || 0) * scale);
+      if (p.courseFlightSpeed !== undefined)
+        p.courseFlightSpeed = Math.round(p.courseFlightSpeed * scale);
+      if (p.jumpSequence)
+        for (const key of ["savedSpeed", "mainSpeed"])
+          p.jumpSequence[key] = Math.round(p.jumpSequence[key] * scale) & 65535;
+      if (p.halfpipeFlight) p.halfpipeFlight.speed *= scale;
+      p.lastFakieJumpBoost = scale;
+    }
+    pointHeading(direction) {
+      const angle = Math.atan2(direction.y * 2, direction.x);
+      const dial =
+        ((Math.round((-angle / (Math.PI * 2)) * 144) % 144) + 144) % 144;
+      return S.OriginalGround.dialDirection(dial);
+    }
+    /** An exit kick plants the foot, ending the backward coast. Keep the
+     * body facing the same way and let the ordinary4F26 kick-start branch
+     * propel it forward; do not turn the sprite or reverse full-speed momentum.
+     */
+    exitFakieWithKick(direction) {
+      const p = this.player,
+        tables = S.OriginalGround.tables,
+        facing = p.romFacingDirection ?? ((p.romDirection ?? 4) + 8) & 15;
+      p.fakie = false;
+      p.romDirection = p.romMovementDirection = facing;
+      p.romFacingDirection = undefined;
+      p.angle = Math.atan2(-tables.y[facing], tables.x[facing]);
+      p.romDialAngle = Math.atan2(-tables.y[facing] * 2, tables.x[facing]);
+      p.romSpeed = 0;
+      p.vx = p.vy = 0;
+      p.romKickEnvelope = { target: 0, impulse: 0, previousMask: 128 };
+      p.fakieSteeringTarget = p.fakieTurnLatch = p.fakieAirInput = null;
+      p.exitFakieTarget = direction.active
+        ? this.pointHeading(direction)
+        : null;
+      p.copingReturn = null;
+      p.halfpipeReturning = false;
+    }
     /** Jump velocity sets height; horizontal momentum is retained in the air. */
     jump() {
       const p = this.player;
@@ -812,6 +877,7 @@
               fractionY: tangent ? motion.fractionY : 0,
             }
           : null;
+      if (jumping && !flight.trick) this.boostFakieJump(wall.copingProfile);
       return true;
     }
     tickHalfpipeAnimation() {
@@ -1078,6 +1144,7 @@
       }
       p.jumpLaunchVelocity = p.romVerticalVelocity;
       p.romGravity = 12; // A068 ordinary jump state; ramp variants remain TODO.
+      this.boostFakieJump(flightProfile);
       this.audio.effect("jump");
       if (this.event?.kind === "jump" && p.fromRamp) this.armCourseTarget();
     }
@@ -1181,16 +1248,7 @@
       const landingInput = this.input.direction();
       p.fakieSteeringTarget =
         p.fakie && landingInput.active
-          ? S.OriginalGround.dialDirection(
-              ((Math.round(
-                (-Math.atan2(landingInput.y * 2, landingInput.x) /
-                  (Math.PI * 2)) *
-                  144,
-              ) %
-                144) +
-                144) %
-                144,
-            )
+          ? (this.pointHeading(landingInput) + 8) & 15
           : null;
       p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
       p.spin = 0;
@@ -1695,6 +1753,7 @@
         kick = this.input.held("kick");
       const kickAnimationSpeed = p.romSpeed || 0; // Previous frame's0331 speed band.
       const kickPressed = kick && !p.kickWasHeld;
+      if (kickPressed && p.fakie && !p.air) this.exitFakieWithKick(direction);
       if (kickPressed && !p.halfpipeReturning && !p.fakie)
         p.romFacingDirection = undefined;
       p.kickWasHeld = kick;
@@ -1733,7 +1792,8 @@
               : Number(this.input.held("right")) -
                 Number(this.input.held("left"))) *
               3.8 *
-              dt;
+              dt *
+              (p.fakie ? -1 : 1);
           p.romDialCounter = dialFromAngle(p.romDialAngle);
           p.romDirection = S.OriginalGround.dialDirection(p.romDialCounter);
           p.angle = isoAngle(p.romDirection);
@@ -1741,12 +1801,18 @@
         if (direction.active && !rotating && !p.halfpipeReturning) {
           if (!p.fakie) p.romFacingDirection = undefined;
           const dial = dialFromAngle(Math.atan2(direction.y * 2, direction.x));
-          const target = S.OriginalGround.dialDirection(dial);
+          const rawTarget = S.OriginalGround.dialDirection(dial);
+          // Point input describes the facing axis; while fakie the board
+          // rolls along its opposite axis. This makes steering reverse around
+          // the held direction that established the backward stance.
+          const target = (rawTarget + (p.fakie ? 8 : 0)) & 15;
           let current = p.romDirection;
           if (current === undefined)
             current = S.OriginalGround.dialDirection(dialFromAngle(p.angle));
-          const latched = p.fakie && target === p.fakieSteeringTarget;
-          if (!latched) p.fakieSteeringTarget = null;
+          const latched =
+            (p.fakie && target === p.fakieSteeringTarget) ||
+            rawTarget === p.exitFakieTarget;
+          if (!latched) p.fakieSteeringTarget = p.exitFakieTarget = null;
           const turn = S.OriginalRoutines.steeringDifference(
             latched ? 0 : target - current,
           );
@@ -1755,6 +1821,7 @@
           p.romDialAngle = Math.atan2(direction.y, direction.x);
           p.angle = isoAngle(p.romDirection);
         }
+        if (!direction.active) p.exitFakieTarget = null;
         if (p.fakie && !p.halfpipeReturning) {
           if (!direction.active) p.fakieSteeringTarget = null;
           if (!stick.active || Math.abs(stick.x) < 0.1) p.fakieTurnLatch = null;
@@ -1853,6 +1920,7 @@
             surface.profile,
             coefficients.slopeDelta,
             kind,
+            p.fakie ? S.CONFIG.fakieTopSpeed : 1,
           );
           // Fakie reverses the body pose, not the rolling vector. Selecting
           // coefficients from its facing angle reverses travel one frame
@@ -2033,9 +2101,9 @@
           else this.land();
         }
       }
-      const maxSpeed = kick
-        ? 220 + this.gear.board * 24
-        : 180 + this.gear.board * 20;
+      const maxSpeed =
+        (kick ? 220 + this.gear.board * 24 : 180 + this.gear.board * 20) *
+        (p.fakie ? S.CONFIG.fakieTopSpeed : 1);
       const speed = Math.hypot(p.vx, p.vy);
       if (!p.romGroundActive && !p.jumpSequence && speed > maxSpeed) {
         p.vx *= maxSpeed / speed;

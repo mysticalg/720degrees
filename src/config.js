@@ -8,6 +8,9 @@ window.Skate720 = {};
     step: 1 / 60,
     // Original fixed-point travel scale; arbitrary pace boost disabled for exact-physics work.
     skatingPace: 1,
+    // User-requested native fakie assists, separate from original ROM tables.
+    fakieJumpBoost: 1.03,
+    fakieTopSpeed: 1.05,
     cityTime: 45,
     beeGrace: 18,
     rounds: 4,

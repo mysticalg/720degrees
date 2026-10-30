@@ -211,6 +211,7 @@
   }
   /** 4EAC-5026 grounded speed for native actions0/3. Other original
    * actions (reverse kick, slide and collision) have separate entry branches.
+   * Optional native limitScale defaults to1, retaining original arithmetic.
    */
   function terrainSpeed(
     speed,
@@ -221,6 +222,7 @@
     profile,
     slope,
     kind,
+    limitScale = 1,
   ) {
     equipment &= 3;
     const terrain = profile & 7;
@@ -230,7 +232,8 @@
     if (speed !== 0) {
       let friction;
       if (
-        Math.abs(speed) > tables.limit[terrain * 4 + equipment] &&
+        Math.abs(speed) >
+          Math.round(tables.limit[terrain * 4 + equipment] * limitScale) &&
         s16(speed ^ s16(slope)) >= 0
       ) {
         let reduction = 0;
