@@ -35,6 +35,15 @@
         );
       }
       this.cells = this.originalMap.tiles;
+      this.finishTrigger =
+        this.kind !== "city" && this.kind !== "ramp"
+          ? S.FinishTrigger.create(
+              this.cells,
+              info.columns,
+              flags,
+              S.BoardGeometry.hull,
+            )
+          : null;
       if (
         this.originalMap.columns !== info.columns ||
         this.originalMap.rows !== info.rows

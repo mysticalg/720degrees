@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),F=require('../src/finish-trigger.js'),B=require('../src/board-geometry.js');
+const flags=new Uint8Array(8192);flags[3]=10;
+const p=F.create(Uint16Array.from([3,0]),2,flags,B.hull);
+assert(F.crosses(p,{x:0,y:0},{x:0,y:0}));
+assert(F.crosses(p,{x:-100,y:4},{x:100,y:4}));
+assert(F.crosses(p,{x:-48,y:-32},{x:-48,y:-32}));
+assert(!F.crosses(p,{x:-100,y:41},{x:100,y:41}));
+assert(!F.crosses(p,{x:57,y:-100},{x:57,y:100}));
+assert.equal(F.create(Uint16Array.from([0,0]),2,flags,B.hull),null);
+assert(!F.crosses(null,{x:0,y:0},{x:0,y:0}));
+console.log('PASS expanded finish boundary, inclusive edge, swept fast crossing, nearby misses and no-finish layouts');

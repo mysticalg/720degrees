@@ -139,7 +139,7 @@
         c.fillStyle = "#08111be6";
         c.fillRect(0, 370, 512, 14);
         this.text(
-          "F8: RED EDGE / AMBER WALL / PURPLE SLOPE / GREEN CURB / CYAN MASK",
+          "F8: RED EDGE / AMBER WALL / PURPLE SLOPE / GREEN CURB / CYAN MASK / WHITE FINISH",
           8,
           373,
           "#e8f7ff",
@@ -171,6 +171,9 @@
         c.fillStyle = color;
         c.fill("evenodd");
       };
+      if (level.finishTrigger) {
+        this.polygon(level.finishTrigger.map(p => [p.x,p.y]), "#ffffff24", "#ffffffcc");
+      }
       area(S.TerrainCollision.debugMesh(level), "#ff38533b");
       const walls = S.TerrainCollision.debugMesh(level, true);
       area(walls, "#ffb72e55");

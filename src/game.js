@@ -1351,7 +1351,7 @@
       if (e.kind === "jump") performance = e.jumpsLanded / 3;
       if (e.kind === "downhill")
         performance =
-          (this.player.y >= e.level.finish.y - 30 ? 1 : 0) *
+          (e.crossedFinish || this.player.y >= e.level.finish.y - 30 ? 1 : 0) *
           Math.max(
             0.25,
             1 - e.elapsed / (e.level.height / 30) - e.crashes * 0.05,
@@ -2509,7 +2509,23 @@
               this.tell("JUMP AT THE LIP \u00b7 LAND ON THE NEXT PLATFORM", 2);
           }
         }
-        if (e.level.contactSample(p.x, p.y).type === 10 && !p.air) {
+        const finishPoint = {
+          x: p.x,
+          y: p.air && Number.isFinite(p.courseShadowY) ? p.courseShadowY : p.y,
+        };
+        if (
+          S.FinishTrigger.crosses(
+            e.level.finishTrigger,
+            e.finishProbe || finishPoint,
+            finishPoint,
+          )
+        )
+          e.crossedFinish = true;
+        e.finishProbe = finishPoint;
+        // Jump-park scoring resolves at touchdown. Remember an airborne
+        // crossing so the finish cannot be skipped, but let land() score the
+        // final target before displaying the result.
+        if (e.crossedFinish && (e.kind !== "jump" || !p.air)) {
           this.finishEvent();
           return;
         }
