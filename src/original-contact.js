@@ -201,6 +201,25 @@
   function pedestrianKnockdown(relativeHeight, sprite, attachedSprite = 0) {
     return sprite !== attachedSprite && signed(word(relativeHeight)) < 0x0380;
   }
+  /** A70C-A732 / FD10: response8 awards cash, then CF5E removes the
+   * contacted rider. No player bail or invented score award is involved.
+   */
+  function riderCash(kind) {
+    return kind >= 56 && kind <= 65
+      ? [1, 1, 10, 20, 5, 5, 10, 20, 10, 10][kind - 56]
+      : 0;
+  }
+  /** D1B8-D1C4 and A64C-A67E: diminishing jump-over pedestrian reward.
+   * FCFA supplies the score words. Repeat kinds reduce the NEXT award.
+   */
+  function airbornePedestrianReward(state, kind) {
+    const index = state.index & 255;
+    if (!index) return { points: 0, index: -1 };
+    const points = [50, 100, 200, 300, 400, 500][index];
+    if (state.kind === (kind & 255)) state.index = (index - 1) & 255;
+    state.kind = kind & 255;
+    return { points, index };
+  }
   /** 4F24-4F3A followed by D498-D4BE: stop the struck actor and select
    * its original6046 hit directory. Preserve unrelated flag bits.
    */
@@ -376,6 +395,8 @@
     maskContact,
     responseCode,
     pedestrianKnockdown,
+    riderCash,
+    airbornePedestrianReward,
     knockDownActor,
     saveActorMotion,
     tickActorRecovery,

@@ -85,3 +85,19 @@ assert.equal(pipe.wallAt(level, 71, 0).stage, "vert");
 console.log(
   "PASS two-stage halfpipe: curved approach, upper vert, continuous join and exact floor/coping endpoints",
 );
+
+assert.equal(pipe.widthProgress(0), 0);
+assert.equal(pipe.widthProgress(pipe.VERT_START), 1);
+assert.equal(pipe.widthProgress(1), 1);
+assert(
+  Math.abs((pipe.widthProgress(join) - pipe.widthProgress(join - eps)) / eps) <
+    1e-4,
+);
+assert.equal(
+  pipe.travelScale({ name: "ramp-1" }, { rawProfile: 17 }),
+  48 / 176,
+);
+assert.equal(pipe.travelScale({ name: "ramp-1" }, { rawProfile: 1 }), 1);
+console.log(
+  "PASS south curved approach reaches an actual vertical tangent and shared north/south travel scale",
+);

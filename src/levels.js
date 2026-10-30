@@ -80,6 +80,15 @@
     }
     /** Improved diagonal support geometry, separate from untouched ROM samples. */
     contactSample(x, y) {
+      const wall = this.halfpipeWallAt?.(x, y);
+      if (wall)
+        return {
+          ...this.sample(x, y),
+          profile: wall.profile,
+          type: 0,
+          blocked: false,
+          contactGeometry: "halfpipe-curve",
+        };
       const sample = S.TerrainCollision.surface(this, x, y);
       const profile = this.surfaceProfile(sample);
       return !this.usesRaisedProfile(sample)

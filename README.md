@@ -1,5 +1,16 @@
 # 720° — native JavaScript port in progress
 
+Recent native contact corrections:
+
+- Both halfpipe walls use the same original inclination progression and physical travel scale. The foreground wall's 48 px map span is normalized to the opposite 176 px span. At 900/1400/1920 entry speed, matching climbs take 32/18/13 ticks and descents 19/14/12 ticks on either side.
+- The southern curve uses one shared projection for wheels, shadow, camera and F8 geometry, including its full 424..640 coping length and the visible lower corner at (704,772). This artwork adapter is native geometry; it is not a completed translation of the original terrain-height controller.
+- Ordinary and late lip flights use the original 9FE8 XY conversion. Jump shadows acquire a lower surface, then follow its original terrain-height reference instead of repeatedly snapping to an edge. Downhill landing surfaces can recede under the board; supported long drops remain in flight until actual contact. Full 9C5E layer composition is still pending.
+- Park entrances are larger isometric columns that catch airborne crossings. Return positions are checked for clear pavement and a swept connection to the entrance.
+- Rider response 8 now applies the original FD10 cash table and retires contacted NPCs. Elevated pedestrian response 6 applies A64C's reward/recovery branch without bailing the player. Original height limits still allow high jumps to clear NPCs.
+- A 180-degree landing keeps momentum and selects backward-facing original poses. Point/rotate input held through touchdown does not immediately reverse the rolling direction.
+- The first additional effect is the original credit-insertion cue in assets/coin.mp3. Existing coin/purchase/ticket/park-entry events share it; exact distinct event sound commands and other missing effects remain unrecovered. Music controls remain separate from effects. Asset provenance is recorded in assets/sound-sources.json. The playable game contains no emulator.
+
+
 A playable browser version built from translations of the original gameplay routines and graphics/audio recovered from the supplied ROM. The browser runs JavaScript, with no emulator or ROM instruction interpreter.
 
 This replaces the obsolete procedural remake formerly at this repository root. That version remains in Git history.
@@ -104,7 +115,7 @@ Upgrade purchasing now uses recovered price/availability routines and tables. Th
 
 ## Original pedestrian contact/recovery (build 52)
 
-Low-height response6 now uses A60C impact-side/direction and player bail, followed by bank1E000:4ECC-4F40 motion save/stop, D498 hit animation selection and BF18 route reservation release. CB26-CB4A and4F42-4F96 restore the six saved motion fields at180 ticks. The original single global snapshot and sprite6/companion5 special branch are retained. Countdown is intentionally not saved. Original hit frames render through the existing ROM sprite directory.
+Low-height response 6 now uses A60C impact-side/direction and player bail, followed by bank1E000:4ECC-4F40 motion save/stop, D498 hit animation selection and BF18 route reservation release. CB26-CB4A and4F42-4F96 restore the six saved motion fields at180 ticks. The original single global snapshot and sprite6/companion5 special branch are retained. Countdown is intentionally not saved. Original hit frames render through the existing ROM sprite directory.
 
 A controlled kind50 pedestrian integration fixture verifies original scanline-mask contact, transparent clearance, player impact, stopped actor animation and restoration of nonzero motion at tick180. This fixture does not prove natural population spawning: full dynamic NPC activation, the A64C airborne reward branch and hit sound decoding still need translation/integration.
 

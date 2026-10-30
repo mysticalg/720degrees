@@ -18,14 +18,53 @@
   // The endpoints stay pinned to the decoded floor and original white coping.
   function heightProgress(progress) {
     const p = Math.max(0, Math.min(1, progress)),
-      initial = 0.6;
-    const curvature = (1 - initial) / (2 * VERT_START - VERT_START ** 2);
-    const join = initial * VERT_START + curvature * VERT_START ** 2;
-    return p < VERT_START
-      ? initial * p + curvature * p * p
-      : join + (initial + 2 * curvature * VERT_START) * (p - VERT_START);
+      t = VERT_START,
+      lower = t / (2 - t);
+    return p < t
+      ? lower * (p / t) ** 2
+      : lower + ((1 - lower) * (p - t)) / (1 - t);
+  }
+  function widthProgress(progress) {
+    const p = Math.max(0, Math.min(1, progress)) / VERT_START;
+    return p < 1 ? 2 * p - p * p : 1;
+  }
+  /** The foreground wall needs both axes: a curved approach ends tangent
+   * to an actual vertical section. Its feet, shadow, camera and F8 mesh all
+   * use this one projection, with the original white coping held fixed.
+   */
+  function southOffsets(wall, progress, height) {
+    const p = Math.max(0, Math.min(1, progress)),
+      dx = wall.lip.x - wall.floor.x,
+      dy = wall.lip.y - wall.floor.y;
+    return {
+      // Original foreground art's lower edge is16px right/28px below the
+      // coarse metadata edge (e.g. right corner688,744 ->704,772).
+      x: 16 + (dx - 16) * widthProgress(p) - dx * p,
+      y: 28 + (dy - height - 28) * heightProgress(p) - dy * p,
+    };
   }
   function wallAt(level, x, y) {
+    if (level.name === "ramp-1") {
+      const q = y - x * 0.5,
+        lipX = x + q - 448;
+      // The original front railing overwrites the last riding tiles. Admit
+      // the complete finite art-derived surface, including its right corner.
+      if (q >= 400 && q <= 448 && lipX >= 424 && lipX <= 640) {
+        const progress = (q - 400) / 48;
+        return {
+          rawProfile: 17,
+          profile: 16 + inclination(progress),
+          progress,
+          stage: progress < VERT_START ? "curve" : "vert",
+          upDirection: 10,
+          returnDirection: 2,
+          copingProfile: 23,
+          distance: 448 - q,
+          floor: { x: x + q - 400, y: y - (q - 400) * 0.5 },
+          lip: { x: lipX, y: y + (448 - q) * 0.5 },
+        };
+      }
+    }
     const raw = level.sample(x, y).profile;
     // Southern foreground rail tiles can occlude short pieces of the curve.
     // Only bridge a bounded rail run between curve/floor samples. A rail at
@@ -92,6 +131,11 @@
         rate = dy - dx * 0.5,
         toFloor = (floorQ - q) / rate,
         toLip = (lipQ - q) / rate;
+      if (
+        profile === 17 &&
+        (q < 400 || q > 448 || x + dx * toLip < 424 || x + dx * toLip > 640)
+      )
+        return null;
       progress = Math.max(0, Math.min(1, (q - floorQ) / (lipQ - floorQ)));
       floorPoint = { x: x + dx * toFloor, y: y + dy * toFloor };
       lipPoint = { x: x + dx * toLip, y: y + dy * toLip };
@@ -127,13 +171,17 @@
           previous = null;
           continue;
         }
-        const point = { x, y: y - riseForWall(level, wall, VERT_START) };
+        const point = projectSlopePoint(level, { x, y });
         if (previous) segments.push({ a: previous, b: point });
         previous = point;
       }
     }
     transitionCache.set(level, segments);
     return segments;
+  }
+  function travelScale(level, wall) {
+    if (level?.name !== "ramp-1" || wall?.rawProfile !== 17) return 1;
+    return 48 / 176;
   }
   function heading(angle, tables) {
     let best = Infinity,
@@ -158,18 +206,60 @@
   function riseForWall(level, wall, progress = wall?.progress) {
     if (level?.name !== "ramp-1" || wall?.rawProfile !== 17) return 0;
     const height = Math.max(0, wall.lip.y - wall.lip.x * 0.5 - 382);
-    return height * heightProgress(progress);
+    return -southOffsets(wall, progress, height).y;
+  }
+  function flatSouthOffset(level, point) {
+    if (
+      level?.name !== "ramp-1" ||
+      level.sample(point.x, point.y).profile !== 24
+    )
+      return { x: 0, y: 0 };
+    const smooth = (v) => {
+      v = Math.max(0, Math.min(1, v));
+      return v * v * (3 - 2 * v);
+    };
+    const q = point.y - point.x * 0.5,
+      lipX = point.x + q - 448;
+    const weight =
+      smooth((q - 320) / 80) *
+      smooth((lipX - 408) / 16) *
+      smooth((656 - lipX) / 16);
+    return { x: 16 * weight, y: 28 * weight };
+  }
+  function returnProjection(level, path) {
+    const floor = flatSouthOffset(level, path.floor),
+      p = 1 - path.t,
+      fx = path.floor.x + floor.x,
+      fy = path.floor.y + floor.y;
+    return {
+      x: fx + (path.from.x - fx) * widthProgress(p),
+      y: fy + (path.from.y - path.rise - fy) * heightProgress(p),
+    };
   }
   function groundRise(level, player) {
     if (level?.name !== "ramp-1") return 0;
     if (player.copingReturn)
-      return (
-        player.copingReturn.rise * heightProgress(1 - player.copingReturn.t)
-      );
+      return player.copingReturn.rawProfile === 17
+        ? player.y - returnProjection(level, player.copingReturn).y
+        : 0;
     const flight = player.halfpipeFlight;
-    return flight
-      ? (flight.projectedRise ?? riseForWall(level, flight.wall, 1))
-      : riseForWall(level, wallAt(level, player.x, player.y));
+    if (flight)
+      return flight.projectedRise ?? riseForWall(level, flight.wall, 1);
+    const wall = wallAt(level, player.x, player.y);
+    return wall?.rawProfile === 17
+      ? riseForWall(level, wall)
+      : -flatSouthOffset(level, player).y;
+  }
+  function groundShift(level, player) {
+    if (level?.name !== "ramp-1" || player.halfpipeFlight) return 0;
+    if (player.copingReturn)
+      return player.copingReturn.rawProfile === 17
+        ? returnProjection(level, player.copingReturn).x - player.x
+        : 0;
+    const wall = wallAt(level, player.x, player.y);
+    return wall?.rawProfile === 17
+      ? southOffsets(wall, wall.progress, 0).x
+      : flatSouthOffset(level, player).x;
   }
   function projectSlopePoint(level, point) {
     if (level?.name !== "ramp-1") return point;
@@ -199,12 +289,31 @@
           break;
         }
       }
-    if (wall?.rawProfile !== 17) return point;
+    if (wall?.rawProfile !== 17) {
+      const offset = flatSouthOffset(level, point);
+      return { ...point, x: point.x + offset.x, y: point.y + offset.y };
+    }
+    // Clip raster contour vertices to the actual finite curve, not stray
+    // foreground alias tiles beyond the right/left ramp end.
+    const sourceQ = point.y - point.x * 0.5,
+      clippedQ = Math.max(400, Math.min(448, sourceQ)),
+      lipX = point.x + sourceQ - 448,
+      along = Math.max(424, Math.min(640, lipX)) - lipX,
+      across = clippedQ - sourceQ;
+    point = {
+      ...point,
+      x: point.x + along - across,
+      y: point.y + along * 0.5 + across * 0.5,
+    };
     const q = point.y - point.x * 0.5,
       floorQ = wall.floor.y - wall.floor.x * 0.5,
       lipQ = wall.lip.y - wall.lip.x * 0.5;
     const progress = (q - floorQ) / (lipQ - floorQ);
-    return { ...point, y: point.y - riseForWall(level, wall, progress) };
+    return {
+      ...point,
+      x: point.x + southOffsets(wall, progress, 0).x,
+      y: point.y - riseForWall(level, wall, progress),
+    };
   }
   /** Recover the whole available lip from the decoded wall, including its
    * staircase corners. Tangential travel is bounded by the real ramp ends.
@@ -270,7 +379,9 @@
           ].every(([a, b]) => {
             const s = level.sample(x + a, y + b);
             return (
-              s.profile === 24 && !level.contactSample(x + a, y + b).blocked
+              s.profile === 24 &&
+              !level.halfpipeWallAt?.(x + a, y + b) &&
+              !level.contactSample(x + a, y + b).blocked
             );
           })
         ) {
@@ -285,7 +396,10 @@
       control: { x: point.x, y: floor.y },
       rise,
       t: 0,
-      length: Math.max(1, Math.hypot(floor.x - point.x, floor.y - point.y)),
+      length:
+        level.name === "ramp-1"
+          ? 176 * Math.sqrt(1.25)
+          : Math.max(1, Math.hypot(floor.x - point.x, floor.y - point.y)),
       rawProfile: wall.rawProfile,
     };
   }
@@ -308,7 +422,10 @@
     VERT_START,
     transitionSegments,
     heading,
+    travelScale,
     groundRise,
+    groundShift,
+    widthProgress,
     riseForWall,
     projectSlopePoint,
     copingAt,

@@ -10,11 +10,7 @@
   const barrier = (level, sample, x, y) =>
     (sample.profile & 7) === 7 &&
     (!!(sample.profile & 64) || level.kind === "ramp") &&
-    !(
-      sample.profile === 15 &&
-      Number.isFinite(x) &&
-      level.halfpipeWallAt?.(x, y)
-    );
+    !(Number.isFinite(x) && level.halfpipeWallAt?.(x, y));
   const solid = (level, sample) => sample.blocked || barrier(level, sample);
   // Low-three-bit incline2 is the city's shallow curb, in all eight
   // orientations. It remains rideable: this is a surface boundary, not a wall.
@@ -26,6 +22,7 @@
     // City curbs have their own continuous region; avoid duplicate pebble
     // contours from the generic incline diagnostic.
     if (curb(level, sample)) return false;
+    if (level?.halfpipeWallAt?.(x, y)) return true;
     const profile = level?.surfaceProfile?.(sample) ?? sample.profile;
     return (
       !sample.blocked &&
@@ -174,6 +171,7 @@
     const maskReader = (x, y) => {
       if (slopesOnly) return slope(level.sample(x, y), level, x, y) ? 1 : 0;
       if (curbsOnly) return curb(level, level.sample(x, y)) ? 1 : 0;
+      if (level.halfpipeWallAt?.(x, y)) return 0;
       const col = Math.floor(x / TILE) + 2,
         row = Math.floor(y / TILE) + 2;
       const fence =
@@ -505,12 +503,12 @@
     const result = [],
       seen = new Set();
     const profile = (x, y) => {
-      const sample = level.sample(x, y);
+      const sample = level.sample(x, y),
+        wall = level.halfpipeWallAt?.(x, y);
+      if (sample.profile === 17 && level.halfpipeWallAt && !wall) return -1;
       return sample.blocked
         ? -1
-        : (level.halfpipeWallAt?.(x, y)?.profile ??
-            level.surfaceProfile?.(sample) ??
-            sample.profile);
+        : (wall?.profile ?? level.surfaceProfile?.(sample) ?? sample.profile);
     };
     for (let row = 0; row < level.rows - 1; row++)
       for (let col = 0; col < level.columns - 1; col++) {

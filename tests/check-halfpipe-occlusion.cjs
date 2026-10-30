@@ -62,7 +62,7 @@ const point = { x: 550, y: 723 - 0.001 },
 assert(projectedWall && projectedWall.rawProfile === 17);
 const top = pipe.projectSlopePoint(artwork, point);
 assert(Math.abs(top.y - top.x * 0.5 - 382) < 0.02);
-assert.equal(pipe.riseForWall(artwork, projectedWall, 0), 0);
+assert.equal(pipe.riseForWall(artwork, projectedWall, 0), -28);
 const frozen = pipe.groundRise(artwork, {
   x: 0,
   y: 0,
@@ -75,4 +75,15 @@ assert.equal(
 );
 console.log(
   "PASS original-art south coping projection, frozen aerial plane and unchanged north wall",
+);
+
+const lower = pipe.projectSlopePoint(artwork, { x: 688, y: 744 });
+assert(
+  Math.abs(lower.x - 704) < 1e-6 && Math.abs(lower.y - 772) < 1e-6,
+  "front lower collision boundary follows the original visible curve corner",
+);
+const coping = pipe.projectSlopePoint(artwork, { x: 640, y: 768 });
+assert(Math.abs(coping.x - 640) < 1e-6 && Math.abs(coping.y - 702) < 1e-6);
+console.log(
+  "PASS art-calibrated lower curve and white coping endpoints share the same projection",
 );

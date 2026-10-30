@@ -63,6 +63,24 @@
           Number(localStorage.getItem("720-native-highscore")) || 0;
       } catch {}
     }
+    /** Keep the board and its lower-surface shadow in the same view. The
+     * midpoint also stays continuous when a long fall rebases on landing.
+     */
+    cameraTargetY(player) {
+      let y = player.y - 35 - S.Halfpipe.groundRise(this.event?.level, player);
+      if (
+        player.air &&
+        this.event?.kind === "jump" &&
+        player.courseShadowPlaneDrop !== undefined
+      )
+        y += (player.courseShadowPlaneDrop - player.z) * 0.5;
+      else if (
+        player.halfpipeFlight ||
+        (player.air && ["jump", "downhill"].includes(this.event?.kind))
+      )
+        y -= player.z * 0.6;
+      return y;
+    }
     resetPlayer(x, y) {
       this.player = {
         x,
@@ -215,6 +233,7 @@
       this.changed?.();
     }
     resetCityClock() {
+      this.pedestrianReward = { kind: 255, index: 5 };
       this.cityTimer = S.CONFIG.cityTime;
       this.bees = null;
       this.warned = false;
@@ -487,8 +506,28 @@
      */
     dropFromLedge() {
       const p = this.player;
+
       p.dropFall = { frames: 0 };
-      p.romMovementDirection = p.romDirection;
+      const rom = S.OriginalGround,
+        profile =
+          p.romSurfaceProfile ??
+          this.event.level.contactSample(p.x, p.y).profile,
+        motion = rom.airborneTransition(
+          p.romSpeed || 0,
+          p.romDirection ?? 4,
+          profile,
+          { downhill: 2, jump: 4 }[this.event.kind],
+          this.gear.board,
+          rom.terrainTableReader(S.TERRAIN_TABLES),
+        );
+      p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
+      p.vy = (-(motion.dy + motion.fractionY / 256) * 60) / 64;
+      p.romSpeed = motion.mainSpeed;
+      p.romMovementDirection = motion.direction;
+      p.courseLaunchProfile = profile;
+      p.courseFlightSpeed = motion.savedSpeed;
+      delete p.courseShadowPlaneDrop;
+      delete p.courseShadowPlaneProfile;
       p.air = true;
       p.edgeContact = false;
       p.spin = 0;
@@ -504,6 +543,10 @@
       p.kickAnimation = null;
       p.launchSource =
         "ROM9F98 falling pose and50E0 gravity; native ledge contact";
+      if (this.event.kind === "jump") {
+        p.fromRamp = true;
+        this.armCourseTarget();
+      }
     }
     updateDropContact() {
       const p = this.player,
@@ -525,7 +568,10 @@
         p.y = this.event.kind === "jump" ? (p.courseShadowY ?? feetY) : feetY;
         p.dropFall = null;
         this.land();
-      } else if (feetY > level.height - 20 || p.z < -320) {
+      } else if (
+        feetY > level.height - 20 ||
+        p.z < (p.courseShadowPlaneDrop !== undefined ? -768 : -320)
+      ) {
         // A missed flight used to teleport to lastSafe on the launch ramp.
         // Recover beside the actual projected impact, so the camera does not
         // yank the skater back up the course. This is a native contact adapter;
@@ -572,34 +618,69 @@
         p.vx = p.vy = p.romSpeed = 0;
       }
     }
-    /** Project onto the first rideable lower surface in the decoded artwork.
-     * This is a native map adapter, not a replacement launch impulse. The
-     * body keeps its original absolute trajectory while the shadow can drop
-     * below the takeoff plane. Vertical scenery faces cannot catch it.
+    /** Infer the lower surface once, then advance its height with the
+     * original9FE8 terrain reference. A downhill landing platform must drop
+     * under the flying board; repeatedly clamping to its leading edge sends
+     * the shadow sideways. Full9C5E layer composition is still pending.
      */
-    updateCourseShadow() {
+    updateCourseShadow(dt = 1 / 60) {
       const p = this.player,
         level = this.event.level;
       p.courseShadowY = null;
       p.courseShadowProfile = undefined;
-      for (let drop = 0; drop <= 320; drop += 2) {
-        const y = p.y + drop,
-          surface = level.contactSample(p.x, y);
-        if (
-          !surface.blocked &&
-          (surface.profile & 7) < 3 &&
-          [0, 9, 10, 15, 16].includes(surface.type)
-        ) {
+      const support = (y) => {
+        const surface = level.contactSample(p.x, y),
+          incline = surface.profile & 7;
+        // The launch curve/painted lip is not the lower landing platform.
+        const launchFace =
+          incline > 0 &&
+          incline < 7 &&
+          (surface.profile & 56) === (p.courseLaunchProfile & 56);
+        return !surface.blocked &&
+          incline < 3 &&
+          !launchFace &&
+          [0, 9, 10, 15].includes(surface.type)
+          ? surface
+          : null;
+      };
+      if (p.courseShadowPlaneDrop !== undefined) {
+        const rom = S.OriginalGround,
+          reader = (this.courseShadowReader ||= rom.terrainTableReader(
+            S.TERRAIN_TABLES,
+          )),
+          reference = rom.airborneTransition(
+            p.courseFlightSpeed ?? p.romSpeed ?? 0,
+            p.romMovementDirection ?? p.romDirection ?? 4,
+            p.courseShadowPlaneProfile ?? 24,
+            4,
+            this.gear.board,
+            reader,
+          ).groundVertical;
+        p.courseShadowPlaneDrop -=
+          (((reference.velocity + reference.fraction / 256) * 60) / 64) * dt;
+        const y = p.y + p.courseShadowPlaneDrop,
+          surface = support(y);
+        if (surface) {
           p.courseShadowY = y;
           p.courseShadowProfile = surface.profile;
-          break;
+          p.courseShadowPlaneProfile = surface.profile;
         }
+        return;
+      }
+      for (let drop = 0; drop <= 320; drop += 2) {
+        const y = p.y + drop,
+          surface = support(y);
+        if (!surface) continue;
+        if (drop >= 8) {
+          p.courseShadowPlaneDrop = drop;
+          p.courseShadowPlaneProfile = surface.profile;
+        }
+        p.courseShadowY = y;
+        p.courseShadowProfile = surface.profile;
+        return;
       }
     }
-    /** Coping entry: use the original vertical-face coefficient and4A
-     * shoe boost, followed by5264's original animation selection. The map
-     * scan supplies a local coping plane until full terrain probing is ported.
-     */
+
     launchHalfpipe(wall) {
       const p = this.player,
         rom = S.OriginalGround,
@@ -907,6 +988,29 @@
         p.x + Math.cos(p.angle) * 24,
         p.y + Math.sin(p.angle) * 24,
       );
+      const lateCourseLip =
+        this.event?.kind === "jump" &&
+        p.romGroundActive &&
+        !p.jumpSequence &&
+        (surface.blocked ||
+          (surface.profile & 7) === 7 ||
+          surface.type === 16) &&
+        (p.romSurfaceProfile & 7) >= 1 &&
+        (p.romSurfaceProfile & 7) <= 6 &&
+        (p.romGroundVertical?.velocity || 0) > 0;
+      const flightProfile = lateCourseLip
+        ? p.romSurfaceProfile
+        : surface.profile;
+      if (lateCourseLip)
+        p.jumpSequence = S.OriginalRoutines.beginSurfaceJumpAnimation(
+          p.romSpeed || 0,
+          p.romGroundVertical.velocity,
+          Math.min(3, this.gear.shoes),
+        );
+      p.courseLaunchProfile = flightProfile;
+      p.courseFlightSpeed = Math.abs(p.romSpeed || 0);
+      delete p.courseShadowPlaneDrop;
+      delete p.courseShadowPlaneProfile;
       p.fromRamp =
         !!p.jumpSequence?.risingSurface ||
         (!p.jumpSequence &&
@@ -928,12 +1032,13 @@
         const motion = rom.airborneTransition(
           speed,
           p.romDirection ?? 4,
-          surface.profile,
+          flightProfile,
           { slalom: 1, downhill: 2, ramp: 3, jump: 4 }[this.event?.kind] || 0,
           Math.min(3, this.gear.board),
           rom.terrainTableReader(S.TERRAIN_TABLES),
         );
         p.romSpeed = motion.mainSpeed;
+        p.courseFlightSpeed = motion.savedSpeed;
         p.romMovementDirection = motion.direction;
         p.airborneTerrainReference = motion.groundVertical;
         p.jumpGroundVertical = { velocity: 0, fraction: 0 };
@@ -944,26 +1049,6 @@
       } else {
         const rate = S.OriginalRoutines.jumpAnimationRate(p.romSpeed || 0);
         p.jumpAnimation = { rate, countdown: rate, phase: 0 };
-      }
-      // Native artwork adapter: the descending approach is already projected
-      // into this map. Preserve that travel line through the curved launch
-      // face instead of applying its terrain-axis skew a second time in air.
-      // No target attraction or airborne steering is applied.
-      const approach = p.courseApproach;
-      if (
-        this.event?.kind === "jump" &&
-        approach &&
-        Math.hypot(p.x - approach.x, p.y - approach.y) < 256 &&
-        approach.direction === (p.romDirection & 15) &&
-        (((surface.profile & 7) >= 1 &&
-          (surface.profile & 7) <= 6 &&
-          (p.romGroundVertical?.velocity || 0) > 0) ||
-          surface.type === 16)
-      ) {
-        const speed = Math.hypot(p.vx, p.vy);
-        p.vx = approach.vx * speed;
-        p.vy = approach.vy * speed;
-        p.courseFlightHeading = { x: approach.vx, y: approach.vy };
       }
       p.air = true;
       p.edgeContact = false;
@@ -992,22 +1077,26 @@
       p.jumpLaunchVelocity = p.romVerticalVelocity;
       p.romGravity = 12; // A068 ordinary jump state; ramp variants remain TODO.
       this.audio.effect("jump");
-      if (this.event?.kind === "jump" && p.fromRamp) {
-        const launch = this.event.ramps.find(
-          // Decoded marker centres sit beyond the start of the curved face.
-          // Admit the whole approach so a rising-surface jump still arms it.
-          (r) => Math.abs(r.y - p.y) < 192 && Math.abs(r.x - p.x) < 256,
-        );
-        if (launch)
-          p.jumpTarget = this.event.targets.findIndex(
-            (target) => target.y > launch.y + 35,
-          );
-      }
+      if (this.event?.kind === "jump" && p.fromRamp) this.armCourseTarget();
     }
+    /** The same target attempt applies to a jumped or rolled-off lip. */
+    armCourseTarget() {
+      const p = this.player;
+      const launch = this.event.ramps.find(
+        (r) => Math.abs(r.y - p.y) < 192 && Math.abs(r.x - p.x) < 256,
+      );
+      if (launch)
+        p.jumpTarget = this.event.targets.findIndex((t) => t.y > launch.y + 35);
+    }
+
     land() {
       const p = this.player;
       delete p.courseShadowY;
       delete p.courseShadowProfile;
+      delete p.courseShadowPlaneDrop;
+      delete p.courseShadowPlaneProfile;
+      delete p.courseFlightSpeed;
+      delete p.courseLaunchProfile;
       p.z = 0;
       p.air = false;
       p.cooldown = 0;
@@ -1073,6 +1162,7 @@
           S.OriginalGround.tables,
         ),
         delta = (facing - travel + 16) & 15;
+      p.romDirection = travel;
       p.fakie = delta >= 6 && delta <= 10;
       p.romFacingDirection = p.fakie ? (travel + 8) & 15 : undefined;
       const face = p.romFacingDirection ?? travel;
@@ -1223,14 +1313,11 @@
       }
       if (this.mode === "city") this.updateCity(dt);
       else if (this.mode === "event") this.updateEvent(dt);
-      this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
-      this.camera.y +=
-        (p.y -
-          35 -
-          S.Halfpipe.groundRise(this.event?.level, p) -
-          (p.halfpipeFlight ? p.z * 0.6 : 0) -
-          this.camera.y) *
+      this.camera.x +=
+        (p.x + S.Halfpipe.groundShift(this.event?.level, p) - this.camera.x) *
         Math.min(1, dt * 7);
+      this.camera.y +=
+        (this.cameraTargetY(p) - this.camera.y) * Math.min(1, dt * 7);
     }
     caughtByBees() {
       if (this.practice) return;
@@ -1304,7 +1391,10 @@
      */
     cityReturnPosition(gate) {
       const level = this.city.level,
-        anchor = this.cityEntryPosition || gate;
+        entered = this.cityEntryPosition || gate,
+        anchor = level.contactSample(entered.x, entered.y).blocked
+          ? gate
+          : entered;
       const target = { x: gate.x, y: gate.y + 96 };
       let best = null,
         distance = Infinity;
@@ -1685,8 +1775,13 @@
               across =
                 (dx + 2 * dy) / 2 +
                 (p.halfpipeWall.rawProfile === 1 ? 1 : -1) * 2 * groundY;
-            p.vx = ((along + across) * 60) / 64;
-            p.vy = ((along - across) * 30) / 64;
+            // The foreground map compresses the south wall into48px while
+            // the opposite curve spans176px. Convert common physical travel
+            // into that wall's parameter distance, not a4x faster ascent.
+            const wallScale = S.Halfpipe.travelScale(e.level, p.halfpipeWall),
+              mappedAcross = across * wallScale;
+            p.vx = ((along + mappedAcross) * 60) / 64;
+            p.vy = ((along - mappedAcross) * 30) / 64;
           }
           if (p.copingReturn) {
             const path = p.copingReturn;
@@ -1808,24 +1903,6 @@
         p.vy *= maxSpeed / speed;
       }
       p.terrainStepOrigin = { x: p.x, y: p.y };
-      if (
-        !p.air &&
-        e?.kind === "jump" &&
-        p.romGroundActive &&
-        p.romGroundVertical?.velocity < 0 &&
-        (p.romSurfaceProfile & 7) >= 1 &&
-        (p.romSurfaceProfile & 7) <= 6
-      ) {
-        const length = Math.hypot(p.vx, p.vy);
-        if (length > 1)
-          p.courseApproach = {
-            x: p.x,
-            y: p.y,
-            vx: p.vx / length,
-            vy: p.vy / length,
-            direction: p.romDirection & 15,
-          };
-      }
       p.x += p.vx * dt * S.CONFIG.skatingPace;
       p.y += p.vy * dt * S.CONFIG.skatingPace;
       const width = e ? e.width : this.city.width,
@@ -1843,19 +1920,16 @@
         p.copingReturn = null;
         p.halfpipeReturning = false;
       }
-      if (e?.kind === "jump" && p.air) this.updateCourseShadow();
+      if (e?.kind === "jump" && p.air) this.updateCourseShadow(dt);
       if (p.dropFall) this.updateDropContact();
       this.collideWithRecoveredTerrain();
       if (this.mode === "city") this.updateCity(dt);
       else this.updateEvent(dt);
-      this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
-      this.camera.y +=
-        (p.y -
-          35 -
-          S.Halfpipe.groundRise(this.event?.level, p) -
-          (p.halfpipeFlight ? p.z * 0.6 : 0) -
-          this.camera.y) *
+      this.camera.x +=
+        (p.x + S.Halfpipe.groundShift(this.event?.level, p) - this.camera.x) *
         Math.min(1, dt * 7);
+      this.camera.y +=
+        (this.cameraTargetY(p) - this.camera.y) * Math.min(1, dt * 7);
     }
     /** Sprite-derived directional board outline against original actor masks.
      * Special post-impact footprint/remaining response controllers are pending.
@@ -1974,15 +2048,19 @@
         this.interact({ ...shop, type: "shop" });
       } else p.shopPad = null;
 
-      // Type1 marks the original green park entry pads. Trigger on walking
-      // onto a pad, and latch rejected requests until the player leaves it.
-      const onPad =
-        !p.air &&
-        p.fallen <= 0 &&
-        this.city.level.contactSample(p.x, p.y).type === 1;
-      const gate = onPad
-        ? this.city.gates.find((g) => S.distance(p, g) < 100)
-        : null;
+      // Expanded isometric entrance column. Use the ground-plane position,
+      // including airborne crossings, so an ollie cannot skip the doorway.
+      // This is a trigger, not a solid fence. Return positions lie outside it.
+      const gate =
+        !p.bail && p.fallen <= 0
+          ? this.city.gates.find((g) => {
+              const dx = p.x - g.x,
+                dy = p.y - g.y;
+              return (
+                Math.abs(dx + 2 * dy) <= 112 && Math.abs(dx - 2 * dy) <= 112
+              );
+            })
+          : null;
       if (!gate) p.parkPad = null;
       else if (p.parkPad !== gate.kind) {
         p.parkPad = gate.kind;
@@ -2019,9 +2097,65 @@
             Math.round(p.z * 64),
             this.objectRegistry.readTypeByte,
           );
-          // A5B8 handles response2/7 with the original1300-unit impact speed.
-          // A60C uses the same impact setup below its signed14px threshold.
-          // Above that threshold A64C has separate reward state, still pending.
+          // A70C uses the original cash table and retires rider types56..65.
+          // The response height gate still admits jumps in front/onto them
+          // near board contact, while a high clear jump remains a pass-over.
+          if (code === 8 && contact.sprite !== (p.attachedSprite || 0)) {
+            const cash = S.OriginalContact.riderCash(contact.kind);
+            if (cash && p.lastOriginalContact !== contact.sprite) {
+              this.cash = Math.max(0, Math.min(9999, this.cash + cash));
+              this.trafficRuntime.remove(contact.slot);
+              this.trafficActors = this.trafficActors.filter(
+                (a) => a !== contact,
+              );
+              this.audio.effect("takedown");
+            }
+            p.lastOriginalContact = contact.sprite;
+            return;
+          }
+          const airbornePedestrian =
+            code === 6 &&
+            p.air &&
+            contact.sprite !== (p.attachedSprite || 0) &&
+            !S.OriginalContact.pedestrianKnockdown(
+              Math.round(p.z * 64) - (contact.height || 0),
+              contact.sprite,
+              p.attachedSprite || 0,
+            );
+          if (airbornePedestrian && p.lastOriginalContact !== contact.sprite) {
+            const award = S.OriginalContact.airbornePedestrianReward(
+              this.pedestrianReward,
+              contact.kind,
+            );
+            if (award.points) {
+              this.addScore(award.points);
+              const effect = S.OriginalEffects.beginLandingEffect(
+                award.index,
+                p.x,
+                p.y - p.z,
+                0,
+              );
+              S.OriginalEffects.tickLandingEffect(effect, p.x, p.y - p.z);
+              this.floats.push(effect);
+            }
+            S.OriginalContact.saveActorMotion(
+              contact,
+              this.trafficRuntime.actorRecovery,
+              this.trafficActors.find((a) => a.sprite === 5),
+            );
+            S.OriginalContact.knockDownActor(
+              contact,
+              this.objectRegistry.readTypeWord,
+            );
+            S.OriginalActorRoutes.release(
+              contact.bitmapIndex,
+              this.objectRegistry,
+            );
+            this.trafficRuntime.sync(contact);
+            p.lastOriginalContact = contact.sprite;
+            return;
+          }
+          // Grounded/low pedestrian contacts retain their original player bail.
           const pedestrianHit =
             code === 6 &&
             S.OriginalContact.pedestrianKnockdown(
@@ -2099,7 +2233,6 @@
         !p.bail &&
         wall &&
         wall.progress > 0.7 &&
-        level.sample(p.x, p.y).profile !== wall.rawProfile &&
         !S.Halfpipe.wallAt(level, p.x, p.y) &&
         (p.romGroundVertical?.velocity || 0) > 0
       ) {

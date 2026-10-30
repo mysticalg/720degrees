@@ -254,6 +254,21 @@
             )
               c.fillRect(point.x - 1, point.y - 1, 2, 2);
       }
+      if (!game.event) {
+        c.fillStyle = "#bcff5030";
+        c.strokeStyle = "#d7ff89";
+        c.lineWidth = 0.8;
+        for (const gate of game.city.gates) {
+          c.beginPath();
+          c.moveTo(gate.x, gate.y - 56);
+          c.lineTo(gate.x + 112, gate.y);
+          c.lineTo(gate.x, gate.y + 56);
+          c.lineTo(gate.x - 112, gate.y);
+          c.closePath();
+          c.fill();
+          c.stroke();
+        }
+      }
       const read = game.objectRegistry?.readContactWord;
       if (!read) return;
       const mask = (x, bottom, pointer, color, board = false) => {
@@ -315,6 +330,7 @@
       const footprint = game.boardFootprint?.(game.player);
       if (!game.player.bail && footprint) {
         const p = game.player,
+          originX = p.x + S.Halfpipe.groundShift(level, p),
           originY =
             p.y -
             p.z -
@@ -323,8 +339,8 @@
         c.beginPath();
         for (let i = 0; i < footprint.polygon.length; i++) {
           const a = footprint.polygon[i];
-          if (i) c.lineTo(p.x + a.x, originY + a.y);
-          else c.moveTo(p.x + a.x, originY + a.y);
+          if (i) c.lineTo(originX + a.x, originY + a.y);
+          else c.moveTo(originX + a.x, originY + a.y);
         }
         c.closePath();
         c.fillStyle = "#00ffcc44";
@@ -334,7 +350,7 @@
         c.stroke();
       } else if (!game.player.bail)
         mask(
-          game.player.x - 40,
+          game.player.x + S.Halfpipe.groundShift(level, game.player) - 40,
           game.player.y +
             11 -
             game.player.z -
@@ -355,7 +371,7 @@
         );
       c.fillStyle = "#ffffff";
       c.fillRect(
-        game.player.x - 1,
+        game.player.x + S.Halfpipe.groundShift(level, game.player) - 1,
         game.player.y - S.Halfpipe.groundRise(level, game.player) - 1,
         2,
         2,
@@ -517,8 +533,10 @@
       profile = p.romSurfaceProfile ?? 24,
       gear = {},
       groundRise = 0,
+      groundShift = 0,
     ) {
-      const c = this.ctx;
+      const c = this.ctx,
+        x = p.x + groundShift;
       if (p.invulnerable > 0 && Math.floor(time * 14) % 2) c.globalAlpha = 0.35;
       const contactHeight = Math.min(
         Math.max(0, p.z),
@@ -579,7 +597,7 @@
         c.globalAlpha *= p.air ? 0.28 : 0.2;
         c.filter = "blur(0.45px)";
         this.descriptorSkater(
-          p.x + (p.air ? 0 : 1),
+          x + (p.air ? 0 : 1),
           (p.air ? (p.courseShadowY ?? p.y) : p.y + 2) - groundRise,
           frame,
           false,
@@ -598,7 +616,7 @@
         c.restore();
       }
       this.descriptorSkater(
-        p.x,
+        x,
         y,
         frame,
         kicking,
@@ -610,7 +628,7 @@
         boardPalette,
       );
       const bodyEntry = this.descriptorSkater(
-        p.x,
+        x,
         y,
         frame,
         kicking,
@@ -631,7 +649,7 @@
       // the current body entry; actor3 has two columns and the body palette.
       if (gear.helmet && !p.bail)
         this.descriptorSkater(
-          p.x,
+          x,
           y,
           frame,
           false,
@@ -646,7 +664,7 @@
       if (p.air && Math.abs(p.spin) > Math.PI)
         this.text(
           `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}\u00b0`,
-          p.x,
+          x,
           y - 73,
           "#fff637",
           9,
@@ -786,6 +804,7 @@
           level.sample(game.player.x, game.player.y).profile,
         game.gear,
         S.Halfpipe.groundRise(level, game.player),
+        S.Halfpipe.groundShift(level, game.player),
       );
       if (e.kind !== "ramp" && Math.abs(game.player.y - level.finish.y) < 250)
         this.text(
