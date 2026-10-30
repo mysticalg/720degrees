@@ -250,7 +250,40 @@
       shape: readShape(pointer, readWord),
     };
   }
+  /** Diagnostic cells from the same backwards scanline strips used by
+   * contact tests. Coordinates are four-pixel cells in original +Y space.
+   */
+  function maskCells(shape, readWord) {
+    const width = shape.width >>> 8,
+      rows = shape.height >>> 8;
+    if (!width || width > 48 || !rows || rows > 64) return [];
+    const anchors =
+      width <= 16
+        ? [0]
+        : width <= 32
+          ? [width - 16, 0]
+          : [width - 16, width - 32, 0];
+    const result = [],
+      seen = new Set();
+    for (let strip = 0; strip < anchors.length; strip++)
+      for (let row = 0; row < rows; row++) {
+        const mask = readWord(
+          word(shape.pointer - 2 - (strip * rows + row) * 2),
+        );
+        for (let bit = 0; bit < 16; bit++)
+          if (mask & (1 << (15 - bit))) {
+            const col = anchors[strip] + bit,
+              key = row * 64 + col;
+            if (col < width && !seen.has(key)) {
+              seen.add(key);
+              result.push({ x: col * 4, y: row * 4 });
+            }
+          }
+      }
+    return result;
+  }
   const api = Object.freeze({
+    maskCells,
     readShape,
     broadPhase,
     findContact,

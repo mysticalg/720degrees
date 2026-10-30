@@ -122,9 +122,96 @@
         else this.text(f.text, f.x, f.y, f.color, 11, "center");
       }
       c.globalAlpha = 1;
+      if (this.showCollisions)
+        this.collisionOverlay(game, event?.level || game.city.level);
       c.restore();
       this.hud(game, event);
       if (game.mapFrames > 0 && !event) this.map(game);
+      if (this.showCollisions) {
+        c.fillStyle = "#08111be6";
+        c.fillRect(0, 370, 512, 14);
+        this.text(
+          "F8: COLLISIONS · RED EDGE / AMBER WALL / CYAN MASK",
+          8,
+          373,
+          "#e8f7ff",
+          7,
+        );
+      }
+    }
+    /** Developer view only. It reads the exact terrain mesh and recovered
+     * sprite masks used by contact, without modifying any gameplay state.
+     */
+    collisionOverlay(game, level) {
+      const c = this.ctx,
+        left = -this.offset.x,
+        top = -this.offset.y;
+      const area = (mesh, color) => {
+        if (!mesh) return;
+        c.beginPath();
+        if (mesh.outside) c.rect(left - 1, top - 1, 514, 386);
+        for (const path of mesh.paths) {
+          if (!path.length) continue;
+          c.moveTo(path[0].x, path[0].y);
+          for (let i = 1; i < path.length; i++) c.lineTo(path[i].x, path[i].y);
+          c.closePath();
+        }
+        c.fillStyle = color;
+        c.fill("evenodd");
+      };
+      area(S.TerrainCollision.debugMesh(level), "#ff38533b");
+      const walls = S.TerrainCollision.debugMesh(level, true);
+      area(walls, "#ffb72e55");
+      c.lineWidth = 0.75;
+      c.strokeStyle = "#ffc64fcc";
+      c.beginPath();
+      for (const edge of walls?.segments || []) {
+        c.moveTo(edge.a.x, edge.a.y);
+        c.lineTo(edge.b.x, edge.b.y);
+      }
+      c.stroke();
+      const read = game.objectRegistry?.readContactWord;
+      if (!read) return;
+      const mask = (x, bottom, pointer, color) => {
+        if (pointer < 0x4000 || pointer >= 0x7ff4) return;
+        const shape = S.OriginalContact.readShape(pointer, read);
+        if (shape.width >>> 8 > 48 || shape.height >>> 8 > 64) return;
+        const left = x + shape.x / 64,
+          base = bottom - shape.y / 64,
+          width = shape.width / 64,
+          height = shape.height / 64;
+        if (
+          left + width < -this.offset.x ||
+          left > -this.offset.x + 512 ||
+          base < -this.offset.y ||
+          base - height > -this.offset.y + 384
+        )
+          return;
+        c.strokeStyle = "#eaffff99";
+        c.strokeRect(left, base - height, width, height);
+        c.fillStyle = color;
+        for (const cell of S.OriginalContact.maskCells(shape, read))
+          c.fillRect(left + cell.x, base - cell.y - 4, 4, 4);
+      };
+      if (!game.event) {
+        for (const actor of [...game.cityActors, ...game.trafficActors])
+          mask(
+            actor.actorX,
+            actor.actorY - (actor.height || 0) / 64,
+            actor.extraPointer || 0,
+            "#00e9ff66",
+          );
+        for (const crack of game.cracks)
+          mask(crack.actorX, crack.actorY, 0x7a30, "#88ff5566");
+      }
+      mask(
+        game.player.x - 40,
+        game.player.y + 11 - game.player.z,
+        0x7114,
+        "#00ffccb3",
+      );
+      c.fillStyle = "#ffffff";
+      c.fillRect(game.player.x - 1, game.player.y - 1, 2, 2);
     }
     city(game) {
       const c = this.ctx,

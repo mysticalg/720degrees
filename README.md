@@ -17,6 +17,7 @@ From this directory, run `python -m http.server 8722`, then open http://localhos
 - Jump: Space or Z; gamepad B.
 - Spin: C; gamepad shoulders or right stick.
 - Park interaction: E or Enter; park entry pads also activate by skating onto them.
+- Developer collision overlay: F8 toggles transparent terrain/fence areas and original sprite masks; collisions remain active.
 - Map: Tab or skate over a map marker; appears for at most three seconds. Fresh skating input dismisses it.
 - Pause: P or Escape. Fullscreen: F.
 - Point/Rotate steering: options button at the top; stick clicks do not change mode.
@@ -47,3 +48,5 @@ Springboard cracks and vehicles now use recovered scanline masks after the origi
 Course corrections remove the artificial halfpipe boundary and grass blocker, preserve speed over its flag13 floor strip, and use a consistent airborne plane so downhill jumps cannot gain height indefinitely. Full coping and terrain-contact controllers remain unfinished.
 
 Presentation interpolates skater, camera, traffic and bee positions between the fixed60Hz simulation ticks. Original sprite frames stay discrete and physics/contact/scoring state is never interpolated. Park changes, resets, pause and large recovery teleports snap immediately. Halfpipe coping/handplant gameplay integration remains unfinished.
+
+Terrain contacts intentionally improve playability beyond the original: diagonal contours replace square tile corners, and swept contacts preserve movement along walls/fences. One-tile fence joins close post gaps, and contour simplification stays within four pixels of the recovered grid. This applies across city and park layouts; jump/downhill voids remain drop-offs. Native physics/scoring and original sprite masks remain separate from this improved terrain layer.

@@ -17,6 +17,7 @@
   };
   class Input {
     constructor(canvas) {
+      this.queuedCollisionToggles = 0;
       this.keys = new Set();
       this.previous = {};
       this.actions = {};
@@ -36,6 +37,11 @@
       } catch {}
       const known = new Set(Object.values(bindings).flat());
       window.addEventListener("keydown", (event) => {
+        if (event.code === "F8") {
+          event.preventDefault();
+          if(!event.repeat)this.queuedCollisionToggles++;
+          return;
+        }
         // Let sliders, buttons and text fields keep their normal keyboard use.
         if (event.target?.closest?.("input,select,textarea,button,a")) return;
         if (!known.has(event.code)) return;
@@ -61,7 +67,13 @@
       });
       canvas.addEventListener("pointerdown", () => canvas.focus());
     }
+    consumeCollisionToggle() {
+      const toggle = !!(this.queuedCollisionToggles & 1);
+      this.queuedCollisionToggles = 0;
+      return toggle;
+    }
     clear() {
+      this.queuedCollisionToggles = 0;
       this.keys.clear();
       this.touchKeys.clear();
       this.actions = {};

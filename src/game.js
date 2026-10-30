@@ -317,7 +317,7 @@
       )
         return;
       const level = this.event?.level || this.city.level;
-      const here = level.sample(p.x, p.y);
+      const here = level.contactSample(p.x, p.y);
       // E344 admits profiles0..2. Their vertical coefficient determines
       // whether E366 selects immediate rising-surface takeoff or anticipation.
       if (
@@ -381,7 +381,7 @@
       // B378 also sees the newly started clock on the activation frame.
       S.OriginalCracks.tick(crack);
       const rom = S.OriginalGround,
-        surface = this.city.level.sample(p.x, p.y);
+        surface = this.city.level.contactSample(p.x, p.y);
       const motion = rom.airborneTransition(
         p.romSpeed,
         p.romDirection ?? 4,
@@ -446,7 +446,7 @@
         level = this.event.level;
       p.dropFall.frames++;
       const feetY = p.y - p.z,
-        surface = level.sample(p.x, feetY);
+        surface = level.contactSample(p.x, feetY);
       if (
         p.romVerticalVelocity < 0 &&
         p.z <= -4 &&
@@ -478,7 +478,7 @@
               [0, 8],
               [0, -8],
             ].every(([sx, sy]) => {
-              const cell = level.sample(x + sx, y + sy);
+              const cell = level.contactSample(x + sx, y + sy);
               return !cell.blocked && (cell.profile & 7) < 3;
             });
             if (supported) {
@@ -515,8 +515,8 @@
         return;
       let boost = 1;
       const level = this.event?.level || this.city.level,
-        surface = level.sample(p.x, p.y);
-      const ahead = level.sample(
+        surface = level.contactSample(p.x, p.y);
+      const ahead = level.contactSample(
         p.x + Math.cos(p.angle) * 24,
         p.y + Math.sin(p.angle) * 24,
       );
@@ -635,7 +635,7 @@
         this.event.points += award.points;
       } else if (award.points) this.addScore(award.points);
       if (award.points) {
-        const profile = (this.event?.level || this.city.level).sample(
+        const profile = (this.event?.level || this.city.level).contactSample(
           p.x,
           p.y,
         ).profile;
@@ -660,7 +660,7 @@
         if (
           target &&
           !this.event.passed.has(p.jumpTarget) &&
-          !this.event.level.sample(p.x, p.y).blocked &&
+          !this.event.level.contactSample(p.x, p.y).blocked &&
           S.distance(p, target) < 175
         ) {
           this.event.passed.add(p.jumpTarget);
@@ -674,7 +674,7 @@
       const p = this.player;
       if (p.invulnerable > 0 || p.fallen > 0) return;
       const level = this.event?.level || this.city.level;
-      const surface = level.sample(p.x, p.y);
+      const surface = level.contactSample(p.x, p.y);
       const bytes = this.motionDirectory;
       const readWord = (a) => bytes[a - 0x4000] | (bytes[a - 0x4000 + 1] << 8);
       p.bail = S.OriginalBail.beginBail(
@@ -714,7 +714,7 @@
         b = p.bail,
         rom = S.OriginalGround;
       const level = this.event?.level || this.city.level;
-      const surface = level.sample(p.x, p.y);
+      const surface = level.contactSample(p.x, p.y);
       p.romFrame = (p.romFrame || 0) + 1;
       const kick = this.input.held("kick");
       rom.kickInputTransition(
@@ -952,11 +952,12 @@
       // a vertical face, not a surface to skate along. Sampling that artwork
       // as ground reverses screen-Y velocity and traps the rider at the lip.
       // Leave the upper platform with its existing momentum instead.
-      const courseSurface = e?.level.sample(p.x, p.y);
+      const courseSurface = e?.level.contactSample(p.x, p.y);
       if (
         ["downhill", "jump"].includes(e?.kind) &&
         courseSurface &&
         (courseSurface.profile & 7) === 7 &&
+        !courseSurface.barrier &&
         !p.air &&
         Math.hypot(p.vx, p.vy) > 0.01
       )
@@ -1017,7 +1018,7 @@
           : rotating
             ? Math.max(0, -stick.y)
             : 0;
-        const surface = (e?.level || this.city.level).sample(p.x, p.y);
+        const surface = (e?.level || this.city.level).contactSample(p.x, p.y);
         // Recovered surface coefficients and grounded arithmetic apply to flag0.
         // The input adapter still supplies turning and kick state timing.
         if (
@@ -1198,7 +1199,7 @@
         // The resulting rendered Y still follows B486: planeY minus height.
         p.z += ((p.romVerticalVelocity * 60) / 64) * dt;
         if (!p.dropFall && p.z <= 0) {
-          const support = (e?.level || this.city.level).sample(p.x, p.y);
+          const support = (e?.level || this.city.level).contactSample(p.x, p.y);
           if (["downhill", "jump"].includes(e?.kind) && support.blocked) {
             // Crossing the takeoff plane over empty scenery is still flight.
             // Keep the current impulse/momentum until lower support is found.
@@ -1214,6 +1215,7 @@
         p.vx *= maxSpeed / speed;
         p.vy *= maxSpeed / speed;
       }
+      p.terrainStepOrigin = { x: p.x, y: p.y };
       p.x += p.vx * dt * S.CONFIG.skatingPace;
       p.y += p.vy * dt * S.CONFIG.skatingPace;
       const width = e ? e.width : this.city.width,
@@ -1275,7 +1277,7 @@
         if (resumed) this.mapFrames = 0;
         this.mapInputSnapshot = current;
       }
-      const surface = this.city.level.sample(p.x, p.y);
+      const surface = this.city.level.contactSample(p.x, p.y);
       if (!p.air && !p.bail && p.fallen <= 0) {
         for (const crack of this.cracks) {
           if (
@@ -1331,7 +1333,9 @@
       // Type1 marks the original green park entry pads. Trigger on walking
       // onto a pad, and latch rejected requests until the player leaves it.
       const onPad =
-        !p.air && p.fallen <= 0 && this.city.level.sample(p.x, p.y).type === 1;
+        !p.air &&
+        p.fallen <= 0 &&
+        this.city.level.contactSample(p.x, p.y).type === 1;
       const gate = onPad
         ? this.city.gates.find((g) => S.distance(p, g) < 100)
         : null;
@@ -1409,9 +1413,33 @@
       const p = this.player,
         level = this.event?.level || this.city.level;
       if (p.dropFall) return;
-      const surface = level.sample(p.x, p.y);
+      if (!p.air && !p.bail && p.fallen <= 0 && p.terrainStepOrigin) {
+        const slide = S.TerrainCollision.sweep(
+          level,
+          p.terrainStepOrigin,
+          p,
+          {
+            x: p.vx,
+            y: p.vy,
+          },
+          { barriersOnly: ["downhill", "jump"].includes(this.event?.kind) },
+        );
+        if (slide.hits) {
+          p.x = slide.x;
+          p.y = slide.y;
+          p.vx = slide.vx;
+          p.vy = slide.vy;
+          p.diagonalContacts = slide.hits;
+          // Retain native drive speed: repeatedly projecting that scalar too
+          // would compound friction on each tick and recreate edge sticking.
+          p.edgeContact = false;
+        } else p.diagonalContacts = 0;
+      }
+      p.terrainStepOrigin = null;
+      const surface = level.contactSample(p.x, p.y);
       if (
         surface.blocked &&
+        !surface.barrier &&
         !p.air &&
         !p.bail &&
         p.fallen <= 0 &&
@@ -1451,7 +1479,7 @@
           [-8, 0],
           [0, 8],
           [0, -8],
-        ].every(([dx, dy]) => !level.sample(p.x + dx, p.y + dy).blocked);
+        ].every(([dx, dy]) => !level.contactSample(p.x + dx, p.y + dy).blocked);
         const movedAway =
           !p.edgeContact ||
           !p.edgeContactOrigin ||
@@ -1497,7 +1525,7 @@
               this.tell("JUMP AT THE LIP · LAND ON THE NEXT PLATFORM", 2);
           }
         }
-        if (e.level.sample(p.x, p.y).type === 10 && !p.air) {
+        if (e.level.contactSample(p.x, p.y).type === 10 && !p.air) {
           this.finishEvent();
           return;
         }
@@ -1619,7 +1647,10 @@
         level: {
           name: (this.event?.level || this.city.level).name,
           source: "decoded original ROM layout",
-          surface: (this.event?.level || this.city.level).sample(p.x, p.y),
+          surface: (this.event?.level || this.city.level).contactSample(
+            p.x,
+            p.y,
+          ),
         },
         message: this.messageTime > 0 ? this.message : null,
       };

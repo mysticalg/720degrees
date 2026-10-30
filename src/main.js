@@ -127,6 +127,8 @@
       togglePause();
   });
   function handleActions() {
+    if (input.consumeCollisionToggle())
+      renderer.showCollisions = !renderer.showCollisions;
     if (input.pressed("fullscreen")) fullscreen();
     if (input.pressed("mute")) toggleSound();
     if (input.pressed("pause")) togglePause();
@@ -193,7 +195,11 @@
     for (let i = 0; i < steps; i++) game.update(S.CONFIG.step);
     renderer.draw(game);
   };
-  window.render_game_to_text = () => JSON.stringify(game.toJSON());
+  window.render_game_to_text = () =>
+    JSON.stringify({
+      ...game.toJSON(),
+      debug: { collisionOverlay: !!renderer.showCollisions },
+    });
   window.Skate720.app = {
     game,
     input,

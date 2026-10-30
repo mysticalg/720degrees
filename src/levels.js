@@ -42,6 +42,9 @@
       this.ready = false;
       this.loaded = new Promise((resolve, reject) => {
         this.image.onload = () => {
+          // Build static contours during scenery loading, before movement.
+          S.TerrainCollision.contours(this);
+          S.TerrainCollision.contours(this, true);
           this.ready = true;
           resolve(this);
         };
@@ -72,6 +75,10 @@
         // Halfpipe tile7168 is grass, not an invisible course fence.
         blocked: type === 18 || type === 19,
       };
+    }
+    /** Improved diagonal support geometry, separate from untouched ROM samples. */
+    contactSample(x, y) {
+      return S.TerrainCollision.surface(this, x, y);
     }
     /** A navigation aid sampled from the decoded surface, never a replacement road. */
     centerAt(y) {
