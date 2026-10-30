@@ -24,6 +24,7 @@
       this.clips = {
         start: new Audio("assets/start.mp3"),
         bees: new Audio("assets/bees.mp3"),
+        coin: new Audio("assets/coin.mp3"),
       };
       for (const audio of Object.values(this.clips)) audio.volume = 0.55;
       // This recording contains the original mixed start music/voice cue.
@@ -95,8 +96,15 @@
       } catch {}
       return this.musicMuted;
     }
-    /** Unrecovered cues remain silent: no replacement synthesized sounds. */
-    effect(name) {}
+    /** Original credit cue, captured separately from music. Other sound
+     * commands stay silent until identified; no synthesized substitutes.
+     * The shared coin event covers ticket rewards, purchases and park entry.
+     */
+    effect(name) {
+      if (name !== "coin" || this.muted) return false;
+      this.clip("coin");
+      return true;
+    }
   }
   window.Skate720.AudioSystem = AudioSystem;
 })();

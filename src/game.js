@@ -466,6 +466,11 @@
       p.spin = 0;
       p.airTime = 0;
       p.takeoffAngle = p.angle;
+      const takeoffInput = this.input.direction();
+      p.fakieAirInput =
+        p.fakie && takeoffInput.active
+          ? Math.atan2(takeoffInput.y, takeoffInput.x)
+          : null;
       p.z = 1;
       p.romVerticalVelocity = activated.vertical;
       p.jumpLaunchVelocity = activated.vertical;
@@ -483,6 +488,7 @@
     dropFromLedge() {
       const p = this.player;
       p.dropFall = { frames: 0 };
+      p.romMovementDirection = p.romDirection;
       p.air = true;
       p.edgeContact = false;
       p.spin = 0;
@@ -841,6 +847,7 @@
       // Facing and travel are separate for fakie. Keep the recovered reverse
       // pose while the positive drive scalar follows the descent coefficients.
       p.romFacingDirection = rockToFakie ? flight.wall.upDirection : undefined;
+      p.fakie = rockToFakie;
       p.angle = Math.atan2(
         -S.OriginalGround.tables.y[p.romDirection],
         S.OriginalGround.tables.x[p.romDirection],
@@ -1057,8 +1064,39 @@
         this.floats.push(effect);
       }
       this.audio.effect("land");
-      // Restore the travel heading after the trick, instead of reversing velocity.
-      p.angle = p.takeoffAngle;
+      // Facing and rolling direction are independent. A half-turn lands
+      // fakie: retain the existing velocity/scalar and select the opposite
+      // original body/board pose. A later half-turn can land forward again.
+      const travel = (p.romMovementDirection ?? p.romDirection ?? 4) & 15,
+        facing = S.OriginalContact.playerDirection(
+          { air: true, angle: p.angle },
+          S.OriginalGround.tables,
+        ),
+        delta = (facing - travel + 16) & 15;
+      p.fakie = delta >= 6 && delta <= 10;
+      p.romFacingDirection = p.fakie ? (travel + 8) & 15 : undefined;
+      const face = p.romFacingDirection ?? travel;
+      p.angle = Math.atan2(
+        -S.OriginalGround.tables.y[face],
+        S.OriginalGround.tables.x[face],
+      );
+      // A held stick that supplied the air turn is not a fresh request to
+      // reverse rolling direction on the first grounded frame.
+      const landingInput = this.input.direction();
+      p.fakieSteeringTarget =
+        p.fakie && landingInput.active
+          ? S.OriginalGround.dialDirection(
+              ((Math.round(
+                (-Math.atan2(landingInput.y * 2, landingInput.x) /
+                  (Math.PI * 2)) *
+                  144,
+              ) %
+                144) +
+                144) %
+                144,
+            )
+          : null;
+      p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
       p.spin = 0;
       if (this.event?.kind === "ramp" && p.fromRamp) this.event.rampHits++;
       if (this.event?.kind === "jump" && p.jumpTarget !== undefined) {
@@ -1430,7 +1468,8 @@
         kick = this.input.held("kick");
       const kickAnimationSpeed = p.romSpeed || 0; // Previous frame's0331 speed band.
       const kickPressed = kick && !p.kickWasHeld;
-      if (kickPressed && !p.halfpipeReturning) p.romFacingDirection = undefined;
+      if (kickPressed && !p.halfpipeReturning && !p.fakie)
+        p.romFacingDirection = undefined;
       p.kickWasHeld = kick;
       const stick = this.input.stick,
         rotating = this.input.controlMode === "rotate";
@@ -1448,17 +1487,22 @@
           );
         if (rotating && !p.halfpipeReturning) {
           if (
-            stick.active ||
-            this.input.held("left") ||
-            this.input.held("right") ||
-            kickPressed
+            !p.fakie &&
+            (stick.active ||
+              this.input.held("left") ||
+              this.input.held("right") ||
+              kickPressed)
           )
             p.romFacingDirection = undefined;
           // Continuous analog dial adapter, followed by the original lookup.
           p.romDialAngle =
             (p.romDialAngle ?? p.angle) +
             (stick.active
-              ? stick.x
+              ? p.fakie &&
+                p.fakieTurnLatch !== null &&
+                Math.abs(stick.x - p.fakieTurnLatch) < 0.05
+                ? 0
+                : stick.x
               : Number(this.input.held("right")) -
                 Number(this.input.held("left"))) *
               3.8 *
@@ -1468,17 +1512,27 @@
           p.angle = isoAngle(p.romDirection);
         }
         if (direction.active && !rotating && !p.halfpipeReturning) {
-          p.romFacingDirection = undefined;
+          if (!p.fakie) p.romFacingDirection = undefined;
           const dial = dialFromAngle(Math.atan2(direction.y * 2, direction.x));
           const target = S.OriginalGround.dialDirection(dial);
           let current = p.romDirection;
           if (current === undefined)
             current = S.OriginalGround.dialDirection(dialFromAngle(p.angle));
-          const turn = S.OriginalRoutines.steeringDifference(target - current);
+          const latched = p.fakie && target === p.fakieSteeringTarget;
+          if (!latched) p.fakieSteeringTarget = null;
+          const turn = S.OriginalRoutines.steeringDifference(
+            latched ? 0 : target - current,
+          );
           p.romDirection = (current + turn.step + 16) & 15;
           p.romDialCounter = dial;
           p.romDialAngle = Math.atan2(direction.y, direction.x);
           p.angle = isoAngle(p.romDirection);
+        }
+        if (p.fakie && !p.halfpipeReturning) {
+          if (!direction.active) p.fakieSteeringTarget = null;
+          if (!stick.active || Math.abs(stick.x) < 0.1) p.fakieTurnLatch = null;
+          p.romFacingDirection = ((p.romDirection ?? 4) + 8) & 15;
+          p.angle = isoAngle(p.romFacingDirection);
         }
         const keyboardKick = ["KeyX", "ShiftLeft", "ShiftRight"].some(
           (code) => this.input.keys.has(code) || this.input.touchKeys.has(code),
@@ -1694,8 +1748,16 @@
           // Point has the same meaning in the air as on the ground. Change
           // facing toward the chosen direction; retain takeoff momentum.
           const target = Math.atan2(direction.y, direction.x);
-          p.spin += S.angleDelta(target, p.angle);
+          const heldFakieInput =
+            p.fakie &&
+            p.fakieAirInput !== null &&
+            Math.abs(S.angleDelta(target, p.fakieAirInput)) < 0.01;
+          if (!heldFakieInput) {
+            p.fakieAirInput = null;
+            p.spin += S.angleDelta(target, p.angle);
+          }
         } else p.spin += spinDirection * spinRate * dt;
+        if (!direction.active) p.fakieAirInput = null;
         p.angle = p.takeoffAngle + p.spin;
         p.airTime += dt;
         this.tickHalfpipeAnimation();
@@ -2177,6 +2239,9 @@
           airborne: p.air,
           speed: +(Math.hypot(p.vx, p.vy) * S.CONFIG.skatingPace).toFixed(1),
           angleDegrees: +((p.angle * 180) / Math.PI).toFixed(1),
+          fakie: !!p.fakie,
+          facingDirection: p.romFacingDirection ?? p.romDirection,
+          travelDirection: p.romMovementDirection ?? p.romDirection,
           spinDegrees: Math.round((p.spin * 180) / Math.PI),
           fallen: p.fallen > 0,
         },
