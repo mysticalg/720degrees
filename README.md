@@ -4,6 +4,8 @@ A playable browser version built from translations of the original gameplay rout
 
 This replaces the obsolete procedural remake formerly at this repository root. That version remains in Git history.
 
+Play online: https://mysticalg.github.io/720degrees/
+
 ## Run
 
 From this directory, run `python -m http.server 8722`, then open http://localhost:8722. No build step is required.
@@ -29,7 +31,7 @@ Terrain contact, halfpipe coping, some scoring/event rules, enemies, powerups an
 
 ## Graphics and audio
 
-The included game media was recovered from the supplied 720° ROM. No replacement sprites or synthesized sound effects are used. Local MP3s contain recordings of original sound output; unrecovered cues remain silent. Traffic sound selection and the complete original sound sequencer are not yet integrated. The ROM ZIP itself is not included.
+The included game media was recovered from the supplied 720° ROM. No replacement sprites or synthesized sound effects are used. The original recorded start cue plays before the city track, and the original bee warning plays when triggered. Pause, mute and music volume apply to the mixed start cue too. Local MP3s contain recordings of original sound output; unrecovered kick/jump/crash cues remain silent. Traffic sound selection and the complete original sound sequencer are not yet integrated. The ROM ZIP itself is not included.
 
 ## Code and checks
 

@@ -15,6 +15,8 @@
         this.musicMuted = localStorage.getItem("720-music-muted") === "true";
       } catch {}
       this.context = null;
+      this.introActive = false;
+      this.musicPaused = true;
       this.music = new Audio("assets/skate-city.mp3");
       this.music.loop = true;
       this.music.volume = this.musicVolume;
@@ -24,20 +26,38 @@
         bees: new Audio("assets/bees.mp3"),
       };
       for (const audio of Object.values(this.clips)) audio.volume = 0.55;
+      // This recording contains the original mixed start music/voice cue.
+      // Keep it under music controls and avoid overlapping the city track.
+      this.clips.start.volume = this.musicVolume;
+      this.clips.start.muted = this.musicMuted;
+      this.clips.start.onended = () => {
+        this.introActive = false;
+        if (!this.musicPaused) this.playMusic();
+      };
     }
     unlock() {
       if (!this.context)
         this.context = new (window.AudioContext || window.webkitAudioContext)();
       this.context.resume().catch(() => {});
     }
+    playStartCue() {
+      this.stop();
+      this.introActive = true;
+      this.playMusic();
+    }
     playMusic() {
-      if (!this.muted) this.music.play().catch(() => {});
+      this.musicPaused = false;
+      const track = this.introActive ? this.clips.start : this.music;
+      if (!this.muted) track.play().catch(() => {});
     }
     pauseMusic() {
+      this.musicPaused = true;
       this.music.pause();
+      this.clips.start.pause();
     }
     stop() {
       this.pauseMusic();
+      this.introActive = false;
       this.music.currentTime = 0;
       for (const a of Object.values(this.clips)) {
         a.pause();
@@ -55,11 +75,13 @@
       this.muted = !this.muted;
       this.music.muted = this.muted || this.musicMuted;
       for (const a of Object.values(this.clips)) a.muted = this.muted;
+      this.clips.start.muted = this.muted || this.musicMuted;
       return this.muted;
     }
     setMusicVolume(value) {
       this.musicVolume = Math.max(0, Math.min(1, value));
       this.music.volume = this.musicVolume;
+      this.clips.start.volume = this.musicVolume;
       try {
         localStorage.setItem("720-music-volume", String(this.musicVolume));
       } catch {}
@@ -67,6 +89,7 @@
     toggleMusic() {
       this.musicMuted = !this.musicMuted;
       this.music.muted = this.muted || this.musicMuted;
+      this.clips.start.muted = this.muted || this.musicMuted;
       try {
         localStorage.setItem("720-music-muted", String(this.musicMuted));
       } catch {}

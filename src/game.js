@@ -173,7 +173,7 @@
       this.camera = { x: 3072, y: 1660 };
       this.tell("SKATE CITY · JUMP + C TO SPIN · E AT A PARK", 7);
       this.audio.unlock();
-      this.audio.playMusic();
+      this.audio.playStartCue();
       this.changed?.();
     }
     resetCityClock() {
@@ -439,11 +439,47 @@
         p.dropFall = null;
         this.land();
       } else if (feetY > level.height - 20 || p.z < -320) {
+        // A missed flight used to teleport to lastSafe on the launch ramp.
+        // Recover beside the actual projected impact, so the camera does not
+        // yank the skater back up the course. This is a native contact adapter;
+        // original terrain-height/collision composition is still incomplete.
+        let recovery = null;
+        const impact = { x: p.x, y: feetY };
+        let nearest = Infinity;
+        for (let dy = -768; dy <= 768; dy += 8)
+          for (let dx = -768; dx <= 768; dx += 8) {
+            const distance = dx * dx + dy * dy;
+            if (distance >= nearest) continue;
+            const x = impact.x + dx,
+              y = impact.y + dy;
+            const supported = [
+              [0, 0],
+              [8, 0],
+              [-8, 0],
+              [0, 8],
+              [0, -8],
+            ].every(([sx, sy]) => {
+              const cell = level.sample(x + sx, y + sy);
+              return !cell.blocked && (cell.profile & 7) < 3;
+            });
+            if (supported) {
+              recovery = { x, y };
+              nearest = distance;
+            }
+          }
+        recovery ||= p.lastSafe;
         p.dropFall = null;
         p.air = false;
         p.z = 0;
-        p.x = p.lastSafe.x;
-        p.y = p.lastSafe.y;
+        p.x = recovery.x;
+        p.y = recovery.y;
+        p.lastSafe = { ...recovery };
+        // Also clear the old airborne controller when invulnerability prevents
+        // crash() from starting a bail. A stale action8 could block the next jump.
+        p.jumpSequence = p.jumpAnimation = p.jumpRecovery = null;
+        p.romVerticalVelocity = 0;
+        p.jumpGroundVertical = { velocity: 0, fraction: 0 };
+        p.spin = 0;
         this.crash("MISSED THE LANDING");
         if (p.bail) p.bail.speed = 0;
         p.vx = p.vy = p.romSpeed = 0;
