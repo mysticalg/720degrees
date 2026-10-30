@@ -1619,9 +1619,17 @@
             this.objectRegistry.readTypeByte,
           );
           // A5B8 handles response2/7 with the original1300-unit impact speed.
-          // Cyclist attachment(5) and pedestrian(6) controllers are separate.
+          // A60C uses the same impact setup below its signed14px threshold.
+          // Above that threshold A64C has separate reward state, still pending.
+          const pedestrianHit =
+            code === 6 &&
+            S.OriginalContact.pedestrianKnockdown(
+              Math.round(p.z * 64) - (contact.height || 0),
+              contact.sprite,
+              p.attachedSprite || 0,
+            );
           if (
-            (code === 2 || code === 7) &&
+            (code === 2 || code === 7 || pedestrianHit) &&
             p.lastOriginalContact !== contact.sprite &&
             p.invulnerable <= 0
           ) {
@@ -1644,7 +1652,25 @@
               S.OriginalGround.tables.x[direction],
             );
             p.romSpeed = 0x0514;
-            this.crash("TRAFFIC COLLISION");
+            this.crash(
+              pedestrianHit ? "PEDESTRIAN COLLISION" : "TRAFFIC COLLISION",
+            );
+            if (pedestrianHit) {
+              S.OriginalContact.saveActorMotion(
+                contact,
+                this.trafficRuntime.actorRecovery,
+                this.trafficActors.find((actor) => actor.sprite === 5),
+              );
+              S.OriginalContact.knockDownActor(
+                contact,
+                this.objectRegistry.readTypeWord,
+              );
+              S.OriginalActorRoutes.release(
+                contact.bitmapIndex,
+                this.objectRegistry,
+              );
+              this.trafficRuntime.sync(contact);
+            }
           }
           if (code !== null) p.lastOriginalContact = contact.sprite;
         }

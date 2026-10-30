@@ -2,7 +2,7 @@
  * Original tables choose paths, poses, speeds, reservations and deadlines.
  * Browser camera coordinates and PNG unwrapping remain explicit adapters.
  * Traffic replacement requests use the original population selector.
- * Player/traffic polygon collisions and recovered engine audio are pending.
+ * Recovered sprite masks supply contact; engine audio decoding is pending.
  */
 (() => {
   const word = (n) => n & 65535,
@@ -24,6 +24,7 @@
       this.entropyReads = 0;
       this.soundCommands = [];
       this.previousCamera = null;
+      this.actorRecovery = { timer: 0, sprite: 255 };
       memory.writeRamByte(0x0e96, 14);
       memory.writeRamByte(0x0e97, 2);
       // Type1 event-pad actors are not in this native renderer's pool yet.
@@ -244,6 +245,9 @@
       const S = this.S,
         m = this.memory;
       this.camera(camera, width, height);
+      S.OriginalContact.tickActorRecovery(this.actorRecovery, (sprite) =>
+        [...this.actors.values()].find((actor) => actor.sprite === sprite),
+      );
       for (const actor of this.actors.values()) {
         if (S.OriginalActors.trafficRouteDue(actor)) this.route(actor);
         const motion = S.OriginalActors.stepMotionActor(actor, m);

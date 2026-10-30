@@ -193,7 +193,7 @@
       return null;
     return readByte(0x61da + kind) & 255;
   }
-  /** Research translation; pedestrian callers are not live yet.
+  /** Original pedestrian response gate; low-height contact is wired live.
    * A60C-A64A: response6 excludes the attached actor, then compares
    * the signed relative height against0380 (14 browser pixels). The upper
    * branch has separate reward state and must not be treated as a bail.
@@ -211,6 +211,59 @@
     actor.pointer = readWord(0x6046 + actor.kind * 2) & 65535;
     actor.flags = ((actor.flags || 0) | 0x18) & 255;
     actor.phase = 0;
+    return actor;
+  }
+  /** Bank1E000:4ECC-4F40. One global saved actor, not a per-NPC timer.
+   * Preserve exactly the six original motion fields before stopping it.
+   * Sprite6 instead stops companion sprite5 without replacing the snapshot.
+   */
+  function saveActorMotion(actor, state, companion) {
+    if (actor.sprite === 6) {
+      if (companion) {
+        companion.pointer = 0x50fa;
+        companion.flags = ((companion.flags || 0) | 0x18) & 255;
+        companion.dx = companion.dy = companion.duration = 0;
+      }
+    } else {
+      state.sprite = actor.sprite & 255;
+      state.timer = 0xb4;
+      state.saved = {};
+      for (const key of [
+        "duration",
+        "rate",
+        "dx",
+        "dy",
+        "pointer",
+        "extraPointer",
+      ])
+        state.saved[key] = actor[key] || 0;
+    }
+    actor.duration = actor.extraPointer = actor.dx = actor.dy = 0;
+    actor.routeFlags = ((actor.routeFlags || 0) | 0x40) & 255;
+    return state;
+  }
+  /** CB26-CB4A and bank1E000:4F42-4F96. Restore only the remembered
+   * sprite when flag40 still marks it as stopped. Countdown is not saved.
+   */
+  function tickActorRecovery(state, findActor) {
+    if (!(state.timer & 255)) return null;
+    state.timer = (state.timer - 1) & 255;
+    if (state.timer) return null;
+    const actor = findActor(state.sprite);
+    if (!actor || !(actor.routeFlags & 0x40)) return null;
+    for (const key of [
+      "duration",
+      "rate",
+      "dx",
+      "dy",
+      "pointer",
+      "extraPointer",
+    ])
+      actor[key] = state.saved[key];
+    actor.flags = ((actor.flags || 0) | 0x18) & 255;
+    actor.routeFlags &= ~0x40 & 255;
+    actor.phase = 0; // Browser directory bookkeeping, not an extra ROM clock.
+    state.sprite = 255;
     return actor;
   }
   /** AD94-ADFE for player slot0 versus an ordinary actor. Shape words8,
@@ -294,6 +347,8 @@
     responseCode,
     pedestrianKnockdown,
     knockDownActor,
+    saveActorMotion,
+    tickActorRecovery,
     impactSide,
     playerContact,
     actorContact,
