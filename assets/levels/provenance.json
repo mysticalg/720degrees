@@ -1,0 +1,800 @@
+{
+  "city": {
+    "name": "city",
+    "kind": "city",
+    "variant": 0,
+    "width": 6144,
+    "height": 3072,
+    "columns": 768,
+    "rows": 384,
+    "start": {
+      "x": 640,
+      "y": 720
+    },
+    "finish": null,
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x180",
+      "mapBank": "0x8000",
+      "macroColumns": 48,
+      "macroRows": 24
+    }
+  },
+  "slalom-1": {
+    "name": "slalom-1",
+    "kind": "slalom",
+    "variant": 0,
+    "width": 2304,
+    "height": 1664,
+    "columns": 288,
+    "rows": 208,
+    "start": {
+      "x": 324,
+      "y": 164,
+      "width": 520
+    },
+    "finish": {
+      "x": 1948,
+      "y": 1084,
+      "cells": 96
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x48",
+      "mapBank": "0x4000",
+      "macroColumns": 18,
+      "macroRows": 13
+    }
+  },
+  "slalom-2": {
+    "name": "slalom-2",
+    "kind": "slalom",
+    "variant": 1,
+    "width": 3072,
+    "height": 2560,
+    "columns": 384,
+    "rows": 320,
+    "start": {
+      "x": 1468,
+      "y": 164,
+      "width": 520
+    },
+    "finish": {
+      "x": 364,
+      "y": 2092,
+      "cells": 81
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x234",
+      "mapBank": "0x4000",
+      "macroColumns": 24,
+      "macroRows": 20
+    }
+  },
+  "slalom-3": {
+    "name": "slalom-3",
+    "kind": "slalom",
+    "variant": 2,
+    "width": 2944,
+    "height": 2304,
+    "columns": 368,
+    "rows": 288,
+    "start": {
+      "x": 324,
+      "y": 164,
+      "width": 520
+    },
+    "finish": {
+      "x": 2156,
+      "y": 1708,
+      "cells": 81
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x620",
+      "mapBank": "0x4000",
+      "macroColumns": 23,
+      "macroRows": 18
+    }
+  },
+  "slalom-4": {
+    "name": "slalom-4",
+    "kind": "slalom",
+    "variant": 3,
+    "width": 3072,
+    "height": 3328,
+    "columns": 384,
+    "rows": 416,
+    "start": {
+      "x": 1468,
+      "y": 164,
+      "width": 520
+    },
+    "finish": {
+      "x": 1436,
+      "y": 2876,
+      "cells": 96
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x960",
+      "mapBank": "0x4000",
+      "macroColumns": 24,
+      "macroRows": 26
+    }
+  },
+  "slalom-5": {
+    "name": "slalom-5",
+    "kind": "slalom",
+    "variant": 4,
+    "width": 2944,
+    "height": 2176,
+    "columns": 368,
+    "rows": 272,
+    "start": {
+      "x": 324,
+      "y": 164,
+      "width": 520
+    },
+    "finish": {
+      "x": 620,
+      "y": 1580,
+      "cells": 81
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0xe6c",
+      "mapBank": "0x4000",
+      "macroColumns": 23,
+      "macroRows": 17
+    }
+  },
+  "slalom-6": {
+    "name": "slalom-6",
+    "kind": "slalom",
+    "variant": 5,
+    "width": 3072,
+    "height": 3200,
+    "columns": 384,
+    "rows": 400,
+    "start": {
+      "x": 1468,
+      "y": 164,
+      "width": 520
+    },
+    "finish": {
+      "x": 2540,
+      "y": 1836,
+      "cells": 81
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x117e",
+      "mapBank": "0x4000",
+      "macroColumns": 24,
+      "macroRows": 25
+    }
+  },
+  "downhill-1": {
+    "name": "downhill-1",
+    "kind": "downhill",
+    "variant": 0,
+    "width": 2048,
+    "height": 4224,
+    "columns": 256,
+    "rows": 528,
+    "start": {
+      "x": 292,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 548,
+      "y": 3740,
+      "cells": 62
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x163e",
+      "mapBank": "0x4000",
+      "macroColumns": 16,
+      "macroRows": 33
+    }
+  },
+  "downhill-2": {
+    "name": "downhill-2",
+    "kind": "downhill",
+    "variant": 1,
+    "width": 2048,
+    "height": 5248,
+    "columns": 256,
+    "rows": 656,
+    "start": {
+      "x": 1628,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 1436,
+      "y": 4860,
+      "cells": 61
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x1a5e",
+      "mapBank": "0x4000",
+      "macroColumns": 16,
+      "macroRows": 41
+    }
+  },
+  "downhill-3": {
+    "name": "downhill-3",
+    "kind": "downhill",
+    "variant": 2,
+    "width": 1536,
+    "height": 6144,
+    "columns": 192,
+    "rows": 768,
+    "start": {
+      "x": 988,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 532,
+      "y": 5652,
+      "cells": 52
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x1f8e",
+      "mapBank": "0x4000",
+      "macroColumns": 12,
+      "macroRows": 48
+    }
+  },
+  "downhill-4": {
+    "name": "downhill-4",
+    "kind": "downhill",
+    "variant": 3,
+    "width": 1536,
+    "height": 6272,
+    "columns": 192,
+    "rows": 784,
+    "start": {
+      "x": 420,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 276,
+      "y": 5780,
+      "cells": 52
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x241e",
+      "mapBank": "0x4000",
+      "macroColumns": 12,
+      "macroRows": 49
+    }
+  },
+  "downhill-5": {
+    "name": "downhill-5",
+    "kind": "downhill",
+    "variant": 4,
+    "width": 2048,
+    "height": 8192,
+    "columns": 256,
+    "rows": 1024,
+    "start": {
+      "x": 1188,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 1564,
+      "y": 7676,
+      "cells": 61
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x28c6",
+      "mapBank": "0x4000",
+      "macroColumns": 16,
+      "macroRows": 64
+    }
+  },
+  "downhill-6": {
+    "name": "downhill-6",
+    "kind": "downhill",
+    "variant": 5,
+    "width": 2048,
+    "height": 9344,
+    "columns": 256,
+    "rows": 1168,
+    "start": {
+      "x": 1500,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 660,
+      "y": 8852,
+      "cells": 52
+    },
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x30c6",
+      "mapBank": "0x4000",
+      "macroColumns": 16,
+      "macroRows": 73
+    }
+  },
+  "ramp-1": {
+    "name": "ramp-1",
+    "kind": "ramp",
+    "variant": 0,
+    "width": 1280,
+    "height": 1152,
+    "columns": 160,
+    "rows": 144,
+    "start": {
+      "x": 676,
+      "y": 637
+    },
+    "finish": null,
+    "launches": [],
+    "targets": [],
+    "rom": {
+      "mapOffset": "0x39e6",
+      "mapBank": "0x4000",
+      "macroColumns": 10,
+      "macroRows": 9
+    },
+    "pipe": {
+      "x": 600,
+      "y": 536,
+      "across": 175,
+      "along": 95
+    }
+  },
+  "jump-1": {
+    "name": "jump-1",
+    "kind": "jump",
+    "variant": 0,
+    "width": 2560,
+    "height": 3584,
+    "columns": 320,
+    "rows": 448,
+    "start": {
+      "x": 548,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 1436,
+      "y": 3244,
+      "cells": 73
+    },
+    "launches": [
+      {
+        "x": 1156,
+        "y": 660,
+        "cells": 73
+      },
+      {
+        "x": 1020,
+        "y": 1604,
+        "cells": 118
+      },
+      {
+        "x": 900,
+        "y": 2772,
+        "cells": 74
+      }
+    ],
+    "targets": [
+      {
+        "x": 1340,
+        "y": 764,
+        "cells": 98
+      },
+      {
+        "x": 828,
+        "y": 1732,
+        "cells": 98
+      }
+    ],
+    "rom": {
+      "mapOffset": "0x3aea",
+      "mapBank": "0x4000",
+      "macroColumns": 20,
+      "macroRows": 28
+    }
+  },
+  "jump-2": {
+    "name": "jump-2",
+    "kind": "jump",
+    "variant": 1,
+    "width": 2048,
+    "height": 4352,
+    "columns": 256,
+    "rows": 544,
+    "start": {
+      "x": 420,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 1676,
+      "y": 3892,
+      "cells": 61
+    },
+    "launches": [
+      {
+        "x": 1036,
+        "y": 700,
+        "cells": 142
+      },
+      {
+        "x": 1148,
+        "y": 1860,
+        "cells": 118
+      },
+      {
+        "x": 1012,
+        "y": 3292,
+        "cells": 62
+      }
+    ],
+    "targets": [
+      {
+        "x": 1260,
+        "y": 852,
+        "cells": 98
+      },
+      {
+        "x": 892,
+        "y": 1972,
+        "cells": 72
+      }
+    ],
+    "rom": {
+      "mapOffset": "0x3f62",
+      "mapBank": "0x4000",
+      "macroColumns": 16,
+      "macroRows": 34
+    }
+  },
+  "jump-3": {
+    "name": "jump-3",
+    "kind": "jump",
+    "variant": 2,
+    "width": 2048,
+    "height": 5632,
+    "columns": 256,
+    "rows": 704,
+    "start": {
+      "x": 676,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 404,
+      "y": 5140,
+      "cells": 52
+    },
+    "launches": [
+      {
+        "x": 1292,
+        "y": 764,
+        "cells": 142
+      },
+      {
+        "x": 1148,
+        "y": 1732,
+        "cells": 118
+      },
+      {
+        "x": 1036,
+        "y": 3196,
+        "cells": 142
+      },
+      {
+        "x": 1004,
+        "y": 4604,
+        "cells": 62
+      }
+    ],
+    "targets": [
+      {
+        "x": 1564,
+        "y": 940,
+        "cells": 72
+      },
+      {
+        "x": 1012,
+        "y": 1876,
+        "cells": 72
+      },
+      {
+        "x": 1236,
+        "y": 3340,
+        "cells": 50
+      }
+    ],
+    "rom": {
+      "mapOffset": "0x43a2",
+      "mapBank": "0x4000",
+      "macroColumns": 16,
+      "macroRows": 44
+    }
+  },
+  "jump-4": {
+    "name": "jump-4",
+    "kind": "jump",
+    "variant": 3,
+    "width": 2560,
+    "height": 7424,
+    "columns": 320,
+    "rows": 928,
+    "start": {
+      "x": 1628,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 404,
+      "y": 7060,
+      "cells": 52
+    },
+    "launches": [
+      {
+        "x": 1020,
+        "y": 708,
+        "cells": 118
+      },
+      {
+        "x": 1036,
+        "y": 1788,
+        "cells": 142
+      },
+      {
+        "x": 1148,
+        "y": 3140,
+        "cells": 118
+      },
+      {
+        "x": 1164,
+        "y": 4732,
+        "cells": 142
+      },
+      {
+        "x": 1132,
+        "y": 6396,
+        "cells": 62
+      }
+    ],
+    "targets": [
+      {
+        "x": 828,
+        "y": 812,
+        "cells": 72
+      },
+      {
+        "x": 1316,
+        "y": 1972,
+        "cells": 50
+      },
+      {
+        "x": 1028,
+        "y": 3268,
+        "cells": 50
+      },
+      {
+        "x": 1380,
+        "y": 4932,
+        "cells": 32
+      }
+    ],
+    "rom": {
+      "mapOffset": "0x4932",
+      "mapBank": "0x4000",
+      "macroColumns": 20,
+      "macroRows": 58
+    }
+  },
+  "jump-5": {
+    "name": "jump-5",
+    "kind": "jump",
+    "variant": 4,
+    "width": 2432,
+    "height": 9984,
+    "columns": 304,
+    "rows": 1248,
+    "start": {
+      "x": 1756,
+      "y": 132,
+      "width": 456
+    },
+    "finish": {
+      "x": 2028,
+      "y": 9540,
+      "cells": 37
+    },
+    "launches": [
+      {
+        "x": 1148,
+        "y": 708,
+        "cells": 118
+      },
+      {
+        "x": 1036,
+        "y": 2172,
+        "cells": 142
+      },
+      {
+        "x": 1148,
+        "y": 3780,
+        "cells": 118
+      },
+      {
+        "x": 1036,
+        "y": 5180,
+        "cells": 142
+      },
+      {
+        "x": 1420,
+        "y": 5564,
+        "cells": 142
+      },
+      {
+        "x": 1276,
+        "y": 6980,
+        "cells": 118
+      },
+      {
+        "x": 1236,
+        "y": 8812,
+        "cells": 38
+      }
+    ],
+    "targets": [
+      {
+        "x": 884,
+        "y": 868,
+        "cells": 50
+      },
+      {
+        "x": 1228,
+        "y": 2260,
+        "cells": 50
+      },
+      {
+        "x": 996,
+        "y": 3900,
+        "cells": 32
+      },
+      {
+        "x": 1636,
+        "y": 5708,
+        "cells": 32
+      },
+      {
+        "x": 1076,
+        "y": 7164,
+        "cells": 18
+      }
+    ],
+    "rom": {
+      "mapOffset": "0x5266",
+      "mapBank": "0x4000",
+      "macroColumns": 19,
+      "macroRows": 78
+    }
+  },
+  "jump-6": {
+    "name": "jump-6",
+    "kind": "jump",
+    "variant": 5,
+    "width": 2560,
+    "height": 10368,
+    "columns": 320,
+    "rows": 1296,
+    "start": {
+      "x": 540,
+      "y": 132,
+      "width": 472
+    },
+    "finish": {
+      "x": 452,
+      "y": 10028,
+      "cells": 22
+    },
+    "launches": [
+      {
+        "x": 1164,
+        "y": 764,
+        "cells": 142
+      },
+      {
+        "x": 1276,
+        "y": 2116,
+        "cells": 118
+      },
+      {
+        "x": 1292,
+        "y": 3708,
+        "cells": 142
+      },
+      {
+        "x": 1532,
+        "y": 5188,
+        "cells": 118
+      },
+      {
+        "x": 1148,
+        "y": 5572,
+        "cells": 118
+      },
+      {
+        "x": 1292,
+        "y": 7292,
+        "cells": 142
+      }
+    ],
+    "targets": [
+      {
+        "x": 1452,
+        "y": 924,
+        "cells": 32
+      },
+      {
+        "x": 1148,
+        "y": 2236,
+        "cells": 32
+      },
+      {
+        "x": 1484,
+        "y": 3884,
+        "cells": 8
+      },
+      {
+        "x": 1644,
+        "y": 3900,
+        "cells": 18
+      },
+      {
+        "x": 1060,
+        "y": 5708,
+        "cells": 18
+      },
+      {
+        "x": 1532,
+        "y": 7452,
+        "cells": 8
+      }
+    ],
+    "rom": {
+      "mapOffset": "0x5dfe",
+      "mapBank": "0x4000",
+      "macroColumns": 20,
+      "macroRows": 81
+    }
+  }
+}

@@ -1,173 +1,159 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skate 720: Park Circuit</title>
-  <link rel="stylesheet" href="styles.css" />
-<!-- Footer AdSense -->
-  <style data-footer-adsense-style>
-    .footer-adsense {
-      margin-top: 24px;
-      padding-top: 18px;
-      display: grid;
-      gap: 12px;
-      width: 100%;
-    }
-
-    .footer-adsense__label {
-      margin: 0;
-      font-size: 12px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      opacity: 0.72;
-    }
-
-    .footer-adsense.is-hidden {
-      display: none;
-    }
-
-    .footer-adsense__unit {
-      display: block;
-      width: 100%;
-      min-height: 90px;
-    }
-  </style>
-  <script src="./adsense-config.js"></script>
-  <script>
-    (function () {
-      const config = window.__FOOTER_ADSENSE__;
-      if (
-        !config ||
-        !config.client ||
-        !config.slot ||
-        document.querySelector("script[data-footer-adsense-loader]")
-      ) {
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.async = true;
-      script.src =
-        "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" +
-        encodeURIComponent(config.client);
-      script.crossOrigin = "anonymous";
-      script.dataset.footerAdsenseLoader = "true";
-      document.head.appendChild(script);
-    })();
-  </script>
-</head>
-<body>
-  <main class="app-shell" aria-live="polite">
-    <header class="top-bar">
-      <h1>🛹 Skate 720: Park Circuit</h1>
-      <p class="subtitle">Original HTML5 tribute with isometric flow, tickets, shops, and four courses.</p>
-    </header>
-
-    <section class="screen-frame">
-      <canvas id="gameCanvas" width="1280" height="720" aria-label="Isometric skate park gameplay"></canvas>
-
-      <aside class="hud" id="hudPanel">
-        <h2>HUD</h2>
-        <ul>
-          <li><span class="icon">🎫</span>Tickets: <strong id="hudTickets">0</strong></li>
-          <li><span class="icon">⭐</span>Score: <strong id="hudScore">0</strong></li>
-          <li><span class="icon">⛸️</span>Course: <strong id="hudCourse">A</strong></li>
-          <li><span class="icon">⏱️</span>Time: <strong id="hudTime">0</strong></li>
-          <li><span class="icon">🎚️</span>Difficulty: <strong id="hudDifficulty">Normal</strong></li>
-        </ul>
-        <div class="tooltip-box" title="Tips and controls">
-          <h3>Controls</h3>
-          <p>Move: Arrow Keys / WASD</p>
-          <p>Ollie: Space</p>
-          <p>Air Spin: Space (while airborne)</p>
-          <p>Pause: P</p>
-          <p>Menu Back: Esc</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>720° — Native JavaScript</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="style.css" />
+    <!-- Plain, ordered scripts also work when index.html is opened directly. -->
+    <script defer src="src/config.js?v=actor-setup-live-36"></script>
+    <script defer src="src/level-data.js"></script>
+    <script defer src="src/motion-data.js"></script>
+    <script defer src="src/terrain-data.js"></script>
+    <script defer src="src/original-routines.js?v=actor-setup-live-36"></script>
+    <script defer src="src/compressed-map-data.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-map-decoder.js?v=actor-setup-live-36"></script>
+    <script defer src="src/actor-table-data.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-actor-memory.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-actor-spawning.js?v=actor-setup-live-36"></script>
+    <script defer src="src/object-registry-data.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-actor-routes.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-object-registry.js?v=actor-setup-live-36"></script>
+    <script defer src="src/city-actor-data.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-actors.js?v=actor-setup-live-36"></script>
+    <script defer src="src/city-crack-data.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-cracks.js?v=actor-setup-live-36"></script>
+    <script defer src="src/levels.js?v=actor-setup-live-36"></script>
+    <script defer src="src/input.js?v=actor-setup-live-36"></script>
+    <script defer src="src/audio.js"></script>
+    <script defer src="src/world.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-ground.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-bail.js?v=actor-setup-live-36"></script>
+    <script defer src="src/original-effects.js?v=actor-setup-live-36"></script>
+    <script defer src="src/game.js?v=actor-setup-live-36"></script>
+    <script defer src="src/renderer.js?v=actor-setup-live-36"></script>
+    <script defer src="src/main.js?v=actor-setup-live-36"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a class="brand" href="index.html" aria-label="720 home"
+          >720<span>°</span></a
+        >
+        <p>SKATE OR DIE.</p>
+        <nav>
+          <button
+            id="steering"
+            aria-pressed="false"
+            title="Point: aim with the analog stick. Rotate: left/right turns your board."
+          >
+            STICK: POINT</button
+          ><button id="sound" aria-pressed="false">SOUND ON</button
+          ><button id="fullscreen">FULLSCREEN ↗</button>
+        </nav>
+      </header>
+      <div class="music-controls" aria-label="Music controls">
+        <button id="music-mute" aria-pressed="false">MUSIC ON</button>
+        <label for="music-volume">MUSIC LEVEL</label>
+        <input
+          id="music-volume"
+          type="range"
+          min="0"
+          max="100"
+          value="38"
+          aria-label="Music volume"
+        />
+        <output id="music-level" for="music-volume">38%</output>
+      </div>
+      <section id="cabinet" aria-label="720 skating game">
+        <canvas
+          id="game"
+          width="512"
+          height="384"
+          tabindex="0"
+          aria-label="720 game screen. Arrow keys steer, X kicks, Space jumps, C spins, E enters a park."
+        ></canvas>
+        <div id="menu" class="overlay">
+          <div class="menu-box">
+            <div class="logo">720<span>°</span></div>
+            <p class="subtitle">WELCOME TO SKATE CITY</p>
+            <p>
+              Jump. Spin. Earn your ticket.<br />Four parks. Sixteen events. One
+              board.
+            </p>
+            <button id="start" class="primary">START SKATING</button
+            ><button id="practice">FREE SKATE · NO TIMER</button
+            ><button id="difficulty">SKILL: TRAINING</button>
+            <p class="menu-controls">
+              ARROWS / WASD steer · X kick · SPACE jump<br />C spin · E enter /
+              buy · P pause
+            </p>
+            <small
+              >Native JavaScript recreation · original ROM artwork &
+              audio</small
+            >
+          </div>
         </div>
-      </aside>
-    </section>
-
-    <footer class="bottom-help">
-      <p>
-        <span class="icon">💡</span>
-        Tooltips are enabled throughout the interface. Hover items in menus for details.
-      </p>
-    <!-- Footer AdSense slot -->
-  <div class="footer-adsense" data-footer-adsense hidden>
-    <p class="footer-adsense__label">Advertisement</p>
-    <ins
-      class="adsbygoogle footer-adsense__unit"
-      style="display:block"
-      data-ad-format="auto"
-      data-full-width-responsive="true"
-    ></ins>
-  </div>
-  <script>
-    (function () {
-      const wrapper = document.currentScript.previousElementSibling;
-      const config = window.__FOOTER_ADSENSE__;
-      if (!wrapper || !config || !config.client || !config.slot) {
-        return;
-      }
-
-      const unit = wrapper.querySelector(".adsbygoogle");
-      if (!unit) {
-        return;
-      }
-
-      const showAd = function () {
-        wrapper.hidden = false;
-        wrapper.classList.remove("is-hidden");
-      };
-
-      const hideAd = function () {
-        wrapper.hidden = true;
-        wrapper.classList.add("is-hidden");
-      };
-
-      const syncVisibility = function () {
-        const status = unit.getAttribute("data-ad-status");
-        if (status === "filled") {
-          showAd();
-          return;
-        }
-
-        if (status === "unfilled") {
-          hideAd();
-        }
-      };
-
-      unit.setAttribute("data-ad-client", config.client);
-      unit.setAttribute("data-ad-slot", config.slot);
-
-      const observer = new MutationObserver(syncVisibility);
-      observer.observe(unit, {
-        attributes: true,
-        attributeFilter: ["data-ad-status"],
-      });
-
-      showAd();
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-        window.setTimeout(syncVisibility, 1500);
-        window.setTimeout(function () {
-          if (!unit.getAttribute("data-ad-status")) {
-            hideAd();
-          }
-        }, 4000);
-      } catch (error) {
-        hideAd();
-        console.error("Footer AdSense failed to render", error);
-      }
-    })();
-  </script>
-</footer>
-  </main>
-
-  <!--
-    Use a classic deferred script so the game boots from both file:// and http:// origins.
-    ES modules on file:// are blocked by browser CORS rules in many local setups.
-  -->
-  <script src="src/game.js" defer></script>
-</body>
+        <div id="pause" class="overlay" hidden>
+          <div class="menu-box compact">
+            <h2>TAKE A BREATHER</h2>
+            <p>Your board will be here.</p>
+            <button id="resume" class="primary">KEEP SKATING</button
+            ><button id="quit">BACK TO TITLE</button>
+          </div>
+        </div>
+        <div id="result" class="overlay" hidden>
+          <div class="menu-box compact">
+            <h2 id="result-title"></h2>
+            <p id="result-copy"></p>
+            <button id="continue" class="primary">BACK TO SKATE CITY</button>
+          </div>
+        </div>
+        <div class="touch" aria-label="Touch controls">
+          <div class="dpad">
+            <button data-key="ArrowUp">▲</button
+            ><button data-key="ArrowLeft">◀</button
+            ><button data-key="ArrowDown">▼</button
+            ><button data-key="ArrowRight">▶</button>
+          </div>
+          <div class="actions">
+            <button data-key="KeyX">KICK</button
+            ><button data-key="Space">JUMP</button
+            ><button data-key="KeyC">SPIN</button
+            ><button data-key="KeyE">ENTER</button>
+          </div>
+        </div>
+      </section>
+      <footer>
+        <div>
+          <b>MOVE</b> ↑↓←→ / WASD <b>KICK</b> X / Shift <b>JUMP</b> Space / Z
+          <b>SPIN</b> C / ←→ in air
+        </div>
+        <div>
+          <b>ENTER / BUY</b> E <b>PAUSE</b> P <b>MAP</b> Tab <b>SOUND</b> M
+          <b>FULLSCREEN</b> F
+        </div>
+        <p id="pad-status">
+          CONTROLLER: press a button on your pad to connect.
+        </p>
+        <div>
+          <b>PAD</b> Left stick steer · A / RT kick · B jump · X spin · Y enter
+          · LB/RB spin · Start pause · Back map
+        </div>
+        <p>
+          Land tricks for tickets. Find the four park arrows before the bees
+          find you.<br />Ramp · Downhill · Jump · Slalom — medal money buys
+          better gear at the blue shops.
+        </p>
+        <small
+          >Original ROM media; partial physics/scoring translation. Work in progress.
+          Artwork © Atari Games, 1986. Local personal copy.</small
+        >
+      </footer>
+    </main>
+  </body>
 </html>

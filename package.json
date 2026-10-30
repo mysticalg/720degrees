@@ -1,0 +1,9 @@
+{
+  "name": "720-native",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Native JavaScript 720 port, translation in progress",
+  "scripts": {
+    "test": "node tests/check-object-registry.cjs && node tests/check-route-choice.cjs && node tests/check-pending-route-clock.cjs"
+  }
+}

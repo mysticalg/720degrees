@@ -1,0 +1,26 @@
+/** Shared constants. All distances are screen-space world pixels; time is seconds. */
+window.Skate720 = {};
+(() => {
+  const S = window.Skate720;
+  S.CONFIG = Object.freeze({
+    width: 512,
+    height: 384,
+    step: 1 / 60,
+    // Original fixed-point travel scale; arbitrary pace boost disabled for exact-physics work.
+    skatingPace: 1,
+    cityTime: 45,
+    beeGrace: 18,
+    rounds: 4,
+  });
+  S.PARKS = ["ramp", "downhill", "jump", "slalom"];
+  S.COLORS = {
+    ramp: "#fda729",
+    downhill: "#f87142",
+    jump: "#31d5cf",
+    slalom: "#bcdf36",
+  };
+  S.clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  S.distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  S.angleDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
+  S.format = (value) => Math.floor(value).toLocaleString("en-US");
+})();

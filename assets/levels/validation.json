@@ -1,0 +1,6 @@
+{
+  "viewport_non_floor_tiles": 1002,
+  "exact_matches": 984,
+  "fraction": 0.9820359281437125,
+  "note": "512x384 original viewport; ground-noise aliases excluded. Actual original scrolling-cache addresses are wrapped, not treated as a flat image."
+}
