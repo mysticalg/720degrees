@@ -1242,13 +1242,30 @@
       this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
       this.camera.y += (p.y - 35 - this.camera.y) * Math.min(1, dt * 7);
     }
+    /** Recovered normal-stance footprint and original small contact masks.
+     * Pose-specific footprint selection and wide vehicle masks remain pending.
+     */
+    actorMaskContact(actor, pointer = actor.extraPointer) {
+      if (!pointer) return false;
+      const read = this.objectRegistry.readContactWord;
+      return (
+        S.OriginalContact.smallMaskContact(
+          S.OriginalContact.actorContact(actor, pointer, read),
+          S.OriginalContact.playerContact(this.player, read),
+          read,
+        ) === true
+      );
+    }
     updateCity(dt) {
       const p = this.player;
       this.mapFrames = Math.max(0, this.mapFrames - 1);
       const surface = this.city.level.sample(p.x, p.y);
       if (!p.air && !p.bail && p.fallen <= 0) {
         for (const crack of this.cracks) {
-          if (S.OriginalCracks.touches(p, crack) && this.launchFromCrack(crack))
+          if (
+            this.actorMaskContact(crack, 0x7a30) &&
+            this.launchFromCrack(crack)
+          )
             break;
         }
       }
@@ -1324,15 +1341,12 @@
         if (length < 22 || this.cityTimer < -S.CONFIG.beeGrace)
           this.caughtByBees();
       }
-      for (const obstacle of this.city.obstacles) {
-        const inside =
-          ((p.x - obstacle.x) / obstacle.rx) ** 2 +
-            ((p.y - obstacle.y) / obstacle.ry) ** 2 <
-          1;
-        if (inside && p.z < 28 && p.invulnerable <= 0) {
-          this.crash(obstacle.type === "water" ? "SPLASH!" : "WIPEOUT!");
-          p.x -= Math.cos(p.angle) * 18;
-          p.y -= Math.sin(p.angle) * 18;
+      if (p.invulnerable <= 0 && !p.bail) {
+        for (const actor of this.cityActors) {
+          if (actor.kind === 87 && this.actorMaskContact(actor)) {
+            this.crash("WIPEOUT!");
+            break;
+          }
         }
       }
     }

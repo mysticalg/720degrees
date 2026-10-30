@@ -7,7 +7,8 @@
       coordinates = decode(data.coordinates),
       objects = decode(data.objects),
       motion = decode(data.motion),
-      fixed = decode(data.fixed);
+      fixed = decode(data.fixed),
+      contactLow = data.contactLow ? decode(data.contactLow) : null;
     const at = (bytes, index) => {
       if (!Number.isInteger(index) || index < 0 || index >= bytes.length)
         throw new RangeError("Actor table read outside extracted range");
@@ -23,6 +24,12 @@
       ...registry,
       readTypeByte: typeByte,
       readTypeWord: (a) => word(typeByte, a),
+      readContactWord: (a) =>
+        word(
+          (b) =>
+            b < 0x6000 ? at(contactLow, b - 0x4000) : at(types[1], b - 0x6000),
+          a,
+        ),
       readObjectByte: objectByte,
       readObjectWord: (a) => word(objectByte, a),
       readTraitByte: coordinateByte,

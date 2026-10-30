@@ -22,7 +22,8 @@
       { kind: "pads", x: 3330, y: 2990, label: "PADS", price: 100 },
     ],
     ramps: [],
-    obstacles: [{ x: 3072, y: 1632, rx: 47, ry: 29, type: "speakers" }],
+    // Solid actor contact uses recovered masks in the game contact stage.
+    obstacles: [],
   });
   S.makeEvent = (kind, round, experienced = false) => {
     const level = S.Levels.course(kind, round, experienced);

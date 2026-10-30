@@ -40,3 +40,5 @@ The included game media was recovered from the supplied 720° ROM. No replacemen
 Run the portable checks with `npm test` (Node.js required; no package installation needed). These cover object reservations, route choice and pending-route timing. They do not establish complete gameplay fidelity. Broader development checks also compare recovered ROM tables and captured original actor state, and exercise the game in a browser.
 
 Extraction tools are in `tools/`; they require the user's ROM and, for some older media extraction paths, additional development capture data and Python dependencies. Generated runtime assets are already included.
+
+Speaker and springboard-crack contact now uses recovered small scanline masks after the original rectangle test. The broad speaker ellipse and its forced position shove were removed. Normal-stance player footprint selection is currently used; pose-specific footprints, wide vehicle masks and player/traffic hit dispatch remain unfinished.
