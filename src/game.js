@@ -441,6 +441,11 @@
     /** Jump velocity sets height; horizontal momentum is retained in the air. */
     jump() {
       const p = this.player;
+      // A fresh press just after spring contact belongs to the same launch.
+      if (p.air && p.crackSpringAge <= 0.1) {
+        this.boostCrackJump();
+        return;
+      }
       if (p.vehicleTow) this.releaseVehicleTow();
       if (
         p.air ||
@@ -450,6 +455,15 @@
         p.jumpSequence
       )
         return;
+      p.crackJumpWindow = 6; // 100ms timing allowance, never a held-button boost.
+      if (this.mode === "city") {
+        for (const crack of this.cracks)
+          if (
+            this.actorMaskContact(crack, 0x7a30) &&
+            this.launchFromCrack(crack)
+          )
+            return;
+      }
       const level = this.event?.level || this.city.level;
       const wall =
         this.event?.kind === "ramp" ? S.Halfpipe.wallAt(level, p.x, p.y) : null;
@@ -508,12 +522,35 @@
      * 9F8A/9FB4 supply the pose and airborne momentum conversion.
      * Native contact rectangles initiate this translated controller.
      */
+    /** Add one normal shoe-jump impulse to a timed spring launch. */
+    boostCrackJump() {
+      const p = this.player;
+      if (
+        !p.air ||
+        !Number.isFinite(p.crackSpringAge) ||
+        p.crackJumpBoosted ||
+        p.crackSpringAge > 0.1
+      )
+        return false;
+      const impulse = S.OriginalRoutines.ordinaryJumpLaunch(
+        Math.min(3, this.gear.shoes),
+      );
+      p.romVerticalVelocity += impulse;
+      p.jumpLaunchVelocity += impulse;
+      p.vz = (p.romVerticalVelocity * 60) / 64;
+      p.crackJumpBoosted = true;
+      p.crackJumpWindow = 0;
+      return true;
+    }
     launchFromCrack(crack) {
       const p = this.player,
         data = S.CITY_CRACK_DATA;
+      const timedJump = p.crackJumpWindow > 0;
       const activated = S.OriginalCracks.activate(
-        p.romSpeed || 0,
-        Math.round(p.z * 64),
+        p.jumpSequence?.action === 4
+          ? p.jumpSequence.savedSpeed
+          : p.romSpeed || 0,
+        timedJump && p.airTime <= 0.1 ? 0 : Math.round(p.z * 64),
         0,
         p.romGroundVertical?.velocity || 0,
         this.gear.pads,
@@ -526,22 +563,13 @@
       const rom = S.OriginalGround,
         surface = this.city.level.contactSample(p.x, p.y);
       const motion = rom.airborneTransition(
-        p.romSpeed,
+        p.jumpSequence?.action === 4 ? p.jumpSequence.savedSpeed : p.romSpeed,
         p.romDirection ?? 4,
         surface.profile,
         0,
         Math.min(3, this.gear.board),
         rom.terrainTableReader(S.TERRAIN_TABLES),
       );
-      if (this.event.kind === "downhill")
-        Object.assign(
-          p,
-          this.downhillTakeoffMotion(
-            motion.savedSpeed,
-            motion.direction,
-            profile,
-          ),
-        );
       p.romSpeed = motion.mainSpeed;
       p.romMovementDirection = motion.direction;
       p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
@@ -570,6 +598,10 @@
       p.jumpLaunchVelocity = activated.vertical;
       p.vz = (activated.vertical * 60) / 64;
       p.romGravity = 12;
+      p.crackSpringAge = 0;
+      p.crackJumpBoosted = false;
+      if (timedJump) this.boostCrackJump();
+      p.crackJumpWindow = 0;
       p.launchSource =
         "ROM A864 crack springboard; pad impulse table7CA4; native contact";
       this.audio.effect("springboard");
@@ -598,6 +630,15 @@
         );
       p.vx = ((motion.dx + motion.fractionX / 256) * 60) / 64;
       p.vy = (-(motion.dy + motion.fractionY / 256) * 60) / 64;
+      if (this.event.kind === "downhill")
+        Object.assign(
+          p,
+          this.downhillTakeoffMotion(
+            motion.savedSpeed,
+            motion.direction,
+            profile,
+          ),
+        );
       p.romSpeed = motion.mainSpeed;
       p.romMovementDirection = motion.direction;
       p.courseLaunchProfile = profile;
@@ -1830,6 +1871,11 @@
       }
       this.floats = this.floats.filter((f) => f.life > 0);
       p.cooldown = Math.max(0, p.cooldown - dt);
+      p.crackJumpWindow = Math.max(0, (p.crackJumpWindow || 0) - 1);
+      if (p.crackSpringAge !== undefined) {
+        if (p.air) p.crackSpringAge += dt;
+        else delete p.crackSpringAge;
+      }
       if (p.jumpRecovery) {
         S.OriginalRoutines.tickAnimationPhase(p.jumpRecovery);
         S.OriginalRoutines.jumpActionTransition(p.jumpRecovery);
@@ -2317,10 +2363,17 @@
         this.mapInputSnapshot = current;
       }
       const surface = this.city.level.contactSample(p.x, p.y);
-      if (!p.air && !p.bail && p.fallen <= 0) {
+      const earlyCrackJump =
+        p.air &&
+        p.crackJumpWindow > 0 &&
+        p.airTime <= 0.1 &&
+        p.crackSpringAge === undefined;
+      if ((!p.air || earlyCrackJump) && !p.bail && p.fallen <= 0) {
         for (const crack of this.cracks) {
           if (
-            this.actorMaskContact(crack, 0x7a30) &&
+            (earlyCrackJump
+              ? S.OriginalCracks.touches(p, crack)
+              : this.actorMaskContact(crack, 0x7a30)) &&
             this.launchFromCrack(crack)
           )
             break;

@@ -1,5 +1,11 @@
 # 720° — native JavaScript port in progress
 
+## Timed springboard jump bonus (build73)
+
+A fresh jump timed within roughly100ms of crack contact adds one normal shoe-jump impulse to the original pad-dependent spring impulse. Contact during jump anticipation or the first rising frames is admitted; a press just after spring contact receives the same bonus. Holding/repeating jump cannot stack the bonus, and late presses leave the spring flight unchanged. Normal automatic springboards retain their original pad impulses and minimum-speed threshold. This timing bonus is a native gameplay enhancement.
+
+Also corrected a misplaced downhill-only adapter from build72 that could throw on city springboard activation; downhill ledge drops now receive the intended projection. Browser checks cover20 timing/gear cases, all16 original crack locations, four original pad impulses/animation clocks, greater boosted apex and landing, and the downhill takeoff regression.
+
 ## Downhill takeoff continuity and X grind (build72)
 
 Downhill jumps and ledge drops keep the original grounded surface projection at takeoff. Previously the adapter removed the slope's vertical contribution from screen Y while retaining X, abruptly turning the projected travel vector sideways. The source coefficient tables and jump-course flight routine are unchanged; this is a native downhill continuity adjustment.
