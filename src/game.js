@@ -498,15 +498,19 @@
         level = this.event.level;
       p.dropFall.frames++;
       const feetY = p.y - p.z,
-        surface = level.contactSample(p.x, feetY);
+        contactY =
+          this.event.kind === "jump" ? (p.courseShadowY ?? feetY) : feetY,
+        surface = level.contactSample(p.x, contactY);
       if (
         p.romVerticalVelocity < 0 &&
-        p.z <= -4 &&
+        p.z <= (this.event.kind === "jump" ? 0 : -4) &&
         !surface.blocked &&
         [0, 9, 10, 15, 16].includes(surface.type) &&
-        (surface.profile & 7) < 3
+        (surface.profile & 7) < 3 &&
+        (this.event.kind !== "jump" ||
+          (p.courseShadowY !== null && feetY >= (p.courseShadowY ?? feetY)))
       ) {
-        p.y = feetY;
+        p.y = this.event.kind === "jump" ? (p.courseShadowY ?? feetY) : feetY;
         p.dropFall = null;
         this.land();
       } else if (feetY > level.height - 20 || p.z < -320) {
@@ -554,6 +558,30 @@
         this.crash("MISSED THE LANDING");
         if (p.bail) p.bail.speed = 0;
         p.vx = p.vy = p.romSpeed = 0;
+      }
+    }
+    /** Project onto the first rideable lower surface in the decoded artwork.
+     * This is a native map adapter, not a replacement launch impulse. The
+     * body keeps its original absolute trajectory while the shadow can drop
+     * below the takeoff plane. Vertical scenery faces cannot catch it.
+     */
+    updateCourseShadow() {
+      const p = this.player,
+        level = this.event.level;
+      p.courseShadowY = null;
+      p.courseShadowProfile = undefined;
+      for (let drop = 0; drop <= 320; drop += 2) {
+        const y = p.y + drop,
+          surface = level.contactSample(p.x, y);
+        if (
+          !surface.blocked &&
+          (surface.profile & 7) < 3 &&
+          [0, 9, 10, 15, 16].includes(surface.type)
+        ) {
+          p.courseShadowY = y;
+          p.courseShadowProfile = surface.profile;
+          break;
+        }
       }
     }
     /** Coping entry: use the original vertical-face coefficient and4A
@@ -729,6 +757,8 @@
         p.jumpRecovery?.action === 9
       )
         return;
+      delete p.courseShadowY;
+      delete p.courseShadowProfile;
       let boost = 1;
       const level = this.event?.level || this.city.level,
         surface = level.contactSample(p.x, p.y);
@@ -812,6 +842,8 @@
     }
     land() {
       const p = this.player;
+      delete p.courseShadowY;
+      delete p.courseShadowProfile;
       p.z = 0;
       p.air = false;
       p.cooldown = 0;
@@ -1448,7 +1480,12 @@
         p.z += ((p.romVerticalVelocity * 60) / 64) * dt;
         if (!p.dropFall && p.z <= 0) {
           const support = (e?.level || this.city.level).contactSample(p.x, p.y);
-          if (["downhill", "jump"].includes(e?.kind) && support.blocked) {
+          if (
+            ["downhill", "jump"].includes(e?.kind) &&
+            (support.blocked ||
+              (e?.kind === "jump" &&
+                (p.courseShadowY === null || p.courseShadowY > p.y + 1)))
+          ) {
             // Crossing the takeoff plane over empty scenery is still flight.
             // Keep the current impulse/momentum until lower support is found.
             p.dropFall = { frames: 0 };
@@ -1474,6 +1511,7 @@
       // 45/75 pixels of valid scenery with the course camera margin.
       p.x = S.clamp(p.x, e ? 35 : 4, width - (e ? 35 : 4));
       p.y = S.clamp(p.y, e ? 75 : 4, height - (e ? 45 : 4));
+      if (e?.kind === "jump" && p.air) this.updateCourseShadow();
       if (p.dropFall) this.updateDropContact();
       this.collideWithRecoveredTerrain();
       if (this.mode === "city") this.updateCity(dt);

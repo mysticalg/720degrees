@@ -6,6 +6,12 @@ This replaces the obsolete procedural remake formerly at this repository root. T
 
 Play online: https://mysticalg.github.io/720degrees/
 
+## Jump-course ground projection (build 54)
+
+The airborne shadow now follows the first rideable lower surface rather than staying on the takeoff plane. It uses the recovered ground board/shadow pose, not the airborne board animation (whose tucked frames visibly floated above the ground). It hides over open space when no supported surface is found. Jump-course falling contact waits until the feet reach that lower surface; it no longer ends flight merely because height passes the upper takeoff plane.
+
+Launch impulse and gravity remain the translated routines: the tested rising face supplies312 vertical units versus170 on flat ground with base shoes. A controlled lower-platform fixture continues48 ticks instead of reaching the upper plane at28; a real ramp fixture projects the shadow48 pixels lower. The vertical search is an explicit native artwork/contact adapter with a320-pixel range and2-pixel steps. It does not establish complete equivalence to the original9C5E height controller.
+
 ## Diagonal city curbs (build 51)
 
 All eight orientations of the city's recovered shallow curb profiles now use a shared diagonal surface contour. This smooths their tile-step boundaries while retaining the original incline coefficients and allowing skating and jumping across them. Coded shop, map and park-entry cells keep their original trigger semantics. This is an intentional playability improvement over square terrain cells.

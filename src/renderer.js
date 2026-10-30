@@ -359,16 +359,24 @@
           : p.jumpRecovery?.action === 9
             ? 4
             : null;
-      this.descriptorSkater(
-        p.x,
-        p.y,
-        frame,
-        kicking,
-        "shadow",
-        jumpPhase,
-        kickPhase,
-        p.bail ? 0x50fa : jumpPhase === null ? groundPose.shadow : null,
-      );
+      if (!(p.air && p.courseShadowY === null))
+        this.descriptorSkater(
+          p.x,
+          p.air ? (p.courseShadowY ?? p.y) : p.y,
+          frame,
+          false,
+          "shadow",
+          null,
+          0,
+          p.bail
+            ? 0x50fa
+            : S.OriginalRoutines.groundPoseEntries(
+                frame,
+                p.air ? (p.courseShadowProfile ?? 24) : profile,
+                0,
+                (a) => directory[a - 0x4000] | (directory[a - 0x4000 + 1] << 8),
+              ).shadow,
+        );
       this.descriptorSkater(
         p.x,
         y,
