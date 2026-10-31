@@ -36,11 +36,14 @@
     const p = Math.max(0, Math.min(1, progress)),
       dx = wall.lip.x - wall.floor.x,
       dy = wall.lip.y - wall.floor.y;
+    // Keep the artwork's horizontal extent, but project that ground travel
+    // on the same isometric axis as the flat floor. Elevation is a separate
+    // smooth term. Independent X/Y curves previously invented lateral drift
+    // and changed the tangent abruptly at the foot of the wall.
+    const acrossX = 16 + (dx - 16) * widthProgress(p);
     return {
-      // Original foreground art's lower edge is16px right/28px below the
-      // coarse metadata edge (e.g. right corner688,744 ->704,772).
-      x: 16 + (dx - 16) * widthProgress(p) - dx * p,
-      y: 28 + (dy - height - 28) * heightProgress(p) - dy * p,
+      x: acrossX - dx * p,
+      y: -acrossX * 0.5 - height * heightProgress(p) - dy * p,
     };
   }
   function wallAt(level, x, y) {
@@ -224,16 +227,19 @@
       smooth((q - 320) / 80) *
       smooth((lipX - 408) / 16) *
       smooth((656 - lipX) / 16);
-    return { x: 16 * weight, y: 28 * weight };
+    // A flat-floor correction may move across the pipe, never along it.
+    return { x: 16 * weight, y: -8 * weight };
   }
   function returnProjection(level, path) {
     const floor = flatSouthOffset(level, path.floor),
       p = 1 - path.t,
       fx = path.floor.x + floor.x,
       fy = path.floor.y + floor.y;
+    const dx = (path.from.x - fx) * widthProgress(p);
+    const rise = path.from.y - path.rise - fy + (path.from.x - fx) * 0.5;
     return {
-      x: fx + (path.from.x - fx) * widthProgress(p),
-      y: fy + (path.from.y - path.rise - fy) * heightProgress(p),
+      x: fx + dx,
+      y: fy - dx * 0.5 + rise * heightProgress(p),
     };
   }
   function groundRise(level, player) {

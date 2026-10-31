@@ -62,7 +62,7 @@ const point = { x: 550, y: 723 - 0.001 },
 assert(projectedWall && projectedWall.rawProfile === 17);
 const top = pipe.projectSlopePoint(artwork, point);
 assert(Math.abs(top.y - top.x * 0.5 - 382) < 0.02);
-assert.equal(pipe.riseForWall(artwork, projectedWall, 0), -28);
+assert.equal(pipe.riseForWall(artwork, projectedWall, 0), 8);
 const frozen = pipe.groundRise(artwork, {
   x: 0,
   y: 0,
@@ -79,11 +79,47 @@ console.log(
 
 const lower = pipe.projectSlopePoint(artwork, { x: 688, y: 744 });
 assert(
-  Math.abs(lower.x - 704) < 1e-6 && Math.abs(lower.y - 772) < 1e-6,
-  "front lower collision boundary follows the original visible curve corner",
+  Math.abs(lower.x - 704) < 1e-6 && Math.abs(lower.y - 736) < 1e-6,
+  "lower curve joins the flat floor without an along-pipe offset",
 );
 const coping = pipe.projectSlopePoint(artwork, { x: 640, y: 768 });
 assert(Math.abs(coping.x - 640) < 1e-6 && Math.abs(coping.y - 702) < 1e-6);
 console.log(
-  "PASS art-calibrated lower curve and white coping endpoints share the same projection",
+  "PASS lane-aligned lower curve and unchanged white coping endpoints share the same projection",
+);
+
+// Ground-plane travel must not gain an along-pipe component merely from
+// entering a display warp. Height changes screen Y separately on the curve.
+for (let q = 320; q < 400; q += 0.25) {
+  const player = { x: 1020 - q, y: (1020 - q) * 0.5 + q };
+  const dx = pipe.groundShift(artwork, player),
+    dy = -pipe.groundRise(artwork, player);
+  assert(Math.abs(dx + 2 * dy) < 1e-9, "flat approach preserves its lane");
+}
+for (let n = 0; n <= 100; n++) {
+  const progress = n / 100,
+    x = 600 - 48 * progress,
+    y = 700 + 24 * progress;
+  const player = { x, y },
+    projected = {
+      x: x + pipe.groundShift(artwork, player),
+      y: y - pipe.groundRise(artwork, player),
+    };
+  const elevation = 66 * pipe.heightProgress(progress);
+  assert(
+    Math.abs(projected.x + 2 * (projected.y + elevation) - (x + 2 * y)) < 1e-7,
+    "curve only raises the rider, never slides the ground lane sideways",
+  );
+}
+const small = 1e-5,
+  floor = { x: 600, y: 700 },
+  next = { x: 600 - 48 * small, y: 700 + 24 * small };
+const a = pipe.projectSlopePoint(artwork, floor),
+  b = pipe.projectSlopePoint(artwork, next);
+assert(
+  Math.abs((b.y - a.y) / (b.x - a.x) + 0.5) < 1e-4,
+  "curve foot tangent matches flat isometric travel",
+);
+console.log(
+  "PASS lane-stable flat approach, elevation-only curve projection and continuous floor tangent",
 );
