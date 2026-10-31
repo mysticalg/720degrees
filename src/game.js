@@ -946,6 +946,13 @@
       p.scoreGapFrames = 0;
       p.scoreTakeoffBackwards = !!p.fakie;
       p.scoreTakeoffDirection = p.romDirection ?? 4;
+      // Holding the approach stick is not a fresh air-turn request when the
+      // board is already travelling backwards (same latch as ordinary jumps).
+      const approachInput = this.input.direction();
+      p.fakieAirInput =
+        p.fakie && approachInput.active
+          ? Math.atan2(approachInput.y, approachInput.x)
+          : null;
       p.spin = 0;
       p.romDirection = p.romMovementDirection = entryDirection;
       const entryFace = (entryDirection + (p.fakie ? 8 : 0)) & 15;
