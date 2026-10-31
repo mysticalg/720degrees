@@ -1,0 +1,107 @@
+{
+  "wheel-slow": {
+    "mediaId": 94708101,
+    "source": "SFX_wheelspin_slow_01",
+    "file": "wheel-slow.mp3"
+  },
+  "wheel-fast": {
+    "mediaId": 572562584,
+    "source": "SFX_wheelspin_fast_01",
+    "file": "wheel-fast.mp3"
+  },
+  "roll-concrete": {
+    "mediaId": 956684671,
+    "source": "SFX_roll_Concrete_05sp_01",
+    "file": "roll-concrete.mp3"
+  },
+  "roll-asphalt": {
+    "mediaId": 440145559,
+    "source": "SFX_roll_Asphalt_05sp_01",
+    "file": "roll-asphalt.mp3"
+  },
+  "roll-wood": {
+    "mediaId": 344613042,
+    "source": "SFX_roll_Wood_05sp_01",
+    "file": "roll-wood.mp3"
+  },
+  "roll-ramp": {
+    "mediaId": 591388198,
+    "source": "SFX_roll_masonite_00sp_01",
+    "file": "roll-ramp.mp3"
+  },
+  "grind-metal": {
+    "mediaId": 92227596,
+    "source": "SFX_grnd_tail_metal_01",
+    "file": "grind-metal.mp3"
+  },
+  "grind-curb": {
+    "mediaId": 421230622,
+    "source": "SFX_grnd_trks_concrete_01",
+    "file": "grind-curb.mp3"
+  },
+  "skid": {
+    "mediaId": 170213840,
+    "source": "SFX_trck_revert_fast_01",
+    "file": "skid.mp3"
+  },
+  "jump-1": {
+    "mediaId": 352787015,
+    "source": "SFX_olli_concrete_01",
+    "file": "jump-1.mp3"
+  },
+  "jump-2": {
+    "mediaId": 656882843,
+    "source": "SFX_olli_concrete_02",
+    "file": "jump-2.mp3"
+  },
+  "jump-3": {
+    "mediaId": 281474125,
+    "source": "SFX_olli_concrete_03",
+    "file": "jump-3.mp3"
+  },
+  "land-1": {
+    "mediaId": 932138582,
+    "source": "SFX_land_concrete_01",
+    "file": "land-1.mp3"
+  },
+  "land-2": {
+    "mediaId": 372078272,
+    "source": "SFX_land_concrete_02",
+    "file": "land-2.mp3"
+  },
+  "land-3": {
+    "mediaId": 187749343,
+    "source": "SFX_land_concrete_03",
+    "file": "land-3.mp3"
+  },
+  "kick-1": {
+    "mediaId": 447573320,
+    "source": "SFX_push_concrete_slow_01",
+    "file": "kick-1.mp3"
+  },
+  "kick-2": {
+    "mediaId": 15202583,
+    "source": "SFX_push_concrete_slow_02",
+    "file": "kick-2.mp3"
+  },
+  "kick-3": {
+    "mediaId": 413090586,
+    "source": "SFX_push_concrete_slow_03",
+    "file": "kick-3.mp3"
+  },
+  "crash-1": {
+    "mediaId": 500116684,
+    "source": "SFX_bail_deck_concrete_imp_01",
+    "file": "crash-1.mp3"
+  },
+  "crash-2": {
+    "mediaId": 73966467,
+    "source": "SFX_bail_deck_concrete_imp_02",
+    "file": "crash-2.mp3"
+  },
+  "crash-3": {
+    "mediaId": 490995738,
+    "source": "SFX_bail_deck_concrete_imp_03",
+    "file": "crash-3.mp3"
+  }
+}

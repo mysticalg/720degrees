@@ -6,7 +6,7 @@
     audio = new S.AudioSystem(),
     renderer = new S.Renderer(canvas),
     game = new S.Game(input, audio);
-  document.querySelector('#skate-status').textContent = Object.keys(audio.foley.urls).length ? 'LOCAL PACK READY' : 'SELECT LOCAL SOUND PACK';
+  document.querySelector('#skate-status').textContent = `${Object.keys(audio.foley.urls).length} SOUNDS READY`;
   const foleyInput = document.querySelector('#skate-pack');
   document.querySelector('#skate-load').onclick = () => foleyInput.click();
   foleyInput.onchange = () => {

@@ -1,5 +1,9 @@
 # 720° — native JavaScript port in progress
 
+## Automatic skate sounds on the live game (build75)
+
+All21 skate recordings are bundled in assets/skate-sfx and load automatically after starting the game, including on GitHub Pages and after a reload. No folder selection is needed. The skate volume/mute controls remain independent of music; CUSTOM SKATE PACK is an optional override. Relative URLs also preserve local-file playback. Source names and media IDs remain in assets/skate-sfx/sources.json.
+
 ## Progressive downhill kicks (build74)
 
 Each fresh grounded kick on downhill adds a small48-unit push, even when slope momentum is already above the original flat kick target. Holding A adds no repeated native pushes; the original held-input envelope still runs. Native push headroom is2400 plus128 per board upgrade, with the existing5% fakie adjustment; naturally faster momentum is never clamped down by this assist. Airborne presses and other parks retain their existing behavior. These are native playability settings in config.js, separate from the original coefficient tables.
@@ -36,9 +40,9 @@ Validation includes both isometric directions and an explicit missing panel, 505
 
 ## Optional skate sound pack and fakie tuning (build69)
 
-The local `local-skate-sfx` folder contains 21 MP3 clips converted from the user's installed THPS HD skateboard Wwise bank: four rolling materials, two grind materials, three pushes, three ollies, three landings, three board impacts a revert/skid and two dedicated free wheel-spin recordings. `sources.json` retains each original media ID and source name. Steam files are read only. This optional pack is separate from the recovered 720 audio and is excluded from the public repository.
+The local `local-skate-sfx` folder contains 21 MP3 clips converted from the user's installed THPS HD skateboard Wwise bank: four rolling materials, two grind materials, three pushes, three ollies, three landings, three board impacts a revert/skid and two dedicated free wheel-spin recordings. `sources.json` retains each original media ID and source name. Steam files are read only. These recordings are separate from the recovered 720 audio. Build75 bundles them in assets/skate-sfx for automatic playback.
 
-Local file/localhost play uses the pack automatically. On GitHub Pages, choose **LOAD SKATE PACK** and select that folder; the browser plays the selected files through temporary object URLs. The selection must be repeated after a reload. **SKATE SFX** and **SKATE LEVEL** control these recordings independently of music. Master SOUND and pause stop the effects. Rolling follows speed with a gentle pitch increase, fades between surfaces and gives way to quieter free wheel-spin recordings in the air; original map artwork supplies a native material approximation, with concrete fallback when a local browser prevents canvas pixel reads. Ramp coping uses the metal grind loop; concrete grind is available in the pack for future curb-grind integration. No online recordings are included.
+Local and GitHub Pages play load the bundled sounds automatically. **CUSTOM SKATE PACK** optionally overrides them with selected files for the current page session. **SKATE SFX** and **SKATE LEVEL** control these recordings independently of music. Master SOUND and pause stop the effects. Rolling follows speed with a gentle pitch increase, fades between surfaces and gives way to quieter free wheel-spin recordings in the air; original map artwork supplies a native material approximation, with concrete fallback when a local browser prevents canvas pixel reads. Ramp coping uses the metal grind loop; concrete grind is available in the pack for future curb-grind integration. No online recordings are included.
 
 Point and rotate steering are reversed while fakie. Holding the facing direction preserves backward coasting; an exit kick keeps the body facing the same direction and starts forward propulsion. Requested native tuning adds a bounded 3% horizontal boost to fakie jumps and 5% speed-limit headroom, without changing jump height or the original coefficient tables.
 

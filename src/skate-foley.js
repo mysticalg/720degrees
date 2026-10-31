@@ -1,4 +1,4 @@
-/** Optional locally supplied skate recordings. No game physics are modified here.
+/** Bundled skate recordings with optional user-supplied overrides. No game physics are modified here.
  * HTMLAudio and file-picker object URLs support both file:// and GitHub Pages.
  */
 (() => {
@@ -13,8 +13,8 @@
       this.lastCue = {};
       this.material = 'concrete';
       this.counter = 0;
-      const local = location.protocol === 'file:' || ['localhost','127.0.0.1'].includes(location.hostname);
-      if (local) for (const key of SkateFoley.keys) this.urls[key] = `local-skate-sfx/${key}.mp3`;
+      // Relative asset URLs work on GitHub Pages and from local HTML files.
+      for (const key of SkateFoley.keys) this.urls[key] = `assets/skate-sfx/${key}.mp3`;
     }
     /** Import only the known filenames, retaining no access to the source folder. */
     load(files) {
