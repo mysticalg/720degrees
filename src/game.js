@@ -1365,7 +1365,7 @@
       );
       if (award.deferred) {
         this.event.originalPendingPoints =
-          (this.event.originalPendingPoints || 0) + award.points;
+          ((this.event.originalPendingPoints || 0) + award.points) & 65535;
         this.event.points += award.points;
       } else if (award.points) this.addScore(award.points);
       if (award.points) {
@@ -1568,9 +1568,7 @@
       e.finished = true;
       this.mapDifficulty = e.difficulty;
       let performance = 0;
-      if (e.kind === "ramp") performance = e.points / 3500;
       if (e.kind === "slalom") performance = e.gatesHit / e.gates.length;
-      if (e.kind === "jump") performance = e.jumpsLanded / 3;
       if (e.kind === "downhill")
         performance =
           (e.crossedFinish || this.player.y >= e.level.finish.y - 30 ? 1 : 0) *
@@ -1578,17 +1576,33 @@
             0.25,
             1 - e.elapsed / (e.level.height / 30) - e.crashes * 0.05,
           );
+      // Original0258 is deferred park score for ramp/jump; race parks use
+      // the separate0F20 counter and remain on the native adapter for now.
+      const originalResult = ["ramp", "jump"].includes(e.kind)
+        ? S.OriginalEventResult.result(
+            e.kind,
+            e.originalPendingPoints || 0,
+            S.OriginalRoutines.setupTableIndex(
+              e.difficulty,
+              e.kind === "ramp" ? 2 : 3,
+              this.medals.length,
+            ),
+            S.EVENT_RESULT_DATA,
+          )
+        : null;
+      e.originalResult = originalResult;
       const medal =
-        performance >= 0.8
+        originalResult?.medal ??
+        (performance >= 0.8
           ? "GOLD"
           : performance >= 0.5
             ? "SILVER"
             : performance >= 0.2
               ? "BRONZE"
-              : "PARTICIPATION";
-      const cash = { GOLD: 300, SILVER: 200, BRONZE: 100, PARTICIPATION: 50 }[
-        medal
-      ];
+              : "PARTICIPATION");
+      const cash =
+        originalResult?.cash ??
+        { GOLD: 300, SILVER: 200, BRONZE: 100, PARTICIPATION: 50 }[medal];
       // Translate the original deferred-points tally; medal labels no longer
       // invent a fixed score bonus. Race tally state 0F20 remains untranslated.
       let pending = e.originalPendingPoints || 0,
@@ -1600,17 +1614,28 @@
           bonus += award;
         }
         pending = tally.pending;
+        if (tally.done) break; // Signed overflow/nonpositive source words stop tallying.
       }
       e.originalPendingPoints = 0;
-      this.cash += cash; // Medal/cash selection remains provisional.
+      this.cash = originalResult
+        ? (this.cash + cash) & 65535
+        : this.cash + cash;
       this.medals.push({
         park: e.kind,
         round: e.round,
         medal,
         points: e.points,
+        packedMedal: originalResult?.packedMedal ?? null,
       });
       this.clears[e.kind] = Math.min(4, this.clears[e.kind] + 1);
-      this.result = { medal, cash, bonus, kind: e.kind, points: e.points };
+      this.result = {
+        medal,
+        cash,
+        bonus,
+        kind: e.kind,
+        points: e.points,
+        original: originalResult,
+      };
       this.mode = "result";
       this.audio.effect("medal");
       this.changed?.();
@@ -2825,7 +2850,7 @@
           originalKickTarget: p.romKickEnvelope?.target || 0,
           completeOriginalSimulation: false,
           scoring:
-            "original accumulator and airtime award; other awards provisional",
+            "original accumulator, airtime and ramp/jump medal/cash; race results provisional",
         },
         score: this.score,
         cash: this.cash,

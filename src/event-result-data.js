@@ -1,0 +1,2 @@
+/** Original park-result tables extracted from the user ROM. */
+window.Skate720.EVENT_RESULT_DATA={"source":"ROM2DE6C pointer table/2DE3C..2DE66 threshold bytes; fixed FE8C cash; bank16000 CPU6BA4..6BB6 scaling","thresholdBytes":[[32,48,64],[36,54,72],[44,66,88],[48,72,96],[52,78,104],[56,84,112],[60,90,120],[64,96,128],[68,102,136],[72,108,144],[76,114,152]],"cashPerClass":[0,25,35,50],"shifts":{"ramp":6,"jump":5}};

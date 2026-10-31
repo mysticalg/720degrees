@@ -1,5 +1,13 @@
 # 720° — native JavaScript port in progress
 
+## Original ramp/jump medal and cash routines (build82)
+
+Bank16000 CPU6B84–6BB6 now unpacks the original three score thresholds and scales ramp/jump values with the recovered six/five shifts. CPU6E38–6E90 compares the signed16-bit deferred event score, searches ranks3→1 inclusively and stores the original rank<<6 medal byte. CPU67D8–680C uses fixed FE8C's25/35/50 cash factors multiplied by the original setup index, rather than browser fixed50/100/200/300 payouts. Rank0 keeps the existing PARTICIPATION UI label but awards no cash. Halfpipe/jump results now use these translations in the live finish path; original deferred points tally exactly once.
+
+The browser's current difficulty still supplies a positive requested class to translated90BA, so this does not establish the full original class/progression controller. Slalom/downhill use a different remaining-race-counter metric; those medal/cash adapters remain provisional until their full counter/contact flow is integrated. Native geometry and requested gameplay/sound enhancements are retained.
+
+The deferred score accumulator now wraps to its original word width; signed nonpositive overflow stops the tally instead of looping forever. The extractor validates the ROM dispatch/shift opcodes and retains11 source threshold rows. Portable tests cover22 class/park sets, rank boundaries, signed words and cash. Browser checks cover24 real finish calls, exactly-once score/cash and safe overflow exit. No replacement graphics, new audio or emulator were added.
+
 ## Facebook in-app browser texture cache (build81)
 
 On the connected phone's Facebook browser, build80 still showed roughly4 FPS with intermittent stalls despite Chrome running smoothly. Its exposed WebView debugging connection identified rendering stalls when large images backed main-canvas draws. The renderer now stages original map art into256px opaque world tiles and original sprite pixels into16px transparent tiles, then draws only those small cached textures. LRU eviction caps these caches at32 world tiles (8MB) and1024 sprite tiles (1MB). No game rules or source graphics were changed; intermediate canvas alpha rounding can differ by at most two8-bit channel values in the tested views.
