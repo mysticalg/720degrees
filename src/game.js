@@ -425,6 +425,7 @@
         tables = S.OriginalGround.tables,
         facing = p.romFacingDirection ?? ((p.romDirection ?? 4) + 8) & 15;
       p.fakie = false;
+      p.fakiePointAnchor = null;
       p.romDirection = p.romMovementDirection = facing;
       p.romFacingDirection = undefined;
       p.angle = Math.atan2(-tables.y[facing], tables.x[facing]);
@@ -946,10 +947,12 @@
       p.scoreTakeoffBackwards = !!p.fakie;
       p.scoreTakeoffDirection = p.romDirection ?? 4;
       p.spin = 0;
-      p.romDirection = entryDirection;
+      p.romDirection = p.romMovementDirection = entryDirection;
+      const entryFace = (entryDirection + (p.fakie ? 8 : 0)) & 15;
+      p.romFacingDirection = p.fakie ? entryFace : undefined;
       p.angle = p.takeoffAngle = Math.atan2(
-        -rom.tables.y[entryDirection],
-        rom.tables.x[entryDirection],
+        -rom.tables.y[entryFace],
+        rom.tables.x[entryFace],
       );
       p.vx = p.vy = 0;
       const motion = rom.airborneTransition(
@@ -1104,8 +1107,15 @@
     landHalfpipe() {
       const p = this.player,
         flight = p.halfpipeFlight;
-      const rockToFakie =
-        flight.trick === "rock" && Math.abs(p.spin) < Math.PI * 0.5;
+      // Travel reverses down the wall, but facing follows the completed air.
+      // Zero/full turns return fakie; a half turn returns forward. Never force
+      // the body to face downhill merely because the descent is constrained.
+      const facing = S.OriginalContact.playerDirection(
+        { air: true, angle: p.angle },
+        S.OriginalGround.tables,
+      );
+      const difference = (facing - flight.wall.returnDirection + 16) & 15;
+      const returnFakie = difference >= 6 && difference <= 10;
       this.land();
       p.halfpipeFlight = p.rampAnimation = null;
       if (p.bail) return;
@@ -1139,11 +1149,14 @@
       p.romDirection = p.romMovementDirection = flight.wall.returnDirection;
       // Facing and travel are separate for fakie. Keep the recovered reverse
       // pose while the positive drive scalar follows the descent coefficients.
-      p.romFacingDirection = rockToFakie ? flight.wall.upDirection : undefined;
-      p.fakie = rockToFakie;
+      p.romFacingDirection = returnFakie
+        ? (p.romDirection + 8) & 15
+        : undefined;
+      p.fakie = returnFakie;
+      const returnFace = p.romFacingDirection ?? p.romDirection;
       p.angle = Math.atan2(
-        -S.OriginalGround.tables.y[p.romDirection],
-        S.OriginalGround.tables.x[p.romDirection],
+        -S.OriginalGround.tables.y[returnFace],
+        S.OriginalGround.tables.x[returnFace],
       );
       // The analog dial lives in an unprojected plane. Feeding it the screen
       // angle selects the adjacent heading when rotate mode resumes.
@@ -1488,6 +1501,7 @@
       );
       // A held stick that supplied the air turn is not a fresh request to
       // reverse rolling direction on the first grounded frame.
+      p.fakiePointAnchor = null;
       const landingInput = this.input.direction();
       p.fakieSteeringTarget =
         p.fakie && landingInput.active
@@ -1928,7 +1942,7 @@
         skid: !!double,
         vx: p.vx,
         vy: p.vy,
-        travel: p.romMovementDirection ?? p.romDirection ?? 4,
+        travel: p.romDirection ?? 4,
       };
       if (double) last.doubleUsed = true;
       else p.lastTriggerPivot = { side, time: this.elapsed, doubleUsed: false };
@@ -1971,10 +1985,16 @@
         p.romDirection = p.romMovementDirection = state.travel;
         p.romFacingDirection = p.fakie ? (state.travel + 8) & 15 : undefined;
         const direction = this.input.direction();
-        p.fakieSteeringTarget =
+        // A trigger turn changes the stance under a held stick, unlike an
+        // airborne turn which usually changes the stick heading too. Anchor
+        // point steering here so the next small adjustment cannot snap travel
+        // through 180 degrees. Rotation mode retains its reversed dial.
+        p.fakiePointAnchor =
           p.fakie && direction.active
-            ? (this.pointHeading(direction) + 8) & 15
+            ? { input: this.pointHeading(direction), travel: state.travel }
             : null;
+        p.fakieSteeringTarget =
+          p.fakie && direction.active ? state.travel : null;
         p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
         p.romDialAngle = Math.atan2(
           -S.OriginalGround.tables.y[state.travel] * 2,
@@ -2288,7 +2308,10 @@
           // Point input describes the facing axis; while fakie the board
           // rolls along its opposite axis. This makes steering reverse around
           // the held direction that established the backward stance.
-          const target = (rawTarget + (p.fakie ? 8 : 0)) & 15;
+          const anchor = p.fakie ? p.fakiePointAnchor : null;
+          const target = anchor
+            ? (anchor.travel + anchor.input - rawTarget + 16) & 15
+            : (rawTarget + (p.fakie ? 8 : 0)) & 15;
           let current = p.romDirection;
           if (current === undefined)
             current = S.OriginalGround.dialDirection(dialFromAngle(p.angle));
@@ -2309,7 +2332,8 @@
         }
         if (!direction.active) p.exitFakieTarget = null;
         if (p.fakie && !p.halfpipeReturning) {
-          if (!direction.active) p.fakieSteeringTarget = null;
+          if (!direction.active)
+            p.fakieSteeringTarget = p.fakiePointAnchor = null;
           if (!stick.active || Math.abs(stick.x) < 0.1) p.fakieTurnLatch = null;
           p.romFacingDirection = ((p.romDirection ?? 4) + 8) & 15;
           p.angle = isoAngle(p.romFacingDirection);
