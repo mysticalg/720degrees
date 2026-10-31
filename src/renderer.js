@@ -783,7 +783,11 @@
             top + row * 16,
           );
           if (record.code & 0x4000) this.ctx.scale(-1, 1);
-          if (palette)
+          if (component === "shadow" && this.ctx.filter === "blur(0.45px)") {
+            // Blur the original tile once, not on every main-canvas draw.
+            this.ctx.filter = "none";
+            this.ctx.drawImage(this.softShadowTile(tile), -2, -2);
+          } else if (palette)
             this.ctx.drawImage(this.equipmentTile(tile, palette), 0, 0);
           else
             this.ctx.drawImage(
@@ -801,6 +805,32 @@
         }
       }
       return entry;
+    }
+    /** Small cached original shadow tiles avoid live blur passes on mobile. */
+    softShadowTile(code) {
+      this.softShadowTiles ||= new Map();
+      if (this.softShadowTiles.has(code)) return this.softShadowTiles.get(code);
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 20;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = false;
+      context.filter = "blur(0.45px)";
+      context.drawImage(
+        this.assets["motion-tiles-3"],
+        (code % 128) * 16,
+        Math.floor(code / 128) * 16,
+        16,
+        16,
+        2,
+        2,
+        16,
+        16,
+      );
+      // Bound the cache even if a future animation adds many distinct tiles.
+      if (this.softShadowTiles.size >= 256)
+        this.softShadowTiles.delete(this.softShadowTiles.keys().next().value);
+      this.softShadowTiles.set(code, canvas);
+      return canvas;
     }
     /** Recolour original indexed pixels using recovered palette-RAM words.
      * Cached16px tiles avoid copying/repainting a full atlas during play.

@@ -1,5 +1,11 @@
 # 720° — native JavaScript port in progress
 
+## Mobile follow-up and FPS readout (build79)
+
+The softened original board-shadow tiles are blurred once into a bounded20px tile cache, avoiding live main-canvas blur passes on each frame. The original silhouette and transparency are retained; the18-view comparison differs only by at most two channel shade values from alpha/blur rounding. Main-canvas filtered draw calls fell2→0 in the city proxy benchmark; desktop CPU timings were roughly unchanged, and A53 performance remains unmeasured.
+
+Audio loops avoid redundant volume/rate writes and duplicate pending play requests while retaining fades and speed pitch. An FPS readout below the game updates once per second for on-device diagnosis. Ordinary-jump wheel audio, halfpipe wheel audio, persisted volume/mute and landing fades pass browser checks. Physics are unchanged.
+
 ## Mobile rendering cost (build78)
 
 After a Samsung A53 low-FPS report, viewport culling skips off-screen sprite work and clips map/decoration source rectangles to the512x384 view rather than submitting6144x3072 city images. Simulation, actor scheduling, original graphics and collisions are unchanged. Conservative descriptor bounds and per-tile margins retain wide vehicles, wrapped descriptors and soft shadows.

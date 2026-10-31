@@ -198,14 +198,28 @@
                 ? Math.min(0.32, 0.18 + spinSpeed / 1800)
                 : Math.min(0.65, speed / 500))
             : 0;
-        audio.volume += (target - audio.volume) * Math.min(1, dt * 10);
+        const nextVolume =
+          audio.volume + (target - audio.volume) * Math.min(1, dt * 10);
+        if (Math.abs(target - audio.volume) > 0.00001)
+          audio.volume =
+            Math.abs(target - audio.volume) < 0.001 ? target : nextVolume;
         if (target > 0) {
           // Small pitch rise with wheel speed; pitch preservation is disabled.
-          audio.playbackRate = Math.max(
+          const rate = Math.max(
             0.85,
             Math.min(1.2, 0.9 + (wheel ? spinSpeed : speed) / 1600),
           );
-          if (audio.paused) audio.play().catch(() => {});
+          if (Math.abs(rate - audio.playbackRate) > 0.01)
+            audio.playbackRate = rate;
+          if (audio.paused && !audio.skatePlayPending) {
+            audio.skatePlayPending = true;
+            audio
+              .play()
+              .catch(() => {})
+              .finally(() => {
+                audio.skatePlayPending = false;
+              });
+          }
         } else if (audio.volume < 0.005) audio.pause();
       }
       // Braking scuffs the wheels, independent of the skater's fakie facing.

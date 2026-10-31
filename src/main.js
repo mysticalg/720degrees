@@ -267,7 +267,16 @@
     accumulator = 0,
     manualClock = false,
     previousFrame = null;
+  let fpsStart = performance.now(),
+    fpsFrames = 0;
   function frame(now) {
+    fpsFrames++;
+    if (now - fpsStart >= 1000) {
+      document.querySelector("#fps-status").textContent =
+        `${Math.round((fpsFrames * 1000) / (now - fpsStart))} FPS`;
+      fpsFrames = 0;
+      fpsStart = now;
+    }
     const delta = Math.min(0.1, (now - last) / 1000);
     last = now;
     if (!manualClock) {
