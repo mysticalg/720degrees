@@ -583,10 +583,14 @@
       p.jumpRecovery = null;
       p.cooldown = 0;
       p.kickAnimation = null;
+      p.skid = p.skidPose = null;
       p.air = true;
       p.edgeContact = false;
       p.spin = 0;
       p.airTime = 0;
+      p.scoreGapFrames = 0;
+      p.scoreTakeoffBackwards = !!p.fakie;
+      p.scoreTakeoffDirection = p.romDirection ?? 4;
       p.takeoffAngle = p.angle;
       const takeoffInput = this.input.direction();
       p.fakieAirInput =
@@ -645,10 +649,14 @@
       p.courseFlightSpeed = motion.savedSpeed;
       delete p.courseShadowPlaneDrop;
       delete p.courseShadowPlaneProfile;
+      p.skid = p.skidPose = null;
       p.air = true;
       p.edgeContact = false;
       p.spin = 0;
       p.airTime = 0;
+      p.scoreGapFrames = 0;
+      p.scoreTakeoffBackwards = !!p.fakie;
+      p.scoreTakeoffDirection = p.romDirection ?? 4;
       p.takeoffAngle = p.angle;
       p.z = 0;
       p.romVerticalVelocity = p.romGroundVertical?.velocity || 0;
@@ -914,9 +922,13 @@
       // above that target, rather than immediately taking the failed-contact
       // branch at the native adapter's old one-pixel takeoff height.
       p.z = flight.trick === "grind" ? 9 : flight.trick === "rock" ? 5 : 1;
+      p.skid = p.skidPose = null;
       p.air = true;
       p.fromRamp = true;
       p.airTime = 0;
+      p.scoreGapFrames = 0;
+      p.scoreTakeoffBackwards = !!p.fakie;
+      p.scoreTakeoffDirection = p.romDirection ?? 4;
       p.spin = 0;
       p.romDirection = entryDirection;
       p.angle = p.takeoffAngle = Math.atan2(
@@ -1282,10 +1294,14 @@
         const rate = S.OriginalRoutines.jumpAnimationRate(p.romSpeed || 0);
         p.jumpAnimation = { rate, countdown: rate, phase: 0 };
       }
+      p.skid = p.skidPose = null;
       p.air = true;
       p.edgeContact = false;
       p.spin = 0;
       p.airTime = 0;
+      p.scoreGapFrames = 0;
+      p.scoreTakeoffBackwards = !!p.fakie;
+      p.scoreTakeoffDirection = p.romDirection ?? 4;
       p.takeoffAngle = p.angle;
       p.z = 1;
       p.lastStickAngle = this.input.stick.active
@@ -1324,6 +1340,7 @@
 
     land() {
       const p = this.player;
+      const scoreDrop = p.courseShadowPlaneDrop || 0;
       delete p.courseShadowY;
       delete p.courseShadowProfile;
       delete p.courseShadowPlaneDrop;
@@ -1359,10 +1376,55 @@
       }
       const kind =
         { slalom: 1, downhill: 2, ramp: 3, jump: 4 }[this.event?.kind] || 0;
-      const award = S.OriginalRoutines.airtimeAward(
-        Math.round(p.airTime * 60),
-        kind,
+      const landingSurface = (
+        this.event?.level || this.city.level
+      ).contactSample(p.x, p.y);
+      // Original7ADA supplies rotation-aware landing points. Preserve the
+      // separate7E44 airtime path for parks whose caller is not yet translated.
+      const landingFacing = S.OriginalContact.playerDirection(
+        { air: true, angle: p.angle },
+        S.OriginalGround.tables,
       );
+      const landingTurn =
+        (landingFacing - (p.romMovementDirection ?? p.romDirection ?? 4) + 16) &
+        15;
+      let award;
+      if (kind === 2 || kind === 4) {
+        const state = (this.event.landingScore ||=
+          S.OriginalLandingScore.createState());
+        award = S.OriginalLandingScore.award(
+          {
+            kind,
+            frames: Math.round(p.airTime * 60),
+            rotation: (p.spin * 288) / (Math.PI * 2),
+            drop: Math.floor(scoreDrop / 8),
+            gapCount: p.scoreGapFrames || 0,
+            gap: (p.scoreGapFrames || 0) > 0,
+            backwards: landingTurn >= 6 && landingTurn <= 10,
+            takeoffBackwards: !!p.scoreTakeoffBackwards,
+            takeoffDirection: p.scoreTakeoffDirection ?? p.romDirection ?? 4,
+            direction: S.OriginalContact.playerDirection(
+              { air: true, angle: p.angle },
+              S.OriginalGround.tables,
+            ),
+            profile: landingSurface.profile,
+            target: landingSurface.type === 15,
+            classIndex: this.event.difficulty,
+          },
+          state,
+          S.LANDING_SCORE_DATA,
+        );
+        award.deferred = kind === 4;
+        this.event.lastLandingAward = {
+          ...award,
+          spin: Math.round(degrees),
+          gap: (p.scoreGapFrames || 0) > 0,
+        };
+      } else
+        award = S.OriginalRoutines.airtimeAward(
+          Math.round(p.airTime * 60),
+          kind,
+        );
       if (award.deferred) {
         this.event.originalPendingPoints =
           ((this.event.originalPendingPoints || 0) + award.points) & 65535;
@@ -1417,23 +1479,25 @@
       p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
       p.spin = 0;
       if (this.event?.kind === "ramp" && p.fromRamp) this.event.rampHits++;
-      if (this.event?.kind === "jump" && p.jumpTarget !== undefined) {
-        const target = this.event.targets[p.jumpTarget];
-        if (
-          target &&
-          !this.event.passed.has(p.jumpTarget) &&
-          !this.event.level.contactSample(p.x, p.y).blocked &&
-          S.distance(p, target) < 175
-        ) {
-          this.event.passed.add(p.jumpTarget);
+      if (this.event?.kind === "jump") {
+        const targetIndex = this.event.targets.findIndex(
+          (t) =>
+            [10, 15].includes(landingSurface.type) && S.distance(p, t) < 160,
+        );
+        if (targetIndex >= 0 && !this.event.passed.has(targetIndex)) {
+          this.event.passed.add(targetIndex);
           this.event.jumpsLanded++;
-          this.popup("TARGET LANDED"); // Original jump scoring chain not yet translated.
-        } else this.popup("MISSED TARGET", p.x, p.y - 65, "#ffab87");
+          // Original landing burst/points are shown by the same F064 actor
+          // used for other scored landings; no replacement target artwork.
+          this.popup("TARGET LANDED");
+          this.audio.effect("coin");
+        }
         p.jumpTarget = undefined;
       }
     }
     crash(reason) {
       const p = this.player;
+      p.skid = p.skidPose = null;
       if (p.vehicleTow) this.releaseVehicleTow();
       if (p.invulnerable > 0 || p.fallen > 0) return;
       const level = this.event?.level || this.city.level;
@@ -1953,6 +2017,12 @@
       p.kickWasHeld = kick;
       const stick = this.input.stick,
         rotating = this.input.controlMode === "rotate";
+      const beforeSteering = {
+        vx: p.vx,
+        vy: p.vy,
+        direction: p.romDirection ?? 4,
+      };
+      p.skidRequest = null;
       if (p.jumpSequence?.action === 4) {
         S.OriginalRoutines.jumpActionTransition(p.jumpSequence);
         if (p.jumpSequence.action === 5) this.launchJump();
@@ -2010,6 +2080,9 @@
           const turn = S.OriginalRoutines.steeringDifference(
             latched ? 0 : target - current,
           );
+          if (turn.distance >= 4 && rawTarget !== p.skidInputTarget)
+            p.skidRequest = { direction: target, side: turn.step };
+          p.skidInputTarget = rawTarget;
           p.romDirection = (current + turn.step + 16) & 15;
           p.romDialCounter = dial;
           p.romDialAngle = Math.atan2(direction.y, direction.x);
@@ -2216,6 +2289,53 @@
           p.vx *= drag;
           p.vy *= drag;
         }
+        // Native traction adapter: original steering changes headings in
+        // steps, which previously redirected all momentum on each step.
+        // A fast, fresh quarter turn now retains wheel-side momentum briefly.
+        // Original E458 pose tables supply the graphics; traction duration is
+        // a deliberate gameplay enhancement, not a claimed ROM constant.
+        if (
+          p.skidRequest &&
+          !p.skid &&
+          !p.fakie &&
+          !p.halfpipeReturning &&
+          !p.copingReturn &&
+          (surface.profile & 7) === 0 &&
+          Math.abs(p.romSpeed || 0) >= 0x500
+        ) {
+          p.skid = {
+            ...beforeSteering,
+            side: p.skidRequest.side,
+            remaining: 0.38,
+          };
+          p.romDirection = p.skidRequest.direction;
+          p.angle = isoAngle(p.romDirection);
+          this.audio.effect("skid");
+        }
+        if (p.skid) {
+          const skid = p.skid;
+          if (
+            (surface.profile & 7) !== 0 ||
+            p.copingReturn ||
+            p.halfpipeReturning
+          )
+            skid.remaining = 0;
+          if (skid.remaining > 0) {
+            const grip = 1 - Math.exp(-dt * 5);
+            skid.vx += (p.vx - skid.vx) * grip;
+            skid.vy += (p.vy - skid.vy) * grip;
+            p.vx = skid.vx;
+            p.vy = skid.vy;
+            skid.remaining -= dt;
+            p.skidPose = S.OriginalRoutines.sharpTurnAnimationEntries(
+              p.romDirection,
+              skid.side,
+            );
+          } else {
+            p.skid = null;
+            p.skidPose = null;
+          }
+        }
         if (kickPressed && !p.kickAnimation) {
           const rate = S.OriginalRoutines.kickAnimationRate(kickAnimationSpeed);
           p.kickAnimation = { rate, countdown: rate, phase: 0 };
@@ -2257,6 +2377,13 @@
         if (!direction.active) p.fakieAirInput = null;
         p.angle = p.takeoffAngle + p.spin;
         p.airTime += dt;
+        // The original gap counter increments while airborne over the gap
+        // contact flag (bank1E000 CPU5494). Count fixed simulation ticks.
+        if (
+          (e?.level || this.city.level).sample(p.x, p.y).type === 18 ||
+          (e?.level || this.city.level).sample(p.x, p.y).type === 11
+        )
+          p.scoreGapFrames = (p.scoreGapFrames || 0) + 1;
         this.tickHalfpipeAnimation();
         if (p.jumpSequence) {
           const state = p.jumpSequence;
@@ -2764,22 +2891,45 @@
         // lip: those limits cut through valid ramp lanes and its grass apron.
       } else {
         if (e.kind === "slalom") {
-          for (const gate of e.gates) {
-            if (!gate.hit && !gate.missed) {
-              // Curving isometric paths can place consecutive flags almost
-              // level in screen Y. Allow the player to weave across to them;
-              // crossing one horizontal pixel row must not mark them missed.
-              if (S.distance(p, gate) < 76) {
+          const previous = e.gateProbe || { x: p.x, y: p.y };
+          if (!p.air && !p.bail)
+            for (const gate of e.gates) {
+              if (gate.hit || gate.missed) continue;
+              // Sweep the board against the original pass mask, so a fast
+              // crossing cannot skip it and touching a nearby pole cannot score.
+              const end = { x: p.x, y: p.y };
+              const steps = Math.min(
+                32,
+                Math.max(
+                  1,
+                  Math.ceil(
+                    Math.hypot(end.x - previous.x, end.y - previous.y) / 4,
+                  ),
+                ),
+              );
+              let passed = false;
+              for (let n = 1; n <= steps && !passed; n++) {
+                p.x = previous.x + ((end.x - previous.x) * n) / steps;
+                p.y = previous.y + ((end.y - previous.y) * n) / steps;
+                passed = this.actorMaskContact(gate.actor);
+              }
+              p.x = end.x;
+              p.y = end.y;
+              if (passed) {
                 gate.hit = true;
                 e.gatesHit++;
-                this.addScore(300, "GATE +300");
+                // A7D6 updates the race counter; A7F0 selects frame2 (+4).
+                e.originalRaceCounter = Math.min(
+                  128,
+                  (e.originalRaceCounter || 0) + 6,
+                );
+                gate.actor.pointer += 4;
+                if (gate.companion) gate.companion.pointer += 4;
+                this.addScore(300, "GATE +300"); // Native award pending race tally integration.
                 this.audio.effect("coin");
-              } else if (p.y > gate.y + 140) {
-                gate.missed = true;
-                this.popup("MISSED GATE", p.x, p.y - 60, "#ff9f88");
               }
             }
-          }
+          e.gateProbe = { x: p.x, y: p.y };
         }
         if (e.kind === "jump") {
           for (const ramp of e.ramps) {
@@ -2831,6 +2981,7 @@
           angleDegrees: +((p.angle * 180) / Math.PI).toFixed(1),
           towing: p.vehicleTow?.sprite ?? null,
           fakie: !!p.fakie,
+          skidding: !!p.skid,
           facingDirection: p.romFacingDirection ?? p.romDirection,
           travelDirection: p.romMovementDirection ?? p.romDirection,
           spinDegrees: Math.round((p.spin * 180) / Math.PI),

@@ -62,14 +62,20 @@
       // The checkpoints now coincide with the original placed flags rather
       // than ten guessed points spread uniformly down the map.
       course.gates = course.actors
+        .filter((actor) => actor.kind !== 25)
         .map((actor) => ({
           x: actor.actorX,
           y: actor.actorY,
           actor,
           hit: false,
           missed: false,
-        }))
-        .sort((a, b) => a.y - b.y);
+        }));
+      // Original6110 mask describes passage beside each flag, rather than
+      // a radius around its pole. Keep placement order through course bends.
+      for (const gate of course.gates)
+        gate.companion = course.actors.find(
+          (a) => a.kind === 25 && a.packed === gate.actor.packed,
+        );
     }
     // Launch and target regions come from the ROM's original gap tiles (type 18).
     course.ramps = level.launches || [];

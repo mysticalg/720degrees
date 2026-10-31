@@ -55,7 +55,7 @@ def build(rom_path):
         return image
 
     # A raw original tile atlas supports translated descriptor playback.
-    for bank in (0,1,3):
+    for bank in (0,1,2,3):
         atlas = Image.new('RGBA',(2048,1024))
         for code in range(8192):
             tile=sprite(code,1,bank)

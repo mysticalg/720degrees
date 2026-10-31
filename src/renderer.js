@@ -18,6 +18,7 @@
           "motion-indices",
           "motion-tiles",
           "motion-tiles-1",
+          "motion-tiles-2",
           "motion-tiles-3",
           "skater",
           "board",
@@ -338,6 +339,14 @@
         for (const crack of game.cracks)
           mask(crack.actorX, crack.actorY, 0x7a30, "#88ff5566");
       }
+      if (game.event?.kind === "slalom")
+        for (const gate of game.event.gates)
+          mask(
+            gate.actor.actorX,
+            gate.actor.actorY,
+            gate.actor.extraPointer,
+            gate.hit ? "#55ff7766" : "#00e9ff66",
+          );
       const footprint = game.boardFootprint?.(game.player);
       if (!game.player.bail && footprint) {
         const p = game.player,
@@ -489,7 +498,7 @@
               actor.actorY - (actor.height || 0) / 64 - 11,
               0,
               false,
-              ["body", "board", null, "shadow"][actor.palette],
+              ["body", "board", "flags", "shadow"][actor.palette],
               null,
               0,
               actor.pointer,
@@ -713,7 +722,7 @@
         "board",
         jumpPhase,
         kickPhase,
-        this.boardEntry(p, profile),
+        p.skidPose?.board ?? this.boardEntry(p, profile),
         null,
         boardPalette,
       );
@@ -729,9 +738,11 @@
           ? p.bail.pointer
           : p.rampAnimation
             ? p.rampAnimation.currentBody
-            : jumpPhase === null && !kicking
-              ? groundPose.body
-              : null,
+            : p.skidPose
+              ? p.skidPose.body
+              : jumpPhase === null && !kicking
+                ? groundPose.body
+                : null,
         null,
         bodyPalette,
       );
@@ -811,9 +822,11 @@
       const atlas =
         component === "shadow"
           ? "motion-tiles-3"
-          : board
-            ? "motion-tiles-1"
-            : "motion-tiles";
+          : component === "flags"
+            ? "motion-tiles-2"
+            : board
+              ? "motion-tiles-1"
+              : "motion-tiles";
       const read = (address) => (address < 0x6000 ? low : high)[address & 8191];
       const records = S.OriginalRoutines.spriteDescriptor(
         read,
@@ -936,7 +949,7 @@
           actor.actorY - 11,
           0,
           false,
-          ["body", "board", null, "shadow"][actor.palette],
+          ["body", "board", "flags", "shadow"][actor.palette],
           null,
           0,
           actor.pointer,

@@ -1,3 +1,10 @@
+## Build83: course scoring, slalom pairs and skids
+
+- Slalom now includes D0C2's original type25 companion for every26..35 placement, the original palette2 atlas, recovered6110 pass masks, swept board crossings and original blue success frames. There are8/16/19/22/30/34 gates across the six maps. Proximity-only scoring and Y-row automatic misses are removed. The native300-point gate award remains provisional; the original race counter increment is retained for future tally integration.
+- Downhill/jump landings use the recovered7ADA numeric scoring tables for duration, rotation, repeats, gaps and target modifier. Native landing/input adapters still supply the inputs; the surrounding original controllers and repeat replenishment timer are not fully translated. Jump points remain deferred until the park tally, with the original F064 burst/points animation visible at touchdown. The target scenery's own animation is still pending.
+- Fresh quarter turns at speed have native lateral traction using original E458 body/board poses. The0.38-second grip adapter is an intentional enhancement, separate from ROM constants. Jump/terrain transitions cancel the pose; fakie and halfpipe returns retain their existing handling.
+- The original SKATE OR DIE word graphic/controller is still being investigated; no replacement artwork was introduced.
+
 # 720° — native JavaScript port in progress
 
 ## Original ramp/jump medal and cash routines (build82)

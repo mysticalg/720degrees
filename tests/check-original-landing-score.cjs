@@ -1,0 +1,67 @@
+const assert = require("node:assert/strict"),
+  fs = require("node:fs"),
+  vm = require("node:vm"),
+  score = require("../src/original-landing-score.js");
+const c = { window: { Skate720: {} } };
+vm.runInNewContext(
+  fs.readFileSync(require.resolve("../src/landing-score-data.js"), "utf8"),
+  c,
+);
+const d = c.window.Skate720.LANDING_SCORE_DATA;
+const base = {
+  kind: 2,
+  frames: 48,
+  rotation: 0,
+  drop: 0,
+  gapCount: 10,
+  gap: true,
+  backwards: false,
+  takeoffBackwards: false,
+  takeoffDirection: 4,
+  direction: 4,
+  profile: 10,
+  target: false,
+  classIndex: 1,
+};
+assert.deepEqual(
+  [0, 288, 576].map(
+    (rotation) =>
+      score.award({ ...base, rotation }, score.createState(), d).points,
+  ),
+  [200, 300, 400],
+);
+assert.equal(
+  score.award({ ...base, rotation: -288 }, score.createState(), d).points,
+  300,
+);
+const jump = { ...base, kind: 4, frames: 60, rotation: 288, drop: 0 };
+assert.equal(
+  score.award({ ...jump, target: false }, score.createState(), d).points,
+  800,
+);
+assert.equal(
+  score.award({ ...jump, target: true }, score.createState(), d).points,
+  900,
+);
+const repeated = score.createState(),
+  awards = Array.from(
+    { length: 4 },
+    () => score.award({ ...base, gapCount: 0 }, repeated, d).points,
+  );
+assert.equal(awards[3], 0);
+const long = score.award({ ...base, frames: 60 }, repeated, d);
+assert(long.points > 0);
+assert.equal(repeated.repeats[4], 3);
+for (const kind of [2, 4])
+  for (const frames of [0, 29, 30, 40, 41, 56, 57, 100])
+    for (const rotation of [0, 144, 288, 576, -576]) {
+      const v = score.award(
+        { ...base, kind, frames, rotation },
+        score.createState(),
+        d,
+      );
+      assert(Number.isInteger(v.points) && v.points >= 0 && v.points <= 1000);
+    }
+console.log(
+  "PASS original landing score: spin signs, target modifier, repeated-trick exhaustion/refill and80 frame/rotation boundaries",
+);
