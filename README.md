@@ -1,5 +1,9 @@
 # 720° — native JavaScript port in progress
 
+## Free wheels on every jump (build77)
+
+Ordinary stationary and slow jumps now receive a quiet free-wheel loop as well as rolling jumps and halfpipe airs. A small minimum wheel-speed reference and audible gain floor remove the horizontal-speed gate; faster takeoffs still change pitch/intensity, and landing fades the loop. Saved skate volume/mute remain authoritative. Real gameplay checks cover stationary,100-unit and900-unit city jumps through landing, alongside the existing settings/halfpipe-audio regression.
+
 ## Saved skate audio settings and halfpipe wheel spin (build76)
 
 Skate sound volume and mute now persist in browser storage and restore both audio state and controls on reload. The keys are separate from music and master sound; restricted storage falls back to working defaults.

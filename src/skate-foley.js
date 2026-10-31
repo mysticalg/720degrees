@@ -162,6 +162,9 @@
               64,
           );
         }
+        // A jump also lifts a slowly moving or stationary board. Keep a quiet
+        // free-spin cue instead of gating ordinary jumps on screen speed.
+        this.wheelSpeed = Math.max(120, this.wheelSpeed);
         this.airTime = 0;
       }
       this.airTime = p.air ? (this.airTime || 0) + dt : 0;
@@ -172,7 +175,7 @@
       const grind = p.halfpipeFlight?.trick === "grind";
       const desired = grind
         ? "grind-metal"
-        : p.air && spinSpeed > 12
+        : p.air
           ? spinSpeed > 170
             ? "wheel-fast"
             : "wheel-slow"
@@ -192,7 +195,7 @@
           key === desired
             ? this.volume *
               (wheel
-                ? Math.min(0.28, spinSpeed / 900)
+                ? Math.min(0.32, 0.18 + spinSpeed / 1800)
                 : Math.min(0.65, speed / 500))
             : 0;
         audio.volume += (target - audio.volume) * Math.min(1, dt * 10);
