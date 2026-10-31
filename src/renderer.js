@@ -392,12 +392,70 @@
     worldImage(image) {
       const left = -this.offset.x,
         top = -this.offset.y;
-      const x = Math.max(0, left),
-        y = Math.max(0, top);
-      const width = Math.min(image.width, left + 512) - x;
-      const height = Math.min(image.height, top + 384) - y;
-      if (width > 0 && height > 0)
-        this.ctx.drawImage(image, x, y, width, height, x, y, width, height);
+      const right = Math.min(image.width, left + 512),
+        bottom = Math.min(image.height, top + 384);
+      // Some embedded browsers stall when a large image backs a canvas draw,
+      // even with a tiny source crop. Submit only small cached canvas textures.
+      for (
+        let y = Math.max(0, Math.floor(top / 256) * 256);
+        y < bottom;
+        y += 256
+      )
+        for (
+          let x = Math.max(0, Math.floor(left / 256) * 256);
+          x < right;
+          x += 256
+        )
+          this.ctx.drawImage(this.imageRegion(image, x, y, 256, true), x, y);
+    }
+    /** Bounded LRU caches: at most 8MB of world tiles and 1MB of sprite pixels.
+     * Cropping uses a CPU-backed staging canvas; large source images never
+     * enter the frequently redrawn main canvas in Facebook's embedded browser.
+     */
+    imageRegion(image, x, y, size, opaque = false) {
+      if (x < 0 || y < 0 || x >= image.width || y >= image.height) {
+        if (!this.emptyImageRegion) {
+          this.emptyImageRegion = document.createElement("canvas");
+          this.emptyImageRegion.width = this.emptyImageRegion.height = 1;
+        }
+        return this.emptyImageRegion;
+      }
+      this.regionImageIds ||= new WeakMap();
+      if (!this.regionImageIds.has(image))
+        this.regionImageIds.set(
+          image,
+          (this.nextRegionImageId = (this.nextRegionImageId || 0) + 1),
+        );
+      const cache = opaque
+        ? (this.worldRegions ||= new Map())
+        : (this.spriteRegions ||= new Map());
+      const key = `${this.regionImageIds.get(image)}:${x}:${y}:${size}`;
+      let tile = cache.get(key);
+      if (tile) {
+        cache.delete(key);
+        cache.set(key, tile);
+        return tile;
+      }
+      tile = document.createElement("canvas");
+      tile.width = Math.min(size, image.width - x);
+      tile.height = Math.min(size, image.height - y);
+      tile
+        .getContext("2d", { alpha: !opaque, willReadFrequently: true })
+        .drawImage(
+          image,
+          x,
+          y,
+          tile.width,
+          tile.height,
+          0,
+          0,
+          tile.width,
+          tile.height,
+        );
+      if (cache.size >= (opaque ? 32 : 1024))
+        cache.delete(cache.keys().next().value);
+      cache.set(key, tile);
+      return tile;
     }
     city(game) {
       const c = this.ctx,
@@ -795,15 +853,14 @@
             this.ctx.drawImage(this.equipmentTile(tile, palette), 0, 0);
           else
             this.ctx.drawImage(
-              this.assets[atlas],
-              (tile % 128) * 16,
-              Math.floor(tile / 128) * 16,
-              16,
-              16,
+              this.imageRegion(
+                this.assets[atlas],
+                (tile % 128) * 16,
+                Math.floor(tile / 128) * 16,
+                16,
+              ),
               0,
               0,
-              16,
-              16,
             );
           this.ctx.restore();
         }

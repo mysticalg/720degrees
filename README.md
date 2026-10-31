@@ -1,5 +1,11 @@
 # 720° — native JavaScript port in progress
 
+## Facebook in-app browser texture cache (build81)
+
+On the connected phone's Facebook browser, build80 still showed roughly4 FPS with intermittent stalls despite Chrome running smoothly. Its exposed WebView debugging connection identified rendering stalls when large images backed main-canvas draws. The renderer now stages original map art into256px opaque world tiles and original sprite pixels into16px transparent tiles, then draws only those small cached textures. LRU eviction caps these caches at32 world tiles (8MB) and1024 sprite tiles (1MB). No game rules or source graphics were changed; intermediate canvas alpha rounding can differ by at most two8-bit channel values in the tested views.
+
+In Facebook's actual on-device test, moving city gameplay reached97–120 FPS after warm-up; sampled ramp/downhill/jump/slalom views read90/115/120/118 FPS. These are measured scenes, not guaranteed rates for every workload. Eighteen old/new rendering comparisons and explicit cache-eviction/memory checks passed.
+
 ## On-device mobile performance and thumbstick (build80)
 
 USB-debugging measurements on the connected Samsung phone reproduced roughly3 FPS in the live build79. Rendering, rather than audio/game logic, dominated frame time. The renderer now skips an invisible world-sized pavement-pattern fill once opaque scenery is loaded, and loads one offline-composited opaque city background instead of drawing the large transparent decorations each frame. It also avoids setting main-canvas blur state at all; the existing cached soft shadow remains. The unused runtime decoration image is no longer decoded separately.
