@@ -486,8 +486,20 @@
       const level = this.event?.level || this.city.level;
       const wall =
         this.event?.kind === "ramp" ? S.Halfpipe.wallAt(level, p.x, p.y) : null;
-      if (wall && wall.progress > 0.55 && !p.halfpipeReturning) {
-        p.halfpipeJumpQueued = 20;
+      const approach = wall
+        ? ((p.romDirection ?? wall.upDirection) - wall.upDirection + 16) & 15
+        : 8;
+      const climbing =
+        wall &&
+        !p.halfpipeReturning &&
+        (p.romSpeed || 0) > 0 &&
+        (approach <= 3 || approach >= 13);
+      if (climbing && wall.progress > 0.02) {
+        // Native timing rule: the curved transition is too early for an air.
+        // Only the upper vert accepts a press to be carried to the coping.
+        if (wall.stage === "curve") {
+          this.crash("JUMPED TOO EARLY", { force: true });
+        } else p.halfpipeJumpQueued = 20;
         return;
       }
       const here = level.contactSample(p.x, p.y);
@@ -1542,13 +1554,13 @@
         p.jumpTarget = undefined;
       }
     }
-    crash(reason) {
+    crash(reason, { force = false } = {}) {
       const p = this.player;
       p.skid = p.skidPose = null;
       p.groundPivot = p.groundPivotPose = null;
       if (p.curbGrind) this.releaseCurbGrind();
       if (p.vehicleTow) this.releaseVehicleTow();
-      if (p.invulnerable > 0 || p.fallen > 0) return;
+      if ((!force && p.invulnerable > 0) || p.fallen > 0) return;
       const level = this.event?.level || this.city.level;
       const surface = level.contactSample(p.x, p.y);
       const bytes = this.motionDirectory;
@@ -1568,6 +1580,7 @@
       p.air = false;
       p.rampAnimation = p.halfpipeFlight = null;
       p.halfpipeReturning = false;
+      p.halfpipeJumpQueued = 0;
       p.copingReturn = null;
       p.romFacingDirection = undefined;
       p.dropFall = null;
