@@ -1,5 +1,13 @@
 # 720° — native JavaScript port in progress
 
+## Saved skate audio settings and halfpipe wheel spin (build76)
+
+Skate sound volume and mute now persist in browser storage and restore both audio state and controls on reload. The keys are separate from music and master sound; restricted storage falls back to working defaults.
+
+Free wheel-spin recordings now use retained halfpipe/course takeoff speed when the aerial controller temporarily holds screen XY still. This keeps them audible during vertical halfpipe airs, with the existing gentle decay and landing fade.
+
+Browser checks passed for HTTP and file URLs: change volume/mute, reload and verify model/UI, unmute and reload again, then verify zero-XY halfpipe wheel spin plays and stops on landing.
+
 ## Automatic skate sounds on the live game (build75)
 
 All21 skate recordings are bundled in assets/skate-sfx and load automatically after starting the game, including on GitHub Pages and after a reload. No folder selection is needed. The skate volume/mute controls remain independent of music; CUSTOM SKATE PACK is an optional override. Relative URLs also preserve local-file playback. Source names and media IDs remain in assets/skate-sfx/sources.json.
