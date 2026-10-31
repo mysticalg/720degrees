@@ -23,7 +23,7 @@
           "board",
           "shadow",
           "pavement",
-          "city-overlays",
+          "city-background",
           "ramp",
           "slalom",
           "jump",
@@ -108,8 +108,12 @@
       this.offset = { x: Math.round(256 - camX), y: Math.round(192 - camY) };
       c.save();
       c.translate(this.offset.x, this.offset.y);
-      c.fillStyle = this.pavement;
-      c.fillRect(0, 0, width, height);
+      // Loaded scenery is opaque and already covers the viewport. Avoid a
+      // redundant world-sized pattern fill (and pattern state) underneath it.
+      if (!(event ? event.level.ready : game.city.level.ready)) {
+        c.fillStyle = this.pavement;
+        c.fillRect(-this.offset.x, -this.offset.y, 512, 384);
+      }
       if (event) this.course(game, event);
       else this.city(game);
       if (game.bees && !event) this.swarm(game.bees, game.elapsed);
@@ -399,9 +403,9 @@
       const c = this.ctx,
         city = game.city;
       if (city.level.ready) {
-        this.worldImage(city.level.image);
-        // EC20 supplies the original class and shop decorations.
-        this.worldImage(this.assets["city-overlays"]);
+        // Original map plus unchanged EC20 decorations, composited offline.
+        // The opaque image avoids a costly full-map alpha blend on mobile.
+        this.worldImage(this.assets["city-background"]);
       }
       const objects = [
         ...game.cracks.map((crack) => ({
@@ -622,7 +626,7 @@
         // wheels; translucent blur softens it without replacement artwork.
         c.save();
         c.globalAlpha *= p.air ? 0.28 : 0.2;
-        c.filter = "blur(0.45px)";
+        this.softShadowPass = true;
         this.descriptorSkater(
           x + (p.air ? 0 : 1),
           (p.air ? (p.courseShadowY ?? p.y) : p.y + 2) - groundRise,
@@ -640,6 +644,7 @@
                 (a) => directory[a - 0x4000] | (directory[a - 0x4000 + 1] << 8),
               ).shadow,
         );
+        this.softShadowPass = false;
         c.restore();
       }
       this.descriptorSkater(
@@ -783,9 +788,8 @@
             top + row * 16,
           );
           if (record.code & 0x4000) this.ctx.scale(-1, 1);
-          if (component === "shadow" && this.ctx.filter === "blur(0.45px)") {
+          if (component === "shadow" && this.softShadowPass) {
             // Blur the original tile once, not on every main-canvas draw.
-            this.ctx.filter = "none";
             this.ctx.drawImage(this.softShadowTile(tile), -2, -2);
           } else if (palette)
             this.ctx.drawImage(this.equipmentTile(tile, palette), 0, 0);

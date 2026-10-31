@@ -30,6 +30,63 @@
       this.throttle = 0;
       this.brake = 0;
       this.padSpin = 0;
+      this.touchStick = { x: 0, y: 0, magnitude: 0, active: false };
+      this.touchStickPointer = null;
+      const thumbstick = document.querySelector("#touch-stick");
+      this.resetTouchStick = () => {
+        this.touchStickPointer = null;
+        this.touchStick = { x: 0, y: 0, magnitude: 0, active: false };
+        thumbstick?.style.setProperty("--stick-x", "0px");
+        thumbstick?.style.setProperty("--stick-y", "0px");
+      };
+      if (thumbstick) {
+        const move = (event) => {
+          if (event.pointerId !== this.touchStickPointer) return;
+          event.preventDefault();
+          const { x, y, radius } = this.touchStickBounds;
+          let dx = (event.clientX - x) / radius,
+            dy = (event.clientY - y) / radius;
+          const length = Math.hypot(dx, dy);
+          if (length > 1) {
+            dx /= length;
+            dy /= length;
+          }
+          const magnitude = Math.max(
+            0,
+            (Math.min(1, length) - this.deadzone) / (1 - this.deadzone),
+          );
+          this.touchStick =
+            length > this.deadzone
+              ? {
+                  x: (dx / Math.min(1, length)) * magnitude,
+                  y: (dy / Math.min(1, length)) * magnitude,
+                  magnitude,
+                  active: true,
+                }
+              : { x: 0, y: 0, magnitude: 0, active: false };
+          thumbstick.style.setProperty("--stick-x", `${dx * radius}px`);
+          thumbstick.style.setProperty("--stick-y", `${dy * radius}px`);
+        };
+        thumbstick.addEventListener("pointerdown", (event) => {
+          if (this.touchStickPointer !== null) return;
+          const rect = thumbstick.getBoundingClientRect();
+          this.touchStickBounds = {
+            x: rect.x + rect.width / 2,
+            y: rect.y + rect.height / 2,
+            radius: rect.width * 0.29,
+          };
+          this.touchStickPointer = event.pointerId;
+          thumbstick.setPointerCapture(event.pointerId);
+          move(event);
+        });
+        thumbstick.addEventListener("pointermove", move);
+        const release = (event) => {
+          if (event.pointerId === this.touchStickPointer)
+            this.resetTouchStick();
+        };
+        for (const name of ["pointerup", "pointercancel", "lostpointercapture"])
+          thumbstick.addEventListener(name, release);
+      }
       try {
         this.controlMode =
           localStorage.getItem("720-stick-mode") === "rotate"
@@ -74,6 +131,7 @@
       return toggle;
     }
     clear() {
+      this.resetTouchStick();
       this.queuedCollisionToggles = 0;
       this.keys.clear();
       this.touchKeys.clear();
@@ -143,6 +201,8 @@
         const right = pad.axes[2] || 0;
         if (Math.abs(right) > 0.2) this.padSpin = right;
       }
+      // Touch and physical pads share exactly the same analog control path.
+      if (this.touchStickPointer !== null) this.stick = { ...this.touchStick };
     }
     held(name) {
       return !!this.actions[name];

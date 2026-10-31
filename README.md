@@ -1,5 +1,13 @@
 # 720° — native JavaScript port in progress
 
+## On-device mobile performance and thumbstick (build80)
+
+USB-debugging measurements on the connected Samsung phone reproduced roughly3 FPS in the live build79. Rendering, rather than audio/game logic, dominated frame time. The renderer now skips an invisible world-sized pavement-pattern fill once opaque scenery is loaded, and loads one offline-composited opaque city background instead of drawing the large transparent decorations each frame. It also avoids setting main-canvas blur state at all; the existing cached soft shadow remains. The unused runtime decoration image is no longer decoded separately.
+
+On that phone, the test build settled at60 FPS while moving through the city and in sampled halfpipe/downhill/jump/slalom views. This describes the tested scenes, not a guarantee for every device or workload. Eighteen city/course views are pixel-identical to build79. Original map art and decorations are composited reproducibly by tools/compose_city_background.py; simulation/collision rules are unchanged.
+
+Mobile arrows are replaced by a circular analog thumbstick sharing the physical-gamepad input path, deadzone, point/rotate modes and airborne steering. Kick and Jump are the only mobile action buttons. Spin/Enter touch buttons are removed; keyboard/gamepad bindings remain. Tests on the actual connected phone cover proportional diagonal input, simultaneous steering+Kick, release/cancel, rotate mode and continued60 FPS.
+
 ## Mobile follow-up and FPS readout (build79)
 
 The softened original board-shadow tiles are blurred once into a bounded20px tile cache, avoiding live main-canvas blur passes on each frame. The original silhouette and transparency are retained; the18-view comparison differs only by at most two channel shade values from alpha/blur rounding. Main-canvas filtered draw calls fell2→0 in the city proxy benchmark; desktop CPU timings were roughly unchanged, and A53 performance remains unmeasured.
