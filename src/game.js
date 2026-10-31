@@ -415,6 +415,20 @@
       if (p.halfpipeFlight) p.halfpipeFlight.speed *= scale;
       p.lastFakieJumpBoost = scale;
     }
+    /** All fakie entries share the same held-stick steering origin. Keep
+     * rolling momentum while that direction is held, then steer by its angular
+     * change until the stick is released or a kick exits the backwards stance.
+     */
+    latchFakieSteering(travel) {
+      const p = this.player,
+        direction = this.input.direction();
+      p.fakiePointAnchor =
+        p.fakie && direction.active
+          ? { input: this.pointHeading(direction), travel }
+          : null;
+      p.fakieSteeringTarget = null;
+      p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
+    }
     pointHeading(direction) {
       const angle = Math.atan2(direction.y * 2, direction.x);
       const dial =
@@ -1178,6 +1192,7 @@
         ? (p.romDirection + 8) & 15
         : undefined;
       p.fakie = returnFakie;
+      this.latchFakieSteering(p.romDirection);
       const returnFace = p.romFacingDirection ?? p.romDirection;
       p.angle = Math.atan2(
         -S.OriginalGround.tables.y[returnFace],
@@ -1527,13 +1542,7 @@
       );
       // A held stick that supplied the air turn is not a fresh request to
       // reverse rolling direction on the first grounded frame.
-      p.fakiePointAnchor = null;
-      const landingInput = this.input.direction();
-      p.fakieSteeringTarget =
-        p.fakie && landingInput.active
-          ? this.pointHeading({ x: landingInput.x, y: -landingInput.y })
-          : null;
-      p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
+      this.latchFakieSteering(travel);
       p.spin = 0;
       if (this.event?.kind === "ramp" && p.fromRamp) this.event.rampHits++;
       if (this.event?.kind === "jump") {
@@ -2020,16 +2029,7 @@
         p.fakie = difference >= 6 && difference <= 10;
         p.romDirection = p.romMovementDirection = state.travel;
         p.romFacingDirection = p.fakie ? (state.travel + 8) & 15 : undefined;
-        const direction = this.input.direction();
-        // Holding the approach stick is not a fresh steering command when
-        // the stance changes. New input keeps left/right and mirrors only Y;
-        // rotate mode likewise keeps its normal left/right dial direction.
-        p.fakiePointAnchor = null;
-        p.fakieSteeringTarget =
-          p.fakie && direction.active
-            ? this.pointHeading({ x: direction.x, y: -direction.y })
-            : null;
-        p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
+        this.latchFakieSteering(state.travel);
         p.romDialAngle = Math.atan2(
           -S.OriginalGround.tables.y[state.travel] * 2,
           S.OriginalGround.tables.x[state.travel],
@@ -2340,9 +2340,12 @@
           const rawTarget = S.OriginalGround.dialDirection(dial);
           // Point controls mirror only the vertical input while backwards.
           // Left/right remain unchanged, as requested for both entry methods.
-          const target = p.fakie
-            ? this.pointHeading({ x: direction.x, y: -direction.y })
-            : rawTarget;
+          const anchor = p.fakie ? p.fakiePointAnchor : null;
+          const target = anchor
+            ? (anchor.travel + rawTarget - anchor.input + 16) & 15
+            : p.fakie
+              ? this.pointHeading({ x: direction.x, y: -direction.y })
+              : rawTarget;
           let current = p.romDirection;
           if (current === undefined)
             current = S.OriginalGround.dialDirection(dialFromAngle(p.angle));
