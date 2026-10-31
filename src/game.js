@@ -781,6 +781,10 @@
           : null;
       };
       if (p.courseShadowPlaneDrop !== undefined) {
+        // A slope gradient is local to the surface under the shadow. Carrying
+        // the bowl rim's gradient over its water keeps moving the lower plane
+        // sideways in isometric view, even though airborne XY is unchanged.
+        // Extend a flat reference over gaps; resume grading only on support.
         const rom = S.OriginalGround,
           reader = (this.courseShadowReader ||= rom.terrainTableReader(
             S.TERRAIN_TABLES,
@@ -788,7 +792,7 @@
           reference = rom.airborneTransition(
             p.courseFlightSpeed ?? p.romSpeed ?? 0,
             p.romMovementDirection ?? p.romDirection ?? 4,
-            p.courseShadowPlaneProfile ?? 24,
+            support(p.y + p.courseShadowPlaneDrop)?.profile ?? 24,
             4,
             this.gear.board,
             reader,
@@ -1493,6 +1497,8 @@
       p.spin = 0;
       if (this.event?.kind === "ramp" && p.fromRamp) this.event.rampHits++;
       if (this.event?.kind === "jump") {
+        if (landingSurface.type === 15)
+          S.OriginalTargetPalette.trigger(this.event);
         const targetIndex = this.event.targets.findIndex(
           (t) =>
             [10, 15].includes(landingSurface.type) && S.distance(p, t) < 160,
@@ -2144,6 +2150,7 @@
       const p = this.player,
         e = this.event;
       this.elapsed += dt;
+      if (e?.kind === "jump") S.OriginalTargetPalette.tick(e);
       for (const crack of this.cracks) S.OriginalCracks.tick(crack);
       if (this.mode === "city")
         for (const actor of this.cityActors) {

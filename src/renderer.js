@@ -997,6 +997,32 @@
           11,
           "center",
         );
+      // DD10 cycles only palette pens 1..3. Small extracted original-pixel
+      // patches avoid re-uploading/recolouring a whole course each frame.
+      const phase = S.OriginalTargetPalette.phase(e),
+        image = level.targetPaletteImage;
+      if (phase >= 0 && image?.complete && image.naturalWidth) {
+        for (const patch of S.TARGET_PALETTE_DATA.patches[level.name] || []) {
+          if (
+            patch.x + patch.w < -this.offset.x ||
+            patch.x > 512 - this.offset.x ||
+            patch.y + patch.h < -this.offset.y ||
+            patch.y > 384 - this.offset.y
+          )
+            continue;
+          c.drawImage(
+            image,
+            phase * patch.w,
+            patch.sy,
+            patch.w,
+            patch.h,
+            patch.x,
+            patch.y,
+            patch.w,
+            patch.h,
+          );
+        }
+      }
       for (const actor of e.actors || [])
         this.descriptorSkater(
           actor.actorX + 40,
@@ -1171,3 +1197,4 @@
   }
   S.Renderer = Renderer;
 })();
+

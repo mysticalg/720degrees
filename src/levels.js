@@ -63,6 +63,12 @@
         this.image.onerror = () =>
           reject(new Error(`Cannot load original map ${this.name}`));
       });
+      if (info.kind === "jump") {
+        this.targetPaletteImage = new Image();
+        this.targetPaletteImage.onload = () =>
+          S.app?.renderer.primeImage?.(this.targetPaletteImage);
+        this.targetPaletteImage.src = `assets/levels/${info.name}-target-cycle.png`;
+      }
       this.image.src = `assets/levels/${info.name}.png`;
     }
     sample(x, y) {
