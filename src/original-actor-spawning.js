@@ -255,28 +255,17 @@
     const cell =
       (memory.readObjectWord(0x7a00 + location * 2) + ((packed & 32767) >> 9)) &
       65535;
+    //BDCA/BDDC/BDEE/BE00 double a16-bit register; indexed addressing
+    //also wraps at16 bits. A directory sentinelFFFF deliberately reads the
+    //preceding coordinate word, rather than a JavaScript address above64K.
+    const coordinate = (base) =>
+      memory.readCoordinateWord((base + cell * 2) & 65535);
     const cutY = readFieldWord(memory, 0x09a6);
-    if (
-      row <= signedWord(top) &&
-      memory.readCoordinateWord(0x5580 + cell * 2) >= cutY
-    )
-      return false;
-    if (
-      row >= signedWord(bottom) &&
-      memory.readCoordinateWord(0x5580 + cell * 2) < cutY
-    )
-      return false;
+    if (row <= signedWord(top) && coordinate(0x5580) >= cutY) return false;
+    if (row >= signedWord(bottom) && coordinate(0x5580) < cutY) return false;
     const cutX = readFieldWord(memory, 0x09a4);
-    if (
-      column >= signedWord(right) &&
-      memory.readCoordinateWord(0x4ac0 + cell * 2) >= cutX
-    )
-      return false;
-    if (
-      column <= signedWord(left) &&
-      memory.readCoordinateWord(0x4ac0 + cell * 2) < cutX
-    )
-      return false;
+    if (column >= signedWord(right) && coordinate(0x4ac0) >= cutX) return false;
+    if (column <= signedWord(left) && coordinate(0x4ac0) < cutX) return false;
     return true;
   }
   /** B56E-B5B6: clear a motion-object slot without touching its registry. */

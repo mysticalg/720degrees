@@ -299,3 +299,6 @@ Ordinary city and slalom landings now follow fixed9AF4-9B02 into CPU7ADA, alongs
 
 
 Halfpipe landing points now translate CPU7E98-7F50 with the original bank2000 time/spin and36 first-use variant tables.7F80 clears the per-course used flags. The original action, variant, completed-segment count and flag64 choose the award; action1 takes the no-award branch. Points are deferred into the course total and later feed its medal/cash result. Markerless animation paths retain5264 scoring fields independently of the render controller. Browser flight/contact timing and incomplete animation-controller paths remain adapters; this does not claim complete original halfpipe physics. Version0.99 also includes the user-selected15-track music pack and saved Original/Surf Rock switch, plus the translated park, ticket, city-clock, bee pursuit/continuation and terminal cash-tally changes recorded above.
+
+
+v0.99.1 fixes a traffic-scanner lockup: BDCA/BDDC/BDEE/BE00 coordinate addresses now wrap to16 bits before table lookup. In particular aFFFF directory sentinel must read557E/4ABE rather than an unbounded JavaScript address. The real record packed358 and top/bottom boundary cases are regression-tested, along with a ten-class whole-city scanner pass and subsequent live simulation ticks.
