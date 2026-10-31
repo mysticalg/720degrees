@@ -172,7 +172,11 @@
         c.fill("evenodd");
       };
       if (level.finishTrigger) {
-        this.polygon(level.finishTrigger.map(p => [p.x,p.y]), "#ffffff24", "#ffffffcc");
+        this.polygon(
+          level.finishTrigger.map((p) => [p.x, p.y]),
+          "#ffffff24",
+          "#ffffffcc",
+        );
       }
       area(S.TerrainCollision.debugMesh(level), "#ff38533b");
       const walls = S.TerrainCollision.debugMesh(level, true);
@@ -380,13 +384,24 @@
         2,
       );
     }
+    /** Crop scenery at source, avoiding full-map draw submissions on mobile. */
+    worldImage(image) {
+      const left = -this.offset.x,
+        top = -this.offset.y;
+      const x = Math.max(0, left),
+        y = Math.max(0, top);
+      const width = Math.min(image.width, left + 512) - x;
+      const height = Math.min(image.height, top + 384) - y;
+      if (width > 0 && height > 0)
+        this.ctx.drawImage(image, x, y, width, height, x, y, width, height);
+    }
     city(game) {
       const c = this.ctx,
         city = game.city;
       if (city.level.ready) {
-        c.drawImage(city.level.image, 0, 0);
+        this.worldImage(city.level.image);
         // EC20 supplies the original class and shop decorations.
-        c.drawImage(this.assets["city-overlays"], 0, 0);
+        this.worldImage(this.assets["city-overlays"]);
       }
       const objects = [
         ...game.cracks.map((crack) => ({
@@ -698,6 +713,16 @@
       overrideColumns = null,
       palette = null,
     ) {
+      // Generous bounds include descriptor wrapping, wide vehicles and tall
+      // poses. Off-screen actors still simulate; only their drawing is skipped.
+      if (
+        this.offset &&
+        (x + this.offset.x < -384 ||
+          x + this.offset.x > 896 ||
+          y + this.offset.y < -384 ||
+          y + this.offset.y > 768)
+      )
+        return;
       const [directory, low, high] = this.motionBanks;
       // Native kick timing remains provisional; directory selection is original.
       const board = component !== "body" && component !== "helmet";
@@ -747,6 +772,11 @@
         left += Math.round((x - left) / 1024) * 1024;
         for (let row = 0; row < height; row++) {
           const tile = code + row;
+          const screenX = left + this.offset.x,
+            screenY = top + row * 16 + this.offset.y;
+          // Allow a halo for the original softened board-shadow filter.
+          if (screenX < -18 || screenX > 514 || screenY < -18 || screenY > 386)
+            continue;
           this.ctx.save();
           this.ctx.translate(
             left + (record.code & 0x4000 ? 16 : 0),
@@ -799,7 +829,7 @@
     course(game, e) {
       const c = this.ctx,
         level = e.level;
-      if (level.ready) c.drawImage(level.image, 0, 0);
+      if (level.ready) this.worldImage(level.image);
       else
         this.text(
           "LOADING ORIGINAL COURSE...",

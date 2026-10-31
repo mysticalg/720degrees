@@ -1,5 +1,11 @@
 # 720° — native JavaScript port in progress
 
+## Mobile rendering cost (build78)
+
+After a Samsung A53 low-FPS report, viewport culling skips off-screen sprite work and clips map/decoration source rectangles to the512x384 view rather than submitting6144x3072 city images. Simulation, actor scheduling, original graphics and collisions are unchanged. Conservative descriptor bounds and per-tile margins retain wide vehicles, wrapped descriptors and soft shadows.
+
+Eighteen city/course/airborne views are pixel-identical to the prior renderer. In a headless Chromium city benchmark with6x CPU throttling, drawImage calls fell178→50 per frame and median draw submission time4.5→2.0ms (95th percentile7.0→3.3ms). This is a desktop proxy measurement, not a measured A53 FPS result; mobile GPU/filter/memory costs may still differ.
+
 ## Free wheels on every jump (build77)
 
 Ordinary stationary and slow jumps now receive a quiet free-wheel loop as well as rolling jumps and halfpipe airs. A small minimum wheel-speed reference and audible gain floor remove the horizontal-speed gate; faster takeoffs still change pitch/intensity, and landing fades the loop. Saved skate volume/mute remain authoritative. Real gameplay checks cover stationary,100-unit and900-unit city jumps through landing, alongside the existing settings/halfpipe-audio regression.
