@@ -31,8 +31,24 @@ assert.equal(original.result("jump", 4608, 10, data).cash, 350); // class10 silv
 assert.equal(original.cash(1, 7, data), 175);
 assert.equal(original.cash(0, 7, data), 0);
 assert.equal(original.cash(3, 2000, data), 34464); // original low-word product
-assert.throws(() => original.thresholds("slalom", 1, data), RangeError);
+assert.deepEqual(original.thresholds("slalom", 1, data), [0, 22, 44]);
+assert.deepEqual(original.thresholds("downhill", 1, data), [0, 32, 64]);
+for (const kind of ["slalom", "downhill"])
+  for (let index = 1; index <= 10; index++) {
+    const limits = original.thresholds(kind, index, data);
+    assert.equal(original.medal(0, limits), 0);
+    assert.equal(original.medal(1, limits), 1);
+    for (let rank = 2; rank <= 3; rank++) {
+      assert.equal(original.medal(limits[rank - 1] - 1, limits), rank - 1);
+      assert.equal(original.medal(limits[rank - 1], limits), rank);
+    }
+    assert.equal(
+      original.result(kind, limits[2], index, data).cash,
+      50 * index,
+    );
+  }
+assert.throws(() => original.thresholds("slalom", 0, data), RangeError);
 assert.throws(() => original.thresholds("ramp", 11, data), RangeError);
 console.log(
-  "PASS original park results:22 class/park threshold sets, inclusive boundaries, signed words, packed medals and class-scaled cash",
+  "PASS original park results:42 class/park threshold sets, inclusive boundaries, signed words, packed medals and class-scaled cash",
 );

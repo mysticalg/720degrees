@@ -3,7 +3,7 @@ window.Skate720 = {};
 (() => {
   const S = window.Skate720;
   S.CONFIG = Object.freeze({
-    version: "0.88",
+    version: "0.89",
     width: 512,
     height: 384,
     step: 1 / 60,

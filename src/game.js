@@ -1675,46 +1675,45 @@
       const e = this.event;
       e.finished = true;
       this.mapDifficulty = e.difficulty;
-      let performance = 0;
-      if (e.kind === "slalom") performance = e.gatesHit / e.gates.length;
-      if (e.kind === "downhill")
-        performance =
-          (e.crossedFinish || this.player.y >= e.level.finish.y - 30 ? 1 : 0) *
-          Math.max(
-            0.25,
-            1 - e.elapsed / (e.level.height / 30) - e.crashes * 0.05,
-          );
-      // Original0258 is deferred park score for ramp/jump; race parks use
-      // the separate0F20 counter and remain on the native adapter for now.
-      const originalResult = ["ramp", "jump"].includes(e.kind)
-        ? S.OriginalEventResult.result(
-            e.kind,
-            e.originalPendingPoints || 0,
-            S.OriginalRoutines.setupTableIndex(
-              e.difficulty,
-              e.kind === "ramp" ? 2 : 3,
-              this.medals.length,
-            ),
-            S.EVENT_RESULT_DATA,
-          )
-        : null;
+      const race = e.kind === "slalom" || e.kind === "downhill";
+      // CPU67AE copies the remaining race counter to0258; ramp/jump copy
+      // deferred landing points. All four parks then call the same6E38 medal
+      // and67D8 class-scaled cash routines.
+      const selector = { slalom: 0, downhill: 1, ramp: 2, jump: 3 }[e.kind];
+      const originalResult = S.OriginalEventResult.result(
+        e.kind,
+        race ? e.originalRaceCounter : e.originalPendingPoints || 0,
+        S.OriginalRoutines.setupTableIndex(
+          e.difficulty,
+          selector,
+          this.medals.length,
+        ),
+        S.EVENT_RESULT_DATA,
+      );
       e.originalResult = originalResult;
-      const medal =
-        originalResult?.medal ??
-        (performance >= 0.8
-          ? "GOLD"
-          : performance >= 0.5
-            ? "SILVER"
-            : performance >= 0.2
-              ? "BRONZE"
-              : "PARTICIPATION");
-      const cash =
-        originalResult?.cash ??
-        { GOLD: 300, SILVER: 200, BRONZE: 100, PARTICIPATION: 50 }[medal];
-      // Translate the original deferred-points tally; medal labels no longer
-      // invent a fixed score bonus. Race tally state 0F20 remains untranslated.
+      const medal = originalResult.medal,
+        cash = originalResult.cash;
+      // CPU6902 counts one unit down per award. D052 leaves0E95 nonzero
+      // for slalom flags (50 points/unit); downhill takes100 points/unit.
+      let raceBonus = 0;
+      if (race) {
+        let counter = e.originalRaceCounter;
+        for (;;) {
+          const tally = S.OriginalRoutines.tallyRaceCounter(
+            counter,
+            e.kind === "slalom",
+          );
+          counter = tally.counter;
+          if (tally.done) break;
+          this.addScore(tally.award, undefined, false);
+          raceBonus += tally.award;
+        }
+        e.originalRaceCounter = counter;
+        e.originalRaceBonus = raceBonus;
+      }
+      // Pending ramp/jump points use the separate original0258 tally.
       let pending = e.originalPendingPoints || 0,
-        bonus = 0;
+        bonus = raceBonus;
       while (pending > 0) {
         const tally = S.OriginalRoutines.tallyPendingScore(pending);
         for (const award of tally.awards) {
@@ -1725,9 +1724,7 @@
         if (tally.done) break; // Signed overflow/nonpositive source words stop tallying.
       }
       e.originalPendingPoints = 0;
-      this.cash = originalResult
-        ? (this.cash + cash) & 65535
-        : this.cash + cash;
+      this.cash = (this.cash + cash) & 65535;
       this.medals.push({
         park: e.kind,
         round: e.round,
@@ -3198,7 +3195,17 @@
         actor.actorY -= motion.dy / 64;
       }
       e.elapsed += dt;
-      e.timer -= dt;
+      if (e.kind === "slalom" || e.kind === "downhill") {
+        // CPU7A74: every16th global frame, active phase3 only. Original
+        // action5 is airborne: jumping pauses this counter; bailing does not.
+        e.originalRaceCounter = S.OriginalRoutines.tickRaceCounter(
+          e.originalRaceCounter,
+          Math.round(this.elapsed * 60),
+          3,
+          p.air ? 5 : 1,
+        );
+        e.timer = e.originalRaceCounter;
+      } else e.timer -= dt;
       if (e.kind === "ramp") {
         // The decoded surface profiles supply wall travel. Do not clamp the
         // pipe to a guessed rotated rectangle or reflect against an invisible
@@ -3237,9 +3244,10 @@
                   128,
                   (e.originalRaceCounter || 0) + 6,
                 );
+                e.timer = e.originalRaceCounter;
                 gate.actor.pointer += 4;
                 if (gate.companion) gate.companion.pointer += 4;
-                this.addScore(300, "GATE +300"); // Native award pending race tally integration.
+                this.popup("GATE +6"); // A7D6 extends the race counter, not an immediate score award.
                 this.audio.effect("coin");
               }
             }
@@ -3317,7 +3325,7 @@
           originalKickTarget: p.romKickEnvelope?.target || 0,
           completeOriginalSimulation: false,
           scoring:
-            "original accumulator, airtime and ramp/jump medal/cash; race results provisional",
+            "original accumulator, landing points, race counter tally and all park medal/cash tables",
         },
         score: this.score,
         cash: this.cash,

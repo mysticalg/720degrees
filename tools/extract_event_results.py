@@ -31,11 +31,22 @@ for index in range(11):
     pointer = word(0x2de6c+2*index)
     address = 0x2c000+pointer-0x4000
     rows.append(list(program[address:address+3]))
+race_rows={}
+for kind, directory in [('slalom',0x2de83),('downhill',0x2de8d)]:
+    rows_for_kind=[None] # class zero is not a race setup entry
+    for index in range(1,11):
+        pointer=word(0x2de28+program[directory+index]*2)
+        rows_for_kind.append(list(program[0x28000+pointer:0x28000+pointer+3]))
+    race_rows[kind]=rows_for_kind
+# CPU6BA0 uses the race threshold byte without the ramp/jump shifts.
+assert word(0x16ba0)==0x1240 and word(0x16ba2)==0x0109
+assert program[0x167ae:0x167b4] == bytes.fromhex('df17200f5802')
 data = {
-    'source':'ROM2DE6C pointer table/2DE3C..2DE66 threshold bytes; fixed FE8C cash; bank16000 CPU6BA4..6BB6 scaling',
+    'source':'ROM2DE28/2DE6C pointers, 2DE83/2DE8D race class directories; fixed FE8C cash; CPU6BA0..6BB6 scaling/67AE metric transfer',
     'thresholdBytes':rows, 'cashPerClass':list(program[0xfe8c:0xfe90]),
-    'shifts':{'ramp':6,'jump':5}
+    'shifts':{'slalom':0,'downhill':0,'ramp':6,'jump':5},
+    'raceThresholdBytes':race_rows
 }
 out = Path(__file__).resolve().parents[1]/'src/event-result-data.js'
 out.write_text('/** Original park-result tables extracted from the user ROM. */\nwindow.Skate720.EVENT_RESULT_DATA='+json.dumps(data,separators=(',',':'))+';\n',encoding='utf-8')
-print('Extracted22 class/park threshold sets; original dispatch opcodes verified')
+print('Extracted42 class/park threshold sets; original dispatch opcodes verified')

@@ -49,6 +49,14 @@
       jumpsLanded: 0,
       crashes: 0,
     };
+    if (kind === "slalom" || kind === "downhill") {
+      const selector = kind === "slalom" ? 0 : 1;
+      course.originalRaceCounter = S.OriginalRoutines.initialRaceCounter(
+        selector,
+        difficulty,
+      );
+      course.timer = course.originalRaceCounter;
+    }
     if (kind === "ramp") course.timer = 45;
     const start = level.start.y + 170,
       end = level.finish?.y - 100 || start + 1000;

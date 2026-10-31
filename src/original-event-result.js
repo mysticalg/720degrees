@@ -6,11 +6,16 @@
   const word = (value) => value & 65535;
   const signed = (value) => (word(value) << 16) >> 16;
   /** CPU6B84..6BB6: unpack three byte thresholds and apply the original
-   * jump-table shifts. Ramp enters6BA4 (six shifts), jump6BAA (five).
+   * jump-table shifts. Race6BA0 leaves bytes unscaled; ramp6BA4 uses six
+   * shifts and jump6BAA five.
    */
   function thresholds(kind, index, data) {
     const shift = data.shifts[kind],
-      row = data.thresholdBytes[index];
+      row =
+        data.raceThresholdBytes?.[kind]?.[index] ??
+        (kind === "ramp" || kind === "jump"
+          ? data.thresholdBytes[index]
+          : null);
     if (!Number.isInteger(shift) || !row)
       throw new RangeError("Unrecovered park result kind or class index");
     return row.map((value) => word(value << shift));
