@@ -7,6 +7,7 @@
     constructor(input, audio) {
       this.input = input;
       this.audio = audio;
+      if (audio.foley) audio.foley.game = this;
       this.motionDirectory = Uint8Array.from(atob(S.MOTION_BANKS[0]), (c) =>
         c.charCodeAt(0),
       );
@@ -441,12 +442,22 @@
     /** Jump velocity sets height; horizontal momentum is retained in the air. */
     jump() {
       const p = this.player;
+      p.fenceJumpWindow = S.CONFIG.fencePlantWindow;
+      if (
+        p.fencePlantAir &&
+        p.fencePlantAge <= S.CONFIG.fencePlantWindow / 60 &&
+        !p.fencePlantBoosted
+      ) {
+        this.boostFencePlant();
+        return;
+      }
       // A fresh press just after spring contact belongs to the same launch.
       if (p.air && p.crackSpringAge <= 0.1) {
         this.boostCrackJump();
         return;
       }
       if (p.vehicleTow) this.releaseVehicleTow();
+      if (p.curbGrind) this.releaseCurbGrind();
       if (
         p.air ||
         p.fallen > 0 ||
@@ -1341,6 +1352,7 @@
     land() {
       const p = this.player;
       const scoreDrop = p.courseShadowPlaneDrop || 0;
+      p.fencePlantAir = false;
       delete p.courseShadowY;
       delete p.courseShadowProfile;
       delete p.courseShadowPlaneDrop;
@@ -1498,6 +1510,7 @@
     crash(reason) {
       const p = this.player;
       p.skid = p.skidPose = null;
+      if (p.curbGrind) this.releaseCurbGrind();
       if (p.vehicleTow) this.releaseVehicleTow();
       if (p.invulnerable > 0 || p.fallen > 0) return;
       const level = this.event?.level || this.city.level;
@@ -1531,7 +1544,9 @@
       p.romKickEnvelope = { target: 0, impulse: 0, previousMask: 128 };
       p.fallen = p.bail.timer / 60;
       p.invulnerable = 2;
-      this.audio.effect("crash");
+      this.audio.effect("crash", {
+        water: level.name === "city" && surface.type === 18,
+      });
       this.popup(reason, p.x, p.y - 45, "#ff967b");
       if (this.event) {
         this.event.crashes++;
@@ -1867,6 +1882,97 @@
         return;
       }
     }
+    /** Grind-button assist follows existing curb contours, never new walls. */
+    tryCurbGrind() {
+      const p = this.player;
+      if (!this.input.held("grind")) p.curbGrindLatch = false;
+      if (
+        this.mode !== "city" ||
+        p.curbGrind ||
+        p.curbGrindLatch ||
+        this.elapsed < (p.curbGrindCooldown || 0) ||
+        !this.input.held("grind")
+      )
+        return;
+      const mesh = S.TerrainCollision.debugMesh(this.city.level, "curbs");
+      const state = S.CurbGrind.acquire(mesh, p);
+      if (!state) return;
+      if (p.air) {
+        this.land();
+        if (p.bail) return;
+      }
+      p.curbGrind = state;
+      state.kickHeld = this.input.held("kick");
+      p.skid = p.skidPose = null;
+      p.jumpSequence =
+        p.jumpAnimation =
+        p.jumpRecovery =
+        p.kickAnimation =
+          null;
+      p.air = false;
+      p.z = 0;
+      p.fakie = false;
+      p.romFacingDirection = undefined;
+      p.x = state.x;
+      p.y = state.y;
+    }
+    releaseCurbGrind() {
+      const p = this.player;
+      if (!p.curbGrind) return;
+      p.curbGrind = null;
+      p.curbGrindPose = null;
+      p.curbGrindLatch = true;
+      p.curbGrindCooldown = this.elapsed + 0.35;
+      p.z = 0;
+      p.air = false;
+      // Preserve outgoing tangent momentum in the normal ground controller.
+      const unit = S.OriginalGround.velocity(1024, p.romDirection ?? 4);
+      const speed =
+        (Math.hypot(
+          unit.dx + unit.fractionX / 256,
+          (unit.dy + unit.fractionY / 256) * 2,
+        ) *
+          60) /
+        64;
+      p.romSpeed = Math.round(
+        (Math.hypot(p.vx, p.vy * 2) / Math.max(0.001, speed)) * 1024,
+      );
+    }
+    updateCurbGrind(dt) {
+      const p = this.player,
+        state = p.curbGrind;
+      if (!state) return false;
+      const kick = this.input.held("kick");
+      if (!this.input.held("grind") || (kick && !state.kickHeld)) {
+        if (kick && !state.kickHeld) p.kickWasHeld = false;
+        this.releaseCurbGrind();
+        return false;
+      }
+      state.kickHeld = kick;
+      S.CurbGrind.step(state, dt);
+      p.x = state.x;
+      p.y = state.y;
+      p.vx = state.vx;
+      p.vy = state.vy;
+      p.angle = Math.atan2(p.vy, p.vx);
+      p.romDirection = p.romMovementDirection =
+        S.OriginalContact.playerDirection(
+          { air: true, angle: p.angle },
+          S.OriginalGround.tables,
+        );
+      p.curbGrindPose = S.OriginalRoutines.sharpTurnAnimationEntries(
+        p.romDirection,
+        1,
+      );
+      p.terrainStepOrigin = null;
+      p.lastSafe = { x: p.x, y: p.y };
+      if (state.finished) this.releaseCurbGrind();
+      this.updateCity(dt);
+      this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
+      this.camera.y +=
+        (this.cameraTargetY(p) - this.camera.y) * Math.min(1, dt * 7);
+      return true;
+    }
     releaseVehicleTow() {
       const p = this.player;
       if (!p.vehicleTow) return;
@@ -1961,6 +2067,8 @@
       this.floats = this.floats.filter((f) => f.life > 0);
       p.cooldown = Math.max(0, p.cooldown - dt);
       p.crackJumpWindow = Math.max(0, (p.crackJumpWindow || 0) - 1);
+      p.fenceJumpWindow = Math.max(0, (p.fenceJumpWindow || 0) - 1);
+      if (p.fencePlantAir) p.fencePlantAge = (p.fencePlantAge || 0) + dt;
       if (p.crackSpringAge !== undefined) {
         if (p.air) p.crackSpringAge += dt;
         else delete p.crackSpringAge;
@@ -1992,6 +2100,8 @@
         return;
       }
       if (this.updateVehicleTow(dt)) return;
+      this.tryCurbGrind();
+      if (this.updateCurbGrind(dt)) return;
       // Course ramp fronts have profile low bits7: their coefficients describe
       // a vertical face, not a surface to skate along. Sampling that artwork
       // as ground reverses screen-Y velocity and traps the rider at the lip.
@@ -2427,7 +2537,12 @@
         (kick ? 220 + this.gear.board * 24 : 180 + this.gear.board * 20) *
         (p.fakie ? S.CONFIG.fakieTopSpeed : 1);
       const speed = Math.hypot(p.vx, p.vy);
-      if (!p.romGroundActive && !p.jumpSequence && speed > maxSpeed) {
+      if (
+        !p.romGroundActive &&
+        !p.jumpSequence &&
+        !p.fencePlantAir &&
+        speed > maxSpeed
+      ) {
         p.vx *= maxSpeed / speed;
         p.vy *= maxSpeed / speed;
       }
@@ -2762,6 +2877,63 @@
       // Speaker87 maps to61DA response0: its original contact causes no bail.
       // Scenery/terrain contact remains responsible for its solid platform.
     }
+    boostFencePlant() {
+      const p = this.player;
+      if (!p.fencePlantAir || p.fencePlantBoosted) return false;
+      p.fencePlantBoosted = true;
+      p.fenceJumpWindow = 0;
+      const impulse = S.OriginalRoutines.ordinaryJumpLaunch(
+        Math.min(3, this.gear.shoes),
+      );
+      p.romVerticalVelocity += Math.round(
+        impulse * S.CONFIG.fencePlantExtraImpulse,
+      );
+      p.vz = (p.romVerticalVelocity * 60) / 64;
+      p.vx *= S.CONFIG.fencePlantSpeedBoost;
+      p.vy *= S.CONFIG.fencePlantSpeedBoost;
+      p.romSpeed = Math.round(
+        (p.romSpeed || 0) * S.CONFIG.fencePlantSpeedBoost,
+      );
+      this.popup("BOOSTED FENCE PLANT");
+      return true;
+    }
+    /** Native boneless-style fence rebound; original jump art supplies poses. */
+    fencePlant() {
+      const p = this.player;
+      if (this.elapsed - (p.lastFencePlant ?? -Infinity) < 0.25) return;
+      p.lastFencePlant = this.elapsed;
+      p.fencePlantAir = true;
+      p.fencePlantAge = 0;
+      p.fencePlantBoosted = false;
+      p.romVerticalVelocity = Math.max(
+        p.romVerticalVelocity || 0,
+        Math.round(
+          S.OriginalRoutines.ordinaryJumpLaunch(Math.min(3, this.gear.shoes)) *
+            S.CONFIG.fencePlantImpulse,
+        ),
+      );
+      p.vz = (p.romVerticalVelocity * 60) / 64;
+      p.romGravity = 12;
+      p.angle = p.takeoffAngle = Math.atan2(p.vy, p.vx);
+      p.spin = 0;
+      p.fakie = false;
+      p.romFacingDirection = undefined;
+      p.romDirection = p.romMovementDirection =
+        S.OriginalContact.playerDirection(
+          { air: true, angle: p.angle },
+          S.OriginalGround.tables,
+        );
+      p.scoreTakeoffDirection = p.romDirection;
+      p.scoreTakeoffBackwards = false;
+      p.scoreGapFrames = 0;
+      p.jumpSequence = p.jumpRecovery = null;
+      const rate = S.OriginalRoutines.jumpAnimationRate(p.romSpeed || 0);
+      p.jumpAnimation = { phase: 1, rate, countdown: rate };
+      p.airTime = 0;
+      this.audio.effect("jump");
+      this.popup("FENCE PLANT");
+      if (p.fenceJumpWindow > 0) this.boostFencePlant();
+    }
     collideWithRecoveredTerrain() {
       const p = this.player,
         level = this.event?.level || this.city.level;
@@ -2788,7 +2960,7 @@
       // Support gaps remain airborne space; only the wall mesh blocks a jump.
       const halfpipeBoundary = this.event?.kind === "ramp";
       if (
-        ((!p.air && !p.bail && p.fallen <= 0) || halfpipeBoundary) &&
+        ((!p.bail && p.fallen <= 0) || halfpipeBoundary) &&
         p.terrainStepOrigin
       ) {
         const slide = S.TerrainCollision.sweep(
@@ -2800,6 +2972,7 @@
             y: p.vy,
           },
           {
+            bounce: p.air && !p.bail && !p.halfpipeFlight,
             barriersOnly:
               p.air ||
               p.bail ||
@@ -2812,6 +2985,7 @@
           p.vx = slide.vx;
           p.vy = slide.vy;
           p.diagonalContacts = slide.hits;
+          if (p.air && !p.bail && !p.halfpipeFlight) this.fencePlant();
           // Retain native drive speed: repeatedly projecting that scalar too
           // would compound friction on each tick and recreate edge sticking.
           p.edgeContact = false;
@@ -2982,6 +3156,7 @@
           towing: p.vehicleTow?.sprite ?? null,
           fakie: !!p.fakie,
           skidding: !!p.skid,
+          curbGrinding: !!p.curbGrind,
           facingDirection: p.romFacingDirection ?? p.romDirection,
           travelDirection: p.romMovementDirection ?? p.romDirection,
           spinDegrees: Math.round((p.spin * 180) / Math.PI),

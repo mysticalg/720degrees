@@ -1,0 +1,707 @@
+{
+  "targetLUFS": -20,
+  "peakCeilingDB": -1.9,
+  "shortClipMethod": "Gated RMS and peak limit for clips too short for integrated LUFS",
+  "effects": [
+    {
+      "file": "assets/skate-sfx/crash-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.56",
+      "afterLUFS": "-20.24",
+      "afterTruePeak": "-2.77"
+    },
+    {
+      "file": "assets/skate-sfx/crash-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-28.00",
+      "afterLUFS": "-20.27",
+      "afterTruePeak": "-2.84"
+    },
+    {
+      "file": "assets/skate-sfx/crash-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.74",
+      "afterLUFS": "-20.46",
+      "afterTruePeak": "-2.33"
+    },
+    {
+      "file": "assets/skate-sfx/crash-asphalt-body-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.06",
+      "afterLUFS": "-20.62",
+      "afterTruePeak": "-2.11"
+    },
+    {
+      "file": "assets/skate-sfx/crash-asphalt-body-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.86",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.00"
+    },
+    {
+      "file": "assets/skate-sfx/crash-asphalt-body-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.63",
+      "afterLUFS": "-19.91",
+      "afterTruePeak": "-2.26"
+    },
+    {
+      "file": "assets/skate-sfx/crash-asphalt-deck-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.18",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-3.97"
+    },
+    {
+      "file": "assets/skate-sfx/crash-asphalt-deck-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.45",
+      "afterLUFS": "-20.54",
+      "afterTruePeak": "-2.49"
+    },
+    {
+      "file": "assets/skate-sfx/crash-asphalt-deck-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-22.30",
+      "afterLUFS": "-20.56",
+      "afterTruePeak": "-2.62"
+    },
+    {
+      "file": "assets/skate-sfx/crash-concrete-body-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.06",
+      "afterLUFS": "-20.62",
+      "afterTruePeak": "-2.11"
+    },
+    {
+      "file": "assets/skate-sfx/crash-concrete-body-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.86",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.00"
+    },
+    {
+      "file": "assets/skate-sfx/crash-concrete-body-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.63",
+      "afterLUFS": "-19.91",
+      "afterTruePeak": "-2.26"
+    },
+    {
+      "file": "assets/skate-sfx/crash-concrete-deck-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.56",
+      "afterLUFS": "-20.24",
+      "afterTruePeak": "-2.77"
+    },
+    {
+      "file": "assets/skate-sfx/crash-concrete-deck-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-28.00",
+      "afterLUFS": "-20.27",
+      "afterTruePeak": "-2.84"
+    },
+    {
+      "file": "assets/skate-sfx/crash-concrete-deck-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.74",
+      "afterLUFS": "-20.46",
+      "afterTruePeak": "-2.33"
+    },
+    {
+      "file": "assets/skate-sfx/crash-ramp-body-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.86",
+      "afterLUFS": "-20.86",
+      "afterTruePeak": "-1.97"
+    },
+    {
+      "file": "assets/skate-sfx/crash-ramp-body-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-21.83",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.77"
+    },
+    {
+      "file": "assets/skate-sfx/crash-ramp-body-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-25.41",
+      "afterLUFS": "-20.51",
+      "afterTruePeak": "-2.59"
+    },
+    {
+      "file": "assets/skate-sfx/crash-ramp-deck-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.94",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.05"
+    },
+    {
+      "file": "assets/skate-sfx/crash-ramp-deck-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-24.42",
+      "afterLUFS": "-20.41",
+      "afterTruePeak": "-2.45"
+    },
+    {
+      "file": "assets/skate-sfx/crash-ramp-deck-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-25.41",
+      "afterLUFS": "-20.49",
+      "afterTruePeak": "-2.68"
+    },
+    {
+      "file": "assets/skate-sfx/crash-water-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-13.98",
+      "afterLUFS": "-19.96",
+      "afterTruePeak": "-6.63"
+    },
+    {
+      "file": "assets/skate-sfx/crash-water-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-14.50",
+      "afterLUFS": "-19.66",
+      "afterTruePeak": "-5.34"
+    },
+    {
+      "file": "assets/skate-sfx/crash-wood-body-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.86",
+      "afterLUFS": "-20.86",
+      "afterTruePeak": "-1.97"
+    },
+    {
+      "file": "assets/skate-sfx/crash-wood-body-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-21.83",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.77"
+    },
+    {
+      "file": "assets/skate-sfx/crash-wood-body-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-25.41",
+      "afterLUFS": "-20.51",
+      "afterTruePeak": "-2.59"
+    },
+    {
+      "file": "assets/skate-sfx/crash-wood-deck-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-24.21",
+      "afterLUFS": "-20.43",
+      "afterTruePeak": "-2.59"
+    },
+    {
+      "file": "assets/skate-sfx/crash-wood-deck-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-23.55",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.82"
+    },
+    {
+      "file": "assets/skate-sfx/crash-wood-deck-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-29.37",
+      "afterLUFS": "-20.26",
+      "afterTruePeak": "-2.38"
+    },
+    {
+      "file": "assets/skate-sfx/grind-curb.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.53",
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-3.99"
+    },
+    {
+      "file": "assets/skate-sfx/grind-metal.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-16.42",
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-9.58"
+    },
+    {
+      "file": "assets/skate-sfx/jump-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.85",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-2.64"
+    },
+    {
+      "file": "assets/skate-sfx/jump-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.55",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-2.27"
+    },
+    {
+      "file": "assets/skate-sfx/jump-3.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-5.36"
+    },
+    {
+      "file": "assets/skate-sfx/jump-asphalt-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-22.00",
+      "afterLUFS": "-20.36",
+      "afterTruePeak": "-2.56"
+    },
+    {
+      "file": "assets/skate-sfx/jump-asphalt-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-26.48",
+      "afterLUFS": "-20.27",
+      "afterTruePeak": "-2.68"
+    },
+    {
+      "file": "assets/skate-sfx/jump-asphalt-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-21.35",
+      "afterLUFS": "-20.55",
+      "afterTruePeak": "-2.50"
+    },
+    {
+      "file": "assets/skate-sfx/jump-concrete-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.85",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-2.64"
+    },
+    {
+      "file": "assets/skate-sfx/jump-concrete-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.55",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-2.27"
+    },
+    {
+      "file": "assets/skate-sfx/jump-concrete-3.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-5.36"
+    },
+    {
+      "file": "assets/skate-sfx/jump-ramp-1.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-20.25",
+      "afterLUFS": "-20.25",
+      "afterTruePeak": "-2.79"
+    },
+    {
+      "file": "assets/skate-sfx/jump-ramp-2.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-20.25",
+      "afterLUFS": "-20.35",
+      "afterTruePeak": "-2.11"
+    },
+    {
+      "file": "assets/skate-sfx/jump-ramp-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-20.95",
+      "afterLUFS": "-20.55",
+      "afterTruePeak": "-2.42"
+    },
+    {
+      "file": "assets/skate-sfx/jump-wood-1.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-4.49"
+    },
+    {
+      "file": "assets/skate-sfx/jump-wood-2.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-4.70"
+    },
+    {
+      "file": "assets/skate-sfx/jump-wood-3.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-4.54"
+    },
+    {
+      "file": "assets/skate-sfx/kick-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-19.10",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-6.57"
+    },
+    {
+      "file": "assets/skate-sfx/kick-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.15",
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-9.43"
+    },
+    {
+      "file": "assets/skate-sfx/kick-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-19.84",
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-7.02"
+    },
+    {
+      "file": "assets/skate-sfx/kick-asphalt-fast-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.60",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-7.04"
+    },
+    {
+      "file": "assets/skate-sfx/kick-asphalt-fast-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-15.92",
+      "afterLUFS": "-20.02",
+      "afterTruePeak": "-7.35"
+    },
+    {
+      "file": "assets/skate-sfx/kick-asphalt-fast-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-14.57",
+      "afterLUFS": "-19.97",
+      "afterTruePeak": "-8.38"
+    },
+    {
+      "file": "assets/skate-sfx/kick-asphalt-slow-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.10",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-6.71"
+    },
+    {
+      "file": "assets/skate-sfx/kick-asphalt-slow-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.53",
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-8.35"
+    },
+    {
+      "file": "assets/skate-sfx/kick-asphalt-slow-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.71",
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-6.31"
+    },
+    {
+      "file": "assets/skate-sfx/kick-concrete-fast-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-13.70",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-7.16"
+    },
+    {
+      "file": "assets/skate-sfx/kick-concrete-fast-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-15.35",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-5.36"
+    },
+    {
+      "file": "assets/skate-sfx/kick-concrete-fast-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-15.18",
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-9.69"
+    },
+    {
+      "file": "assets/skate-sfx/kick-concrete-slow-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-19.10",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-6.57"
+    },
+    {
+      "file": "assets/skate-sfx/kick-concrete-slow-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.15",
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-9.43"
+    },
+    {
+      "file": "assets/skate-sfx/kick-concrete-slow-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-19.84",
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-7.02"
+    },
+    {
+      "file": "assets/skate-sfx/kick-ramp-fast-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-28.60",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-7.47"
+    },
+    {
+      "file": "assets/skate-sfx/kick-ramp-fast-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-27.85",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-5.25"
+    },
+    {
+      "file": "assets/skate-sfx/kick-ramp-fast-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-28.15",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-5.25"
+    },
+    {
+      "file": "assets/skate-sfx/kick-ramp-slow-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-32.22",
+      "afterLUFS": "-19.96",
+      "afterTruePeak": "-5.48"
+    },
+    {
+      "file": "assets/skate-sfx/kick-ramp-slow-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-34.41",
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-6.13"
+    },
+    {
+      "file": "assets/skate-sfx/kick-ramp-slow-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-33.64",
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-8.63"
+    },
+    {
+      "file": "assets/skate-sfx/kick-wood-fast-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-22.38",
+      "afterLUFS": "-20.85",
+      "afterTruePeak": "-1.98"
+    },
+    {
+      "file": "assets/skate-sfx/kick-wood-fast-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-23.77",
+      "afterLUFS": "-19.97",
+      "afterTruePeak": "-2.09"
+    },
+    {
+      "file": "assets/skate-sfx/kick-wood-fast-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-25.65",
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-5.21"
+    },
+    {
+      "file": "assets/skate-sfx/kick-wood-slow-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-31.27",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-3.93"
+    },
+    {
+      "file": "assets/skate-sfx/kick-wood-slow-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-34.20",
+      "afterLUFS": "-20.33",
+      "afterTruePeak": "-2.02"
+    },
+    {
+      "file": "assets/skate-sfx/kick-wood-slow-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-29.24",
+      "afterLUFS": "-20.13",
+      "afterTruePeak": "-3.00"
+    },
+    {
+      "file": "assets/skate-sfx/land-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.45",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-2.32"
+    },
+    {
+      "file": "assets/skate-sfx/land-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.15",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-3.68"
+    },
+    {
+      "file": "assets/skate-sfx/land-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-16.25",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-4.58"
+    },
+    {
+      "file": "assets/skate-sfx/land-asphalt-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.65",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-3.17"
+    },
+    {
+      "file": "assets/skate-sfx/land-asphalt-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.05",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-3.82"
+    },
+    {
+      "file": "assets/skate-sfx/land-asphalt-3.mp3",
+      "method": "two-pass LUFS / transient peak control",
+      "beforeLUFS": "-20.15",
+      "afterLUFS": "-20.28",
+      "afterTruePeak": "-2.56"
+    },
+    {
+      "file": "assets/skate-sfx/land-concrete-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.45",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-2.32"
+    },
+    {
+      "file": "assets/skate-sfx/land-concrete-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.15",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-3.68"
+    },
+    {
+      "file": "assets/skate-sfx/land-concrete-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-16.25",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-4.58"
+    },
+    {
+      "file": "assets/skate-sfx/land-ramp-1.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.25",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-2.52"
+    },
+    {
+      "file": "assets/skate-sfx/land-ramp-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.15",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-3.70"
+    },
+    {
+      "file": "assets/skate-sfx/land-ramp-3.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-15.65",
+      "afterLUFS": "-19.95",
+      "afterTruePeak": "-5.13"
+    },
+    {
+      "file": "assets/skate-sfx/land-wood-1.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-5.27"
+    },
+    {
+      "file": "assets/skate-sfx/land-wood-2.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-18.65",
+      "afterLUFS": "-20.05",
+      "afterTruePeak": "-2.19"
+    },
+    {
+      "file": "assets/skate-sfx/land-wood-3.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-7.33"
+    },
+    {
+      "file": "assets/skate-sfx/roll-asphalt.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-19.75",
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-9.11"
+    },
+    {
+      "file": "assets/skate-sfx/roll-concrete.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-26.43",
+      "afterLUFS": "-19.97",
+      "afterTruePeak": "-9.57"
+    },
+    {
+      "file": "assets/skate-sfx/roll-ramp.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-22.38",
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-5.01"
+    },
+    {
+      "file": "assets/skate-sfx/roll-wood.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-20.98",
+      "afterLUFS": "-20.07",
+      "afterTruePeak": "-1.97"
+    },
+    {
+      "file": "assets/skate-sfx/skid.mp3",
+      "method": "short transient gated RMS / peak limit",
+      "beforeLUFS": "-inf",
+      "afterLUFS": "-inf",
+      "afterTruePeak": "-5.81"
+    },
+    {
+      "file": "assets/skate-sfx/wheel-fast.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-33.51",
+      "afterLUFS": "-20.22",
+      "afterTruePeak": "-2.06"
+    },
+    {
+      "file": "assets/skate-sfx/wheel-slow.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-39.00",
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-4.55"
+    },
+    {
+      "file": "assets/coin.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-15.19",
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-9.05"
+    },
+    {
+      "file": "assets/purchase.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-11.11",
+      "afterLUFS": "-19.96",
+      "afterTruePeak": "-13.65"
+    },
+    {
+      "file": "assets/takedown.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-15.83",
+      "afterLUFS": "-20.03",
+      "afterTruePeak": "-8.90"
+    },
+    {
+      "file": "assets/springboard.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-17.89",
+      "afterLUFS": "-21.12",
+      "afterTruePeak": "-7.21"
+    },
+    {
+      "file": "assets/bees.mp3",
+      "method": "two-pass LUFS",
+      "beforeLUFS": "-24.97",
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-8.18"
+    }
+  ]
+}

@@ -487,14 +487,35 @@
         },
         into = dot(remaining, n),
         speedInto = dot(v, n);
-      start = { x: first.hit.x + n.x * 0.01, y: first.hit.y + n.y * 0.01 };
-      end = {
-        x: start.x + remaining.x - n.x * Math.min(0, into),
-        y: start.y + remaining.y - n.y * Math.min(0, into),
+      const separation = options.bounce ? 0.5 : 0.01;
+      start = {
+        x: first.hit.x + n.x * separation,
+        y: first.hit.y + n.y * separation,
       };
-      if (speedInto < 0) {
-        v.x -= n.x * speedInto;
-        v.y -= n.y * speedInto;
+      if (options.bounce) {
+        // Reflect in the isometric ground plane, not stretched screen space.
+        const length = Math.hypot(n.x, n.y / 2);
+        const nx = n.x / length,
+          ny = n.y / 2 / length;
+        const reflect = (value) => {
+          const inward = value.x * nx + value.y * 2 * ny;
+          if (inward < 0) {
+            value.x -= nx * inward * 1.9;
+            value.y -= (ny * inward * 1.9) / 2;
+          }
+        };
+        reflect(remaining);
+        reflect(v);
+        end = { x: start.x + remaining.x, y: start.y + remaining.y };
+      } else {
+        end = {
+          x: start.x + remaining.x - n.x * Math.min(0, into),
+          y: start.y + remaining.y - n.y * Math.min(0, into),
+        };
+        if (speedInto < 0) {
+          v.x -= n.x * speedInto;
+          v.y -= n.y * speedInto;
+        }
       }
     }
     return { x: end.x, y: end.y, vx: v.x, vy: v.y, hits };

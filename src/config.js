@@ -6,6 +6,11 @@ window.Skate720 = {};
     width: 512,
     height: 384,
     step: 1 / 60,
+    // Native wall-plant combo: six-frame input window and one boost per plant.
+    fencePlantWindow: 6,
+    fencePlantImpulse: 0.8,
+    fencePlantExtraImpulse: 0.6,
+    fencePlantSpeedBoost: 1.12,
     // Original fixed-point travel scale; arbitrary pace boost disabled for exact-physics work.
     skatingPace: 1,
     // User-requested native fakie assists, separate from original ROM tables.

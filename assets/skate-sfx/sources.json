@@ -2,106 +2,571 @@
   "wheel-slow": {
     "mediaId": 94708101,
     "source": "SFX_wheelspin_slow_01",
-    "file": "wheel-slow.mp3"
+    "file": "wheel-slow.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "wheel-fast": {
     "mediaId": 572562584,
     "source": "SFX_wheelspin_fast_01",
-    "file": "wheel-fast.mp3"
+    "file": "wheel-fast.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "roll-concrete": {
     "mediaId": 956684671,
     "source": "SFX_roll_Concrete_05sp_01",
-    "file": "roll-concrete.mp3"
+    "file": "roll-concrete.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "roll-asphalt": {
     "mediaId": 440145559,
     "source": "SFX_roll_Asphalt_05sp_01",
-    "file": "roll-asphalt.mp3"
+    "file": "roll-asphalt.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "roll-wood": {
     "mediaId": 344613042,
     "source": "SFX_roll_Wood_05sp_01",
-    "file": "roll-wood.mp3"
+    "file": "roll-wood.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "roll-ramp": {
     "mediaId": 591388198,
     "source": "SFX_roll_masonite_00sp_01",
-    "file": "roll-ramp.mp3"
+    "file": "roll-ramp.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "grind-metal": {
-    "mediaId": 92227596,
-    "source": "SFX_grnd_tail_metal_01",
-    "file": "grind-metal.mp3"
+    "mediaId": 537994694,
+    "source": "SFX_Skateboard_Metal_Grind_Pole_4",
+    "file": "grind-metal.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "grind-curb": {
     "mediaId": 421230622,
     "source": "SFX_grnd_trks_concrete_01",
-    "file": "grind-curb.mp3"
+    "file": "grind-curb.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "skid": {
     "mediaId": 170213840,
     "source": "SFX_trck_revert_fast_01",
-    "file": "skid.mp3"
+    "file": "skid.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "jump-1": {
     "mediaId": 352787015,
     "source": "SFX_olli_concrete_01",
-    "file": "jump-1.mp3"
+    "file": "jump-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "jump-2": {
     "mediaId": 656882843,
     "source": "SFX_olli_concrete_02",
-    "file": "jump-2.mp3"
+    "file": "jump-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "jump-3": {
     "mediaId": 281474125,
     "source": "SFX_olli_concrete_03",
-    "file": "jump-3.mp3"
+    "file": "jump-3.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "land-1": {
     "mediaId": 932138582,
     "source": "SFX_land_concrete_01",
-    "file": "land-1.mp3"
+    "file": "land-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "land-2": {
     "mediaId": 372078272,
     "source": "SFX_land_concrete_02",
-    "file": "land-2.mp3"
+    "file": "land-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "land-3": {
     "mediaId": 187749343,
     "source": "SFX_land_concrete_03",
-    "file": "land-3.mp3"
+    "file": "land-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "kick-1": {
     "mediaId": 447573320,
     "source": "SFX_push_concrete_slow_01",
-    "file": "kick-1.mp3"
+    "file": "kick-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "kick-2": {
     "mediaId": 15202583,
     "source": "SFX_push_concrete_slow_02",
-    "file": "kick-2.mp3"
+    "file": "kick-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "kick-3": {
     "mediaId": 413090586,
     "source": "SFX_push_concrete_slow_03",
-    "file": "kick-3.mp3"
+    "file": "kick-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "crash-1": {
     "mediaId": 500116684,
     "source": "SFX_bail_deck_concrete_imp_01",
-    "file": "crash-1.mp3"
+    "file": "crash-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "crash-2": {
     "mediaId": 73966467,
     "source": "SFX_bail_deck_concrete_imp_02",
-    "file": "crash-2.mp3"
+    "file": "crash-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   },
   "crash-3": {
     "mediaId": 490995738,
     "source": "SFX_bail_deck_concrete_imp_03",
-    "file": "crash-3.mp3"
+    "file": "crash-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-concrete-slow-1": {
+    "mediaId": 447573320,
+    "source": "SFX_push_concrete_slow_01",
+    "file": "kick-concrete-slow-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-concrete-slow-2": {
+    "mediaId": 15202583,
+    "source": "SFX_push_concrete_slow_02",
+    "file": "kick-concrete-slow-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-concrete-slow-3": {
+    "mediaId": 413090586,
+    "source": "SFX_push_concrete_slow_03",
+    "file": "kick-concrete-slow-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-concrete-fast-1": {
+    "mediaId": 316732257,
+    "source": "SFX_push_concrete_fast_01",
+    "file": "kick-concrete-fast-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-concrete-fast-2": {
+    "mediaId": 153274888,
+    "source": "SFX_push_concrete_fast_02",
+    "file": "kick-concrete-fast-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-concrete-fast-3": {
+    "mediaId": 614579034,
+    "source": "SFX_push_concrete_fast_03",
+    "file": "kick-concrete-fast-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-concrete-1": {
+    "mediaId": 352787015,
+    "source": "SFX_olli_concrete_01",
+    "file": "jump-concrete-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-concrete-2": {
+    "mediaId": 656882843,
+    "source": "SFX_olli_concrete_02",
+    "file": "jump-concrete-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-concrete-3": {
+    "mediaId": 281474125,
+    "source": "SFX_olli_concrete_03",
+    "file": "jump-concrete-3.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-concrete-1": {
+    "mediaId": 932138582,
+    "source": "SFX_land_concrete_01",
+    "file": "land-concrete-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-concrete-2": {
+    "mediaId": 372078272,
+    "source": "SFX_land_concrete_02",
+    "file": "land-concrete-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-concrete-3": {
+    "mediaId": 187749343,
+    "source": "SFX_land_concrete_03",
+    "file": "land-concrete-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-concrete-body-1": {
+    "mediaId": 148932830,
+    "source": "SFX_bail_body_concrete_01",
+    "file": "crash-concrete-body-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-concrete-body-2": {
+    "mediaId": 667213794,
+    "source": "SFX_bail_body_concrete_02",
+    "file": "crash-concrete-body-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-concrete-body-3": {
+    "mediaId": 827619039,
+    "source": "SFX_bail_body_concrete_03",
+    "file": "crash-concrete-body-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-concrete-deck-1": {
+    "mediaId": 500116684,
+    "source": "SFX_bail_deck_concrete_imp_01",
+    "file": "crash-concrete-deck-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-concrete-deck-2": {
+    "mediaId": 73966467,
+    "source": "SFX_bail_deck_concrete_imp_02",
+    "file": "crash-concrete-deck-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-concrete-deck-3": {
+    "mediaId": 490995738,
+    "source": "SFX_bail_deck_concrete_imp_03",
+    "file": "crash-concrete-deck-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-asphalt-slow-1": {
+    "mediaId": 1069684631,
+    "source": "SFX_push_asphalt_slow_01",
+    "file": "kick-asphalt-slow-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-asphalt-slow-2": {
+    "mediaId": 757079790,
+    "source": "SFX_push_asphalt_slow_02",
+    "file": "kick-asphalt-slow-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-asphalt-slow-3": {
+    "mediaId": 317910214,
+    "source": "SFX_push_asphalt_slow_03",
+    "file": "kick-asphalt-slow-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-asphalt-fast-1": {
+    "mediaId": 497820099,
+    "source": "SFX_push_asphalt_fast_01",
+    "file": "kick-asphalt-fast-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-asphalt-fast-2": {
+    "mediaId": 238292084,
+    "source": "SFX_push_asphalt_fast_02",
+    "file": "kick-asphalt-fast-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-asphalt-fast-3": {
+    "mediaId": 950186854,
+    "source": "SFX_push_asphalt_fast_03",
+    "file": "kick-asphalt-fast-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-asphalt-1": {
+    "mediaId": 779610707,
+    "source": "SFX_olli_asphalt_01",
+    "file": "jump-asphalt-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-asphalt-2": {
+    "mediaId": 853697580,
+    "source": "SFX_olli_asphalt_02",
+    "file": "jump-asphalt-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-asphalt-3": {
+    "mediaId": 695533095,
+    "source": "SFX_olli_asphalt_03",
+    "file": "jump-asphalt-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-asphalt-1": {
+    "mediaId": 1032107060,
+    "source": "SFX_land_Asphalt_01",
+    "file": "land-asphalt-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-asphalt-2": {
+    "mediaId": 161980386,
+    "source": "SFX_land_Asphalt_02",
+    "file": "land-asphalt-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-asphalt-3": {
+    "mediaId": 988173403,
+    "source": "SFX_land_Asphalt_03",
+    "file": "land-asphalt-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-asphalt-body-1": {
+    "mediaId": 148932830,
+    "source": "SFX_bail_body_concrete_01",
+    "file": "crash-asphalt-body-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-asphalt-body-2": {
+    "mediaId": 667213794,
+    "source": "SFX_bail_body_concrete_02",
+    "file": "crash-asphalt-body-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-asphalt-body-3": {
+    "mediaId": 827619039,
+    "source": "SFX_bail_body_concrete_03",
+    "file": "crash-asphalt-body-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-asphalt-deck-1": {
+    "mediaId": 643677501,
+    "source": "SFX_bail_deck_asphalt_imp_01",
+    "file": "crash-asphalt-deck-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-asphalt-deck-2": {
+    "mediaId": 171426497,
+    "source": "SFX_bail_deck_asphalt_imp_02",
+    "file": "crash-asphalt-deck-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-asphalt-deck-3": {
+    "mediaId": 592407872,
+    "source": "SFX_bail_deck_asphalt_imp_03",
+    "file": "crash-asphalt-deck-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-wood-slow-1": {
+    "mediaId": 19090629,
+    "source": "SFX_push_wood_slow_01",
+    "file": "kick-wood-slow-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-wood-slow-2": {
+    "mediaId": 510038810,
+    "source": "SFX_push_wood_slow_02",
+    "file": "kick-wood-slow-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-wood-slow-3": {
+    "mediaId": 4377755,
+    "source": "SFX_push_wood_slow_03",
+    "file": "kick-wood-slow-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-wood-fast-1": {
+    "mediaId": 679519079,
+    "source": "SFX_push_wood_fast_01",
+    "file": "kick-wood-fast-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-wood-fast-2": {
+    "mediaId": 241485701,
+    "source": "SFX_push_wood_fast_02",
+    "file": "kick-wood-fast-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-wood-fast-3": {
+    "mediaId": 915250555,
+    "source": "SFX_push_wood_fast_03",
+    "file": "kick-wood-fast-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-wood-1": {
+    "mediaId": 261550412,
+    "source": "SFX_olli_wood_01",
+    "file": "jump-wood-1.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-wood-2": {
+    "mediaId": 262132025,
+    "source": "SFX_olli_wood_02",
+    "file": "jump-wood-2.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-wood-3": {
+    "mediaId": 393657655,
+    "source": "SFX_olli_wood_03",
+    "file": "jump-wood-3.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-wood-1": {
+    "mediaId": 164648540,
+    "source": "SFX_land_deck_wood_01",
+    "file": "land-wood-1.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-wood-2": {
+    "mediaId": 37942004,
+    "source": "SFX_land_deck_wood_02",
+    "file": "land-wood-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-wood-3": {
+    "mediaId": 135177365,
+    "source": "SFX_land_deck_wood_03",
+    "file": "land-wood-3.mp3",
+    "processing": "Final loudness balance: short transient gated RMS / peak limit; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-wood-body-1": {
+    "mediaId": 869871166,
+    "source": "SFX_bail_body_wood_01",
+    "file": "crash-wood-body-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-wood-body-2": {
+    "mediaId": 544689628,
+    "source": "SFX_bail_body_wood_02",
+    "file": "crash-wood-body-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-wood-body-3": {
+    "mediaId": 533694092,
+    "source": "SFX_bail_body_wood_03",
+    "file": "crash-wood-body-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-wood-deck-1": {
+    "mediaId": 179574100,
+    "source": "SFX_bail_deck_wood_imp_01",
+    "file": "crash-wood-deck-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-wood-deck-2": {
+    "mediaId": 938582018,
+    "source": "SFX_bail_deck_wood_imp_02",
+    "file": "crash-wood-deck-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-wood-deck-3": {
+    "mediaId": 932494719,
+    "source": "SFX_bail_deck_wood_imp_03",
+    "file": "crash-wood-deck-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-ramp-slow-1": {
+    "mediaId": 759340288,
+    "source": "SFX_push_masonite_slow_01",
+    "file": "kick-ramp-slow-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-ramp-slow-2": {
+    "mediaId": 56212590,
+    "source": "SFX_push_masonite_slow_02",
+    "file": "kick-ramp-slow-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-ramp-slow-3": {
+    "mediaId": 537111003,
+    "source": "SFX_push_masonite_slow_03",
+    "file": "kick-ramp-slow-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-ramp-fast-1": {
+    "mediaId": 1016201283,
+    "source": "SFX_push_masonite_fast_01",
+    "file": "kick-ramp-fast-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-ramp-fast-2": {
+    "mediaId": 43295248,
+    "source": "SFX_push_masonite_fast_02",
+    "file": "kick-ramp-fast-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "kick-ramp-fast-3": {
+    "mediaId": 638740248,
+    "source": "SFX_push_masonite_fast_03",
+    "file": "kick-ramp-fast-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-ramp-1": {
+    "mediaId": 197475260,
+    "source": "SFX_olli_masonite_01",
+    "file": "jump-ramp-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-ramp-2": {
+    "mediaId": 296718432,
+    "source": "SFX_olli_masonite_02",
+    "file": "jump-ramp-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "jump-ramp-3": {
+    "mediaId": 759799974,
+    "source": "SFX_olli_masonite_03",
+    "file": "jump-ramp-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-ramp-1": {
+    "mediaId": 424315846,
+    "source": "SFX_land_masonite_01",
+    "file": "land-ramp-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-ramp-2": {
+    "mediaId": 24288441,
+    "source": "SFX_land_masonite_02",
+    "file": "land-ramp-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "land-ramp-3": {
+    "mediaId": 952386772,
+    "source": "SFX_land_masonite_03",
+    "file": "land-ramp-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-ramp-body-1": {
+    "mediaId": 869871166,
+    "source": "SFX_bail_body_wood_01",
+    "file": "crash-ramp-body-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-ramp-body-2": {
+    "mediaId": 544689628,
+    "source": "SFX_bail_body_wood_02",
+    "file": "crash-ramp-body-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-ramp-body-3": {
+    "mediaId": 533694092,
+    "source": "SFX_bail_body_wood_03",
+    "file": "crash-ramp-body-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-ramp-deck-1": {
+    "mediaId": 831257629,
+    "source": "SFX_bail_deck_masonite_imp_01",
+    "file": "crash-ramp-deck-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-ramp-deck-2": {
+    "mediaId": 379477050,
+    "source": "SFX_bail_deck_masonite_imp_02",
+    "file": "crash-ramp-deck-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-ramp-deck-3": {
+    "mediaId": 122305253,
+    "source": "SFX_bail_deck_masonite_imp_03",
+    "file": "crash-ramp-deck-3.mp3",
+    "processing": "Final loudness balance: two-pass LUFS / transient peak control; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-water-1": {
+    "mediaId": 476705138,
+    "source": "SFX_bail_body_water_01",
+    "file": "crash-water-1.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
+  },
+  "crash-water-2": {
+    "mediaId": 17527545,
+    "source": "SFX_bail_body_water_02",
+    "file": "crash-water-2.mp3",
+    "processing": "Final loudness balance: two-pass LUFS; target-20LUFS, short transients use gated RMS; see ../sfx-normalisation.json"
   }
 }

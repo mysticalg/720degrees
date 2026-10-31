@@ -24,11 +24,11 @@
       this.music.muted = this.musicMuted;
       this.clips = {
         start: new Audio("assets/start.mp3"),
-        bees: new Audio("assets/bees.mp3"),
-        coin: new Audio("assets/coin.mp3"),
-        purchase: new Audio("assets/purchase.mp3"),
-        takedown: new Audio("assets/takedown.mp3"),
-        springboard: new Audio("assets/springboard.mp3"),
+        bees: new Audio("assets/bees.mp3?v=skate-library-84"),
+        coin: new Audio("assets/coin.mp3?v=skate-library-84"),
+        purchase: new Audio("assets/purchase.mp3?v=skate-library-84"),
+        takedown: new Audio("assets/takedown.mp3?v=skate-library-84"),
+        springboard: new Audio("assets/springboard.mp3?v=skate-library-84"),
       };
       for (const audio of Object.values(this.clips)) audio.volume = 0.55;
       // This recording contains the original mixed start music/voice cue.
@@ -107,8 +107,8 @@
      * Optional imported skate cues are routed separately from ROM captures.
      * Credit still supplies the provisional shared ticket/park-entry cue.
      */
-    effect(name) {
-      const enhanced = this.foley.effect(name);
+    effect(name, details) {
+      const enhanced = this.foley.effect(name, details);
       if (
         !["coin", "purchase", "takedown", "springboard"].includes(name) ||
         this.muted

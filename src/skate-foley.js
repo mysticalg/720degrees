@@ -21,9 +21,11 @@
       this.lastCue = {};
       this.material = "concrete";
       this.counter = 0;
+      this.cueCounters = {};
+      this.imported = new Set();
       // Relative asset URLs work on GitHub Pages and from local HTML files.
       for (const key of SkateFoley.keys)
-        this.urls[key] = `assets/skate-sfx/${key}.mp3`;
+        this.urls[key] = `assets/skate-sfx/${key}.mp3?v=skate-library-84`;
     }
     setVolume(value) {
       if (!Number.isFinite(value)) return;
@@ -45,16 +47,24 @@
       this.stop();
       for (const url of Object.values(this.urls))
         if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-      this.urls = {};
+      this.urls = Object.fromEntries(
+        SkateFoley.keys.map((key) => [
+          key,
+          `assets/skate-sfx/${key}.mp3?v=skate-library-84`,
+        ]),
+      );
       this.loops = {};
+      this.imported.clear();
       for (const file of files) {
         const key = file.name.replace(/\.mp3$/i, "");
-        if (SkateFoley.keys.includes(key) && /\.mp3$/i.test(file.name))
+        if (SkateFoley.keys.includes(key) && /\.mp3$/i.test(file.name)) {
           this.urls[key] = URL.createObjectURL(file);
+          this.imported.add(key);
+        }
       }
-      return Object.keys(this.urls).length;
+      return this.imported.size;
     }
-    effect(name) {
+    effect(name, details = {}) {
       if (!this.enabled || this.owner.muted) return false;
       const now = performance.now();
       if (
@@ -62,9 +72,37 @@
         (name === "skid" ? 600 : 110)
       )
         return false;
-      const key = ["jump", "land", "kick", "crash"].includes(name)
-        ? `${name}-${1 + (this.counter++ % 3)}`
-        : name;
+      // Read at the event position, not the previous render frame: the
+      // landing surface can differ from the material at takeoff.
+      const game = details.game || this.game;
+      const material =
+        details.material ||
+        (game ? this.surface(game, game.player) : this.material) ||
+        "concrete";
+      const pools = window.Skate720.SKATE_SOUND_POOLS || {};
+      const speed = game
+        ? Math.hypot(game.player.vx || 0, (game.player.vy || 0) * 2)
+        : 0;
+      let choices =
+        name === "kick"
+          ? pools.kick?.[material]?.[speed > 180 ? "fast" : "slow"]
+          : name === "crash" && details.water
+            ? pools.water
+            : pools[name]?.[material];
+      const legacy = ["jump", "land", "kick", "crash"].includes(name)
+        ? [1, 2, 3].map((n) => `${name}-${n}`)
+        : [name];
+      // Older imported packs still override their matching legacy action.
+      const custom = legacy.filter((key) => this.imported.has(key));
+      choices = custom.length
+        ? custom
+        : (choices || legacy).filter((key) => this.urls[key]);
+      if (!choices.length) return false;
+      const group = `${name}:${material}:${details.water ? "water" : "dry"}`;
+      const index = this.cueCounters[group] || 0;
+      this.cueCounters[group] = index + 1;
+      const key = choices[index % choices.length];
+      this.lastPlayed = { name, key, material, water: !!details.water };
       if (!this.urls[key]) return false;
       this.lastCue[name] = now;
       const audio = new Audio(this.urls[key]);
@@ -123,6 +161,7 @@
       return "concrete";
     }
     update(game, dt) {
+      this.game = game;
       const p = game.player;
       const active =
         p &&
@@ -137,7 +176,13 @@
       }
       this.material = this.surface(game, p);
       // Also catches ramp transitions which bypass the ordinary jump/land cue.
-      if (this.wasAir !== undefined && !!p.air !== this.wasAir)
+      if (
+        this.wasAir !== undefined &&
+        !!p.air !== this.wasAir &&
+        !p.bail &&
+        !p.fallen &&
+        !p.curbGrind
+      )
         this.effect(p.air ? "jump" : "land");
       const justLaunched = !!p.air && !this.wasAir;
       this.wasAir = !!p.air;
@@ -173,15 +218,17 @@
         (this.wheelSpeed || speed) * Math.exp(-this.airTime * 0.08),
       );
       const grind = p.halfpipeFlight?.trick === "grind";
-      const desired = grind
-        ? "grind-metal"
-        : p.air
-          ? spinSpeed > 170
-            ? "wheel-fast"
-            : "wheel-slow"
-          : !p.air && this.material && speed > 12
-            ? `roll-${this.material}`
-            : null;
+      const desired = p.curbGrind
+        ? "grind-curb"
+        : grind
+          ? "grind-metal"
+          : p.air
+            ? spinSpeed > 170
+              ? "wheel-fast"
+              : "wheel-slow"
+            : !p.air && !p.bail && !p.fallen && this.material && speed > 12
+              ? `roll-${this.material}`
+              : null;
       if (desired && this.urls[desired] && !this.loops[desired]) {
         const audio = new Audio(this.urls[desired]);
         audio.loop = true;
@@ -239,6 +286,21 @@
     ...["jump", "land", "kick", "crash"].flatMap((k) =>
       [1, 2, 3].map((n) => `${k}-${n}`),
     ),
+  ];
+  // Pool filenames are inert metadata; no audio is loaded until it plays.
+  const collect = (value) =>
+    Array.isArray(value)
+      ? value.flatMap(collect)
+      : value && typeof value === "object"
+        ? Object.values(value).flatMap(collect)
+        : typeof value === "string"
+          ? [value]
+          : [];
+  SkateFoley.keys = [
+    ...new Set([
+      ...SkateFoley.keys,
+      ...collect(window.Skate720.SKATE_SOUND_POOLS),
+    ]),
   ];
   window.Skate720.SkateFoley = SkateFoley;
 })();

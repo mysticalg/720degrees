@@ -543,6 +543,7 @@
     /** One board-directory selection shared by drawing and contact geometry. */
     boardEntry(p, profile) {
       if (p.bail) return 0x50fa;
+      if (p.curbGrindPose) return p.curbGrindPose.board;
       if (p.rampAnimation?.currentBoard !== undefined)
         return p.rampAnimation.currentBoard;
       const frame = S.OriginalContact.playerDirection(
@@ -738,8 +739,8 @@
           ? p.bail.pointer
           : p.rampAnimation
             ? p.rampAnimation.currentBody
-            : p.skidPose
-              ? p.skidPose.body
+            : p.curbGrindPose || p.skidPose
+              ? (p.curbGrindPose || p.skidPose).body
               : jumpPhase === null && !kicking
                 ? groundPose.body
                 : null,
