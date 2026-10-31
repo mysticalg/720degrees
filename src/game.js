@@ -1942,7 +1942,7 @@
         p.groundPivot.total = Math.PI * 2;
         p.groundPivot.skid = true;
         last.doubleUsed = true;
-        this.audio.effect("skid");
+        this.audio.effect("skid", { freshPress: true });
         return true;
       }
       const travel =
@@ -1970,7 +1970,8 @@
       else p.lastTriggerPivot = { side, time: this.elapsed, doubleUsed: false };
       p.skid = p.skidPose = null;
       p.kickAnimation = null;
-      if (double) this.audio.effect("skid");
+      // Each accepted trigger turn scrapes the wheels, in either stance.
+      this.audio.effect("skid", { freshPress: true });
       return true;
     }
     updateGroundPivot(dt) {

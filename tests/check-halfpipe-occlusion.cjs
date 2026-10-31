@@ -71,7 +71,7 @@ const frozen = pipe.groundRise(artwork, {
 assert.equal(frozen, pipe.riseForWall(artwork, projectedWall, 1));
 assert.equal(
   pipe.riseForWall({ name: "ramp-1" }, { ...projectedWall, rawProfile: 1 }, 1),
-  64,
+  50,
 );
 console.log(
   "PASS original-art coping projection and frozen aerial plane",

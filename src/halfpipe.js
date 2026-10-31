@@ -47,26 +47,26 @@
     };
   }
   // The far wall's panel seams turn upward into the vert. Its coarse ROM
-  // plane omits that artwork projection:128px of height at the coping.
-  // This maps a seam from624,624 to712,452, keeping the white lip q=96.
+  // plane omits that artwork projection:100px of height at the coping.
+  // This maps a seam from636,590 to712,452, keeping the white lip q=96.
   function northOffsets(wall, progress) {
     const p = Math.max(0, Math.min(1, progress));
     const dx = wall.lip.x - wall.floor.x,
       dy = wall.lip.y - wall.floor.y;
-    const across = (dx - 128) * widthProgress(p);
+    const across = (dx - 100) * widthProgress(p);
     return {
       x: across - dx * p,
-      y: -across * 0.5 - 128 * heightProgress(p) - dy * p,
+      y: -across * 0.5 - 100 * heightProgress(p) - dy * p,
     };
   }
   function wallAt(level, x, y) {
     if (level.name === "ramp-1") {
       const q = y - x * 0.5;
       const northLipX = x + q - 96;
-      // Full art-aligned far wall: its left panel runs from624,624 on the
+      // Full art-aligned far wall: its left panel runs from636,590 on the
       // floor to712,452 at the white coping; other lanes translate32,16.
-      if (q >= 96 && q <= 312 && northLipX >= 840 && northLipX <= 1056) {
-        const progress = (312 - q) / 216;
+      if (q >= 96 && q <= 272 && northLipX >= 812 && northLipX <= 1028) {
+        const progress = (272 - q) / 176;
         return {
           rawProfile: 1,
           profile: inclination(progress),
@@ -76,7 +76,7 @@
           returnDirection: 10,
           copingProfile: 7,
           distance: q - 96,
-          floor: { x: northLipX - 216, y: (northLipX - 216) * 0.5 + 312 },
+          floor: { x: northLipX - 176, y: (northLipX - 176) * 0.5 + 272 },
           lip: { x: northLipX, y: northLipX * 0.5 + 96 },
         };
       }
@@ -195,7 +195,7 @@
     if (transitionCache.has(level)) return transitionCache.get(level);
     const segments = [];
     for (const raw of [1, 17]) {
-      const floorQ = raw === 1 ? 312 : 400,
+      const floorQ = raw === 1 ? 272 : 400,
         lipQ = raw === 1 ? 96 : 448,
         q = floorQ + (lipQ - floorQ) * VERT_START;
       let previous = null;
@@ -216,7 +216,7 @@
   }
   function travelScale(level, wall) {
     if (level?.name !== "ramp-1" || wall?.rawProfile !== 17) return 1;
-    return 48 / 216;
+    return 48 / 176;
   }
   function heading(angle, tables) {
     let best = Infinity,
@@ -269,7 +269,7 @@
       p = 1 - path.t,
       fx = path.floor.x + floor.x,
       fy = path.floor.y + floor.y;
-    const fromX = path.from.x - (path.rawProfile === 1 ? 128 : 0);
+    const fromX = path.from.x - (path.rawProfile === 1 ? 100 : 0);
     const dx = (fromX - fx) * widthProgress(p);
     const rise = path.from.y - path.rise - fy + (fromX - fx) * 0.5;
     return {
@@ -290,7 +290,7 @@
   function groundShift(level, player) {
     if (level?.name !== "ramp-1") return 0;
     if (player.halfpipeFlight)
-      return player.halfpipeFlight.wall.rawProfile === 1 ? -128 : 0;
+      return player.halfpipeFlight.wall.rawProfile === 1 ? -100 : 0;
     if (player.copingReturn)
       return returnProjection(level, player.copingReturn).x - player.x;
     const wall = wallAt(level, player.x, player.y);
@@ -441,7 +441,7 @@
       t: 0,
       length:
         level.name === "ramp-1"
-          ? 216 * Math.sqrt(1.25)
+          ? 176 * Math.sqrt(1.25)
           : Math.max(1, Math.hypot(floor.x - point.x, floor.y - point.y)),
       rawProfile: wall.rawProfile,
     };

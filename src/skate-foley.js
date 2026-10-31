@@ -69,7 +69,9 @@
       const now = performance.now();
       if (
         now - (this.lastCue[name] ?? -Infinity) <
-        (name === "skid" ? 600 : 110)
+        // Trigger turns are already edge-debounced by the input system.
+        // Do not let a recent scrape silence the return turn out of fakie.
+        (name === "skid" ? (details.freshPress ? 0 : 600) : 110)
       )
         return false;
       // Read at the event position, not the previous render frame: the

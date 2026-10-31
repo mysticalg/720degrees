@@ -95,7 +95,7 @@ assert(
 );
 assert.equal(
   pipe.travelScale({ name: "ramp-1" }, { rawProfile: 17 }),
-  48 / 216,
+  48 / 176,
 );
 assert.equal(pipe.travelScale({ name: "ramp-1" }, { rawProfile: 1 }), 1);
 console.log(
