@@ -53,7 +53,7 @@
       document.querySelector("#result-title").textContent =
         r.medal === "PARTICIPATION" ? "KEEP PRACTISING" : `${r.medal} MEDAL!`;
       document.querySelector("#result-copy").textContent =
-        `${r.kind.toUpperCase()} PARK · CLASS ${game.event.round}\n${S.format(r.points)} points · $${r.cash} prize\n+${S.format(r.bonus)} medal bonus`;
+        `${r.kind.toUpperCase()} PARK · CLASS ${game.event.round}\n${S.format(r.points)} points · $${r.cash} prize\n${S.format(r.bonus)} points added to total`;
       button.textContent = "BACK TO SKATE CITY";
     } else if (game.mode === "gameover" || game.mode === "victory") {
       document.querySelector("#result-title").textContent =
