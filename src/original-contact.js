@@ -209,6 +209,12 @@
       ? [1, 1, 10, 20, 5, 5, 10, 20, 10, 10][kind - 56]
       : 0;
   }
+  /** A6DE-A6EA indexes the original FCFA score-word ladder. */
+  function pickupPoints(kind) {
+    return kind >= 72 && kind <= 82
+      ? [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000][kind - 72]
+      : 0;
+  }
   /** D1B8-D1C4 and A64C-A67E: diminishing jump-over pedestrian reward.
    * FCFA supplies the score words. Repeat kinds reduce the NEXT award.
    */
@@ -438,6 +444,7 @@
     responseCode,
     pedestrianKnockdown,
     riderCash,
+    pickupPoints,
     airbornePedestrianReward,
     knockDownActor,
     saveActorMotion,

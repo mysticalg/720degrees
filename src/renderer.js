@@ -30,6 +30,8 @@
           "jump",
           "ramp-sign",
           "downhill",
+          "skate-or-die",
+          "skate-or-die-dim",
         ].map(
           (name) =>
             new Promise((resolve, reject) => {
@@ -147,6 +149,16 @@
         this.collisionOverlay(game, event?.level || game.city.level);
       c.restore();
       this.hud(game, event);
+      // Original alpha badge at the recovered2130 screen position. Only
+      // palette78 flashes; use predecoded phases to avoid per-frame pixels.
+      if (game.warned && !event && game.mode === "city") {
+        const phase = (Math.floor(game.elapsed * 60) >> 4) & 1;
+        c.drawImage(
+          this.assets[phase ? "skate-or-die-dim" : "skate-or-die"],
+          192,
+          16,
+        );
+      }
       if (game.mapFrames > 0 && !event) this.map(game);
       if (this.showCollisions) {
         c.fillStyle = "#08111be6";
@@ -1058,8 +1070,11 @@
       // The old16-frame sheet was the landing-points effect. Type4's
       // verified default bee loop is separate and uses four palette1 columns.
       const effects = S.OriginalEffects;
-      const entry = effects.beeEntry(
+      const entry = effects.chasingBeeEntry(
         Math.floor((time - (bees.born || 0)) * 60),
+        bees.direction || 0,
+        bees.enraged || false,
+        bees.appearance ?? 4,
       );
       this.descriptorSkater(
         bees.x,

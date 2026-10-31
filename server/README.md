@@ -1,0 +1,2 @@
+# 720 community scores
+Netlify Functions + Netlify Database. Deploy this folder with the CLI; the SQL migration creates its own table, never touches other apps. Public API: /.netlify/functions/scores. Player initials and scores are public. No email or account is needed. Unique run IDs make retries idempotent. Server-side validation and IP rate limiting limit accidental duplicates and spam; browser scores remain client supplied and are not cheat-proof. No game assets or ROMs are deployed here.

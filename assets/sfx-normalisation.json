@@ -702,6 +702,111 @@
       "beforeLUFS": "-24.97",
       "afterLUFS": "-19.99",
       "afterTruePeak": "-8.18"
+    },
+    {
+      "file": "assets/shop-voice/80.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-8.20"
+    },
+    {
+      "file": "assets/shop-voice/81.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.93",
+      "afterTruePeak": "-3.26"
+    },
+    {
+      "file": "assets/shop-voice/8a.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-7.60"
+    },
+    {
+      "file": "assets/shop-voice/8c.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.02",
+      "afterTruePeak": "-5.90"
+    },
+    {
+      "file": "assets/shop-voice/b0.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-8.18"
+    },
+    {
+      "file": "assets/shop-voice/b1.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.01",
+      "afterTruePeak": "-8.71"
+    },
+    {
+      "file": "assets/shop-voice/b2.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-6.09"
+    },
+    {
+      "file": "assets/shop-voice/b3.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.03",
+      "afterTruePeak": "-6.47"
+    },
+    {
+      "file": "assets/shop-voice/82.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-7.30"
+    },
+    {
+      "file": "assets/shop-voice/83.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-6.43"
+    },
+    {
+      "file": "assets/shop-voice/8b.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.99",
+      "afterTruePeak": "-6.01"
+    },
+    {
+      "file": "assets/shop-voice/b5.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.97",
+      "afterTruePeak": "-7.61"
+    },
+    {
+      "file": "assets/shop-voice/88.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-7.01"
+    },
+    {
+      "file": "assets/shop-voice/89.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-19.98",
+      "afterTruePeak": "-8.29"
+    },
+    {
+      "file": "assets/shop-voice/b6.mp3",
+      "method": "Original ROM phrase / normalized LUFS",
+      "beforeLUFS": null,
+      "afterLUFS": "-20.00",
+      "afterTruePeak": "-8.98"
     }
   ]
 }

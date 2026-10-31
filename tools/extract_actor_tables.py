@@ -14,13 +14,16 @@ data={'source':'Original actor type, object/coordinate, motion and fixed tables'
 def tb(a):return r[(0x28000+a-0x4000) if a<0x6000 else (0x20000+a-0x6000)]
 def tw(a):return tb(a)|(tb(a+1)<<8)
 data['trafficInitial']={}
+data['cityInitial']={}
 for difficulty in range(1,11):
- pointer=tw(0x6b9e+difficulty*2);records=[]
+ pointer=tw(0x6b9e+difficulty*2);records=[];all_records=[]
  while tw(pointer)!=65535:
   kind,packed=tw(pointer),tw(pointer+2)
+  all_records.append({'kind':kind,'packed':packed})
   if tb(0x623f+kind)==1:records.append({'kind':kind,'packed':packed})
   pointer+=4
  data['trafficInitial'][str(difficulty)]=records
+ data['cityInitial'][str(difficulty)]=all_records
 data['trafficSound']=[[r[0x1a000+0x1b0b+i] for i in range(8)], [r[0x1a000+0x1b11+i] for i in range(8)]]
 (root/'src/actor-table-data.js').write_text('/** Original read-only actor tables, extracted from user ROM. */\nwindow.Skate720.ACTOR_TABLE_DATA='+json.dumps(data,separators=(',',':'))+';\n',encoding='utf-8')
 print('Extracted actor tables for native spawn/route routines')

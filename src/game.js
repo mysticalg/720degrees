@@ -44,6 +44,7 @@
       this.mapFrames = 0;
       this.mapVisitMask = 0;
       this.mapDifficulty = 1;
+      this.beeAppearanceCycle = 0;
       this.score = 0;
       this.cash = 100;
       this.tickets = 1;
@@ -107,6 +108,7 @@
       this.practice = practice;
       this.cityActors = S.CITY_ACTOR_DATA.objects.map((object) => ({
         ...object,
+        parkSign: object.kind === 93,
         pointer: object.entry,
         countdown: object.rate,
         phase: 0,
@@ -180,11 +182,10 @@
           actor.phase = 0;
         }
       }
-      // D2AE queues the original difficulty1 category1 placements. These
-      // pending records now advance through C8AA/C850/C868/C0D8 off-screen.
-      // Visibility-to-sprite activation remains a separate integration stage.
+      // D2AE queues every original starting actor, not only category1 traffic.
+      // Later city classes also contain spectators and paired frisbee actors.
       this.pendingTrafficSlots = [];
-      for (const object of S.ACTOR_TABLE_DATA.trafficInitial["1"]) {
+      for (const object of S.ACTOR_TABLE_DATA.cityInitial["1"]) {
         const placement = S.OriginalObjectRegistry.enqueue(
           object.packed,
           object.kind,
@@ -203,6 +204,7 @@
       this.mapFrames = 0;
       this.mapVisitMask = 0;
       this.mapDifficulty = 1;
+      this.beeAppearanceCycle = 0;
       this.score = 0;
       this.cash = practice ? 900 : 100;
       this.tickets = practice ? 99 : 1;
@@ -227,16 +229,45 @@
         S,
         this.objectRegistry,
         this.actorMemory.readSpriteByte,
+        [...this.cityActors, ...this.cracks].map((actor) => actor.registrySlot),
       );
       this.tell("SKATE CITY \u00b7 JUMP + C TO SPIN \u00b7 E AT A PARK", 7);
       this.audio.unlock();
       this.audio.playStartCue();
       this.changed?.();
     }
+    /** Original banner types93/94/95: open flag, ticket needed, park closed.
+     * The native progression adapter supplies availability; the sign uses
+     * the exact matching type directory, dimensions and original palette.
+     */
+    updateParkSigns() {
+      const m = this.actorMemory;
+      for (const actor of this.cityActors) {
+        if (!actor.parkSign) continue;
+        const gate = this.city.gates.reduce((a, b) =>
+          Math.hypot(a.x - actor.actorX, a.y - actor.actorY) <
+          Math.hypot(b.x - actor.actorX, b.y - actor.actorY)
+            ? a
+            : b,
+        );
+        const kind = !this.available(gate.kind)
+          ? 95
+          : !this.practice && this.tickets < 1
+            ? 94
+            : 93;
+        if (kind === actor.kind) continue;
+        actor.kind = kind;
+        actor.pointer = m.readTypeWord(0x5f7c + kind * 2);
+        actor.columns = m.readTypeByte(0x5c96 + kind);
+        actor.palette = (m.readTypeByte(0x6438 + kind) >> 4) & 3;
+        actor.rate = actor.countdown = actor.phase = 0;
+      }
+    }
     resetCityClock() {
       this.pedestrianReward = { kind: 255, index: 5 };
       this.cityTimer = S.CONFIG.cityTime;
       this.bees = null;
+      this.beeWarningFrames = 0;
       this.warned = false;
     }
     tell(text, seconds = 3) {
@@ -273,6 +304,19 @@
     /** Contact flags5..8 select a shop region. The original5326 consumes
      * scrolling map fields; nearest wrapped region adapts the full city PNG.
      */
+    /** Brief feedback for the actual original table changes at purchase. */
+    upgradeBenefit(kind) {
+      const level = this.gear[kind],
+        tables = S.OriginalGround.tables;
+      const percent = (value, base) => Math.round((value / base - 1) * 100);
+      if (kind === "board")
+        return `ROLL DRAG -${Math.round((1 - tables.friction[level] / tables.friction[0]) * 100)}%`;
+      if (kind === "shoes")
+        return `JUMP +${percent(S.OriginalRoutines.ordinaryJumpLaunch(level), S.OriginalRoutines.ordinaryJumpLaunch(0))}%, PUSH +${percent(tables.kickImpulse[level], tables.kickImpulse[0])}%`;
+      if (kind === "helmet")
+        return `AIR TURN +${percent(S.EQUIPMENT_DATA.airTurnSteps[level], S.EQUIPMENT_DATA.airTurnSteps[0])}%`;
+      return `RECOVERY ${(S.OriginalBail.recoveryFrames[level] / 60).toFixed(2)}s`;
+    }
     shopAt(x, y) {
       const distance = (shop) => {
         const dx = Math.abs(x - shop.x),
@@ -333,12 +377,15 @@
           this.shopState.visitMask =
             (this.shopState.visitMask || 0) | (1 << index);
           this.audio.effect("purchase");
+          this.audio.playShopVoice("purchased");
           this.tell(
-            `${shop.label} LEVEL ${result.level} \u00b7 $${result.cost}`,
+            `${shop.label} ${result.level} \u00b7 ${this.upgradeBenefit(shop.kind)} \u00b7 $${result.cost}`,
             3,
           );
-        } else if (result.status === "funds")
+        } else if (result.status === "funds") {
+          this.audio.playShopVoice("funds");
           this.tell(`NEED $${result.cost} \u00b7 WIN MEDALS TO EARN CASH`, 3);
+        }
         return;
       }
       if (!this.available(target.kind)) {
@@ -346,6 +393,7 @@
         return;
       }
       if (this.tickets < 1) {
+        this.audio.playShopVoice("ticket");
         this.tell("NEED A TICKET \u00b7 JUMP AND SPIN TO EARN POINTS", 3);
         return;
       }
@@ -1848,6 +1896,7 @@
     }
     /** Original pending route clock followed by active traffic scheduling. */
     updatePendingTraffic() {
+      this.trafficRuntime.setDifficulty(this.mapDifficulty);
       const memory = this.objectRegistry;
       const resolve = S.OriginalRoutines.resolveObjectPlacement;
       const advance = (slot, placement, alternate) => {
@@ -2206,6 +2255,7 @@
       this.elapsed += dt;
       if (e?.kind === "jump") S.OriginalTargetPalette.tick(e);
       for (const crack of this.cracks) S.OriginalCracks.tick(crack);
+      if (this.mode === "city") this.updateParkSigns();
       if (this.mode === "city")
         for (const actor of this.cityActors) {
           const motion = S.OriginalActors.stepMotionActor(
@@ -2632,7 +2682,10 @@
               : 0;
         if (this.input.padSpin) spinDirection = this.input.padSpin;
         else if (rotating && stick.active) spinDirection = stick.x;
-        const spinRate = ((610 + this.gear.helmet * 100) * Math.PI) / 180;
+        const spinRate = S.OriginalEquipment.airTurnRate(
+          this.gear.helmet,
+          S.EQUIPMENT_DATA,
+        );
         if (
           this.input.controlMode === "point" &&
           direction.active &&
@@ -2648,7 +2701,13 @@
             Math.abs(S.angleDelta(target, p.fakieAirInput)) < 0.01;
           if (!heldFakieInput) {
             p.fakieAirInput = null;
-            p.spin += S.angleDelta(target, p.angle);
+            // Point steering must use the same equipment-dependent turn
+            // budget as spin buttons; instant aiming hid every helmet upgrade.
+            p.spin += S.clamp(
+              S.angleDelta(target, p.angle),
+              -spinRate * dt,
+              spinRate * dt,
+            );
           }
         } else p.spin += spinDirection * spinRate * dt;
         if (!direction.active) p.fakieAirInput = null;
@@ -2888,15 +2947,45 @@
       if (!this.practice) this.cityTimer -= dt;
       if (this.cityTimer <= 0 && !this.warned) {
         this.warned = true;
-        this.bees = { x: p.x - 230, y: p.y - 120, born: this.elapsed };
+        // E02E gives the warning120 frames before E036 admits a swarm.
+        this.beeWarningFrames = 120;
         this.tell("SKATE OR DIE! \u00b7 GET TO A PARK!", 6);
         this.audio.clip("bees");
+      }
+      if (
+        this.warned &&
+        !this.bees &&
+        this.beeWarningFrames > 0 &&
+        !p.air &&
+        !p.bail &&
+        p.fallen <= 0
+      ) {
+        if (--this.beeWarningFrames === 0) {
+          // E08C cycles0EB3 through0..5; FE18 selects the swarm's shape.
+          this.beeAppearanceCycle = (this.beeAppearanceCycle + 1) % 6;
+          this.bees = {
+            x: p.x - 230,
+            y: p.y - 120,
+            born: this.elapsed,
+            appearance: [2, 6, 4, 3, 1, 5][this.beeAppearanceCycle],
+          };
+        }
       }
       if (this.bees) {
         const dx = p.x - this.bees.x,
           dy = p.y - this.bees.y,
           length = Math.hypot(dx, dy) || 1;
-        const speed = 130 + Math.min(80, -this.cityTimer * 5);
+        const frames = Math.floor((this.elapsed - this.bees.born) * 60);
+        this.bees.stage = S.OriginalEffects.beeStage(
+          frames,
+          this.mapDifficulty,
+        );
+        this.bees.enraged = this.bees.stage >= 4;
+        this.bees.direction = S.Halfpipe.heading(
+          Math.atan2(dy, dx),
+          S.OriginalGround.tables,
+        );
+        const speed = 130 + (this.bees.stage - 1) * 16;
         this.bees.x += (dx / length) * speed * dt;
         this.bees.y += (dy / length) * speed * dt;
         if (length < 22 || this.cityTimer < -S.CONFIG.beeGrace)
@@ -2924,6 +3013,21 @@
             Math.round(p.z * 64),
             this.objectRegistry.readTypeByte,
           );
+          // A6A6-A6EE: contact response4 turns a point pickup into its
+          // original seven-tick animation, awards FCFA[kind-72], and clears
+          // its mask so the same pickup cannot pay out twice.
+          if (code === 4 && contact.kind >= 72 && contact.kind <= 82) {
+            const points = S.OriginalContact.pickupPoints(contact.kind);
+            this.addScore(points);
+            contact.extraPointer = 0;
+            contact.flags |= 0x60;
+            contact.rate = 7;
+            contact.duration = 0x80;
+            contact.pickupTicks = 0x80;
+            this.trafficRuntime.sync(contact);
+            this.audio.effect("coin");
+            return;
+          }
           // A70C uses the original cash table and retires rider types56..65.
           // The response height gate still admits jumps in front/onto them
           // near board contact, while a high clear jump remains a pass-over.
@@ -2931,6 +3035,7 @@
             const cash = S.OriginalContact.riderCash(contact.kind);
             if (cash && p.lastOriginalContact !== contact.sprite) {
               this.cash = Math.max(0, Math.min(9999, this.cash + cash));
+              this.popup(`+$${cash}`);
               this.trafficRuntime.remove(contact.slot);
               this.trafficActors = this.trafficActors.filter(
                 (a) => a !== contact,

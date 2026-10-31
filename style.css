@@ -471,3 +471,35 @@ footer small {
     letter-spacing: 0.4px;
   }
 }
+
+#highscores {
+  padding: 20px;
+  border: 1px solid #53687d;
+  margin: 16px 0;
+  background: #101c28;
+}
+#highscores table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+#highscores td,
+#highscores th {
+  padding: 8px;
+  border-bottom: 1px solid #334354;
+}
+#highscores input,
+#highscores select {
+  padding: 10px;
+  background: #142537;
+  color: white;
+  border: 1px solid #64788a;
+}
+#highscores small {
+  display: block;
+  margin-top: 8px;
+}
+#highscores input {
+  width: 80px;
+  text-transform: uppercase;
+}

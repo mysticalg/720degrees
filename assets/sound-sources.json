@@ -47,5 +47,155 @@
     "events": [
       "springboard"
     ]
+  },
+  "shop-voice/80.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x80",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.98",
+    "measuredTruePeak": "-8.20"
+  },
+  "shop-voice/81.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x81",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.93",
+    "measuredTruePeak": "-3.26"
+  },
+  "shop-voice/8a.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x8a",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.99",
+    "measuredTruePeak": "-7.60"
+  },
+  "shop-voice/8c.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x8c",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.02",
+    "measuredTruePeak": "-5.90"
+  },
+  "shop-voice/b0.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0xb0",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.01",
+    "measuredTruePeak": "-8.18"
+  },
+  "shop-voice/b1.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0xb1",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.01",
+    "measuredTruePeak": "-8.71"
+  },
+  "shop-voice/b2.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0xb2",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.00",
+    "measuredTruePeak": "-6.09"
+  },
+  "shop-voice/b3.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0xb3",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "purchased",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.03",
+    "measuredTruePeak": "-6.47"
+  },
+  "shop-voice/82.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x82",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "funds",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.99",
+    "measuredTruePeak": "-7.30"
+  },
+  "shop-voice/83.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x83",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "funds",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.00",
+    "measuredTruePeak": "-6.43"
+  },
+  "shop-voice/8b.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x8b",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "funds",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.99",
+    "measuredTruePeak": "-6.01"
+  },
+  "shop-voice/b5.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0xb5",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "funds",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.97",
+    "measuredTruePeak": "-7.61"
+  },
+  "shop-voice/88.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x88",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "ticket refusal",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.98",
+    "measuredTruePeak": "-7.01"
+  },
+  "shop-voice/89.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0x89",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "ticket refusal",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-19.98",
+    "measuredTruePeak": "-8.29"
+  },
+  "shop-voice/b6.mp3": {
+    "source": "User-provided 720.zip original sound program",
+    "command": "0xb6",
+    "sourceRoutine": "1E000:52B2 FE1E purchase / 52E8 FE26 insufficient cash / 541A FE2A ticket refusal",
+    "event": "ticket refusal",
+    "capture": "Offline original 6502 dispatcher rendering; static MP3 only in delivered game",
+    "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
+    "measuredLUFS": "-20.00",
+    "measuredTruePeak": "-8.98"
   }
 }

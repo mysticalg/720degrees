@@ -8,9 +8,10 @@
   const word = (n) => n & 65535,
     signed = (n) => (n << 16) >> 16;
   class TrafficRuntime {
-    constructor(S, memory, spriteReader) {
+    constructor(S, memory, spriteReader, fixedSlots = []) {
       this.S = S;
       this.memory = { ...memory, readSpriteByte: spriteReader };
+      this.fixedSlots = new Set(fixedSlots);
       this.actors = new Map();
       this.visible = [];
       this.requests = [];
@@ -24,6 +25,9 @@
       this.entropyReads = 0;
       this.soundCommands = [];
       this.previousCamera = null;
+      this.difficulty = 1;
+      this.dynamicCursor = 63;
+      S.OriginalPopulation.resetRequests(this.population, 1, this.memory);
       this.actorRecovery = { timer: 0, sprite: 255 };
       memory.writeRamByte(0x0e96, 14);
       memory.writeRamByte(0x0e97, 2);
@@ -36,7 +40,7 @@
           this.requests.push(g);
           S.OriginalPopulation.request(this.population, g);
         },
-        remove: (slot) => this.remove(slot),
+        remove: (slot) => this.remove(slot, true),
         prepareTraffic: (kind) =>
           S.OriginalTrafficSound.acquire(
             kind,
@@ -50,6 +54,41 @@
           ),
       };
     }
+    /** D2AE's class-specific city actors. Refresh only the static registry;
+     * fixed scenery and the player's equipment survive course returns.
+     * mapDifficulty is supplied by the existing native progression adapter.
+     */
+    setDifficulty(difficulty) {
+      difficulty = Math.max(1, Math.min(10, difficulty));
+      if (difficulty === this.difficulty) return;
+      for (let slot = 0; slot < 255; slot++)
+        if (
+          !this.fixedSlots.has(slot) &&
+          this.memory.readRamByte(0x09b8 + slot)
+        )
+          this.remove(slot);
+      this.S.OriginalPopulation.resetRequests(
+        this.population,
+        difficulty,
+        this.memory,
+      );
+      this.write(0x09ae, 65535);
+      for (const record of this.S.ACTOR_TABLE_DATA.cityInitial[difficulty]) {
+        const result = this.S.OriginalObjectRegistry.enqueue(
+          record.packed,
+          record.kind,
+          false,
+          this.memory,
+          {
+            inspect: this.S.OriginalActorRoutes.inspect,
+            resolve: this.services.resolve,
+          },
+        );
+        // D2C8 ignores CE24 rejection when a placement is already reserved.
+        if (result.status !== 0) continue;
+      }
+      this.difficulty = difficulty;
+    }
     read(a) {
       return this.memory.readRamByte(a) | (this.memory.readRamByte(a + 1) << 8);
     }
@@ -57,7 +96,17 @@
       this.memory.writeRamByte(a, n);
       this.memory.writeRamByte(a + 1, n >> 8);
     }
-    remove(slot) {
+    remove(slot, budgetReturned = false) {
+      const actor = this.actors.get(slot);
+      if (actor && !budgetReturned) {
+        const flags = this.memory.readTypeByte(0x649d + actor.kind);
+        if (flags & 16)
+          this.memory.writeRamByte(0x0e96, this.memory.readRamByte(0x0e96) + 1);
+        if (flags & 64) {
+          this.memory.writeRamByte(0x0e97, this.memory.readRamByte(0x0e97) + 1);
+          this.services.releaseTraffic(actor.kind);
+        }
+      }
       this.S.OriginalObjectRegistry.remove(slot, this.memory, {
         ...this.services,
         release: this.S.OriginalActorRoutes.release,
@@ -249,11 +298,22 @@
         [...this.actors.values()].find((actor) => actor.sprite === sprite),
       );
       for (const actor of this.actors.values()) {
+        if (actor.pickupTicks !== undefined && --actor.pickupTicks <= 0) {
+          this.remove(actor.slot);
+          continue;
+        }
         // A grabbed car keeps its native towing assist for this visible trip.
         // Advance the original motion/route controller at each extra clock,
         // rather than scaling displacement past a pending turn or junction.
         for (let clock = 0; clock < (actor.towBoost || 1); clock++) {
-          if (S.OriginalActors.trafficRouteDue(actor)) this.route(actor);
+          // Category0 scenery has a descriptor clock but no route controller.
+          // Categories1/3/8 share CA4C routing; paired NPC handoffs remain
+          // a separate controller from this movement/animation adapter.
+          if (
+            [1, 3, 8].includes(m.readTypeByte(0x623f + actor.kind)) &&
+            S.OriginalActors.trafficRouteDue(actor)
+          )
+            this.route(actor);
           const motion = S.OriginalActors.stepMotionActor(actor, m);
           actor.x = word(actor.x + motion.dx);
           actor.y = word(actor.y + motion.dy);
@@ -293,8 +353,9 @@
             ).status,
         );
       }
-      S.OriginalActorSpawning.scanRecords(false, m, {
+      const scanner = {
         process: (slot) => {
+          if (this.fixedSlots.has(slot)) return;
           S.OriginalActorSpawning.processRecord(slot, m, {
             retire: (s) => this.retire(s),
             spawn: (s) => {
@@ -320,7 +381,16 @@
             },
           });
         },
-      });
+      };
+      // The browser composes both cabinet scheduling passes each tick.
+      // Preserve their cursors independently: the static pass masks09AC to63
+      // and would otherwise starve dynamic records beyond the first slots.
+      const staticCursor = this.read(0x09ac);
+      this.write(0x09ac, this.dynamicCursor);
+      S.OriginalActorSpawning.scanRecords(true, m, scanner);
+      this.dynamicCursor = this.read(0x09ac);
+      this.write(0x09ac, staticCursor);
+      S.OriginalActorSpawning.scanRecords(false, m, scanner);
       this.visible = [...this.actors.values()];
       return this.visible;
     }

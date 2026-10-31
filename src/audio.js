@@ -15,6 +15,7 @@
           this.musicVolume = Math.max(0, Math.min(1, Number(saved)));
         this.musicMuted = localStorage.getItem("720-music-muted") === "true";
       } catch {}
+      this.shopVoice = null;
       this.context = null;
       this.introActive = false;
       this.musicPaused = true;
@@ -40,6 +41,26 @@
         if (!this.musicPaused) this.playMusic();
       };
     }
+    /** 1E000:52B2/52E8/541A select recorded sound-ROM phrases from
+     * FE1E/FE26/FE2A. Cabinet entropy is adapted with browser randomness.
+     * Phrases are captured original audio, never runtime speech synthesis.
+     */
+    playShopVoice(outcome) {
+      if (this.muted) return;
+      const commands = {
+        purchased: [0x80, 0x81, 0x8a, 0x8c, 0xb0, 0xb1, 0xb2, 0xb3],
+        funds: [0x82, 0x83, 0x8b, 0xb5],
+        ticket: [0x88, 0x89, 0xb6, 0x88],
+      }[outcome];
+      if (!commands) return;
+      this.shopVoice?.pause();
+      const command = commands[Math.floor(Math.random() * commands.length)];
+      this.shopVoice = new Audio(
+        `assets/shop-voice/${command.toString(16)}.mp3`,
+      );
+      this.shopVoice.volume = 0.55;
+      this.shopVoice.play().catch(() => {});
+    }
     unlock() {
       if (!this.context)
         this.context = new (window.AudioContext || window.webkitAudioContext)();
@@ -62,6 +83,7 @@
       this.clips.start.pause();
     }
     stop() {
+      this.shopVoice?.pause();
       this.foley.stop();
       this.pauseMusic();
       this.introActive = false;
@@ -80,6 +102,7 @@
     }
     toggle() {
       this.muted = !this.muted;
+      if (this.shopVoice) this.shopVoice.muted = this.muted;
       if (this.muted) this.foley.stop();
       this.music.muted = this.muted || this.musicMuted;
       for (const a of Object.values(this.clips)) a.muted = this.muted;

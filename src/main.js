@@ -44,7 +44,9 @@
     pause = document.querySelector("#pause"),
     result = document.querySelector("#result");
   const button = document.querySelector("#continue");
+  const leaderboard = S.attachLeaderboard(game);
   function syncScreen() {
+    leaderboard.sync();
     menu.hidden = game.mode !== "title";
     pause.hidden = !game.paused;
     result.hidden = !["result", "gameover", "victory"].includes(game.mode);
@@ -68,6 +70,8 @@
     previousFrame = null;
     accumulator = 0;
     game.start(practice);
+    game.leaderboardAssisted = !!renderer.showCollisions;
+    leaderboard.start();
     input.clear();
     canvas.focus();
     syncScreen();
@@ -229,8 +233,10 @@
       togglePause();
   });
   function handleActions() {
-    if (input.consumeCollisionToggle())
+    if (input.consumeCollisionToggle()) {
       renderer.showCollisions = !renderer.showCollisions;
+      game.leaderboardAssisted = true;
+    }
     if (input.pressed("fullscreen")) fullscreen();
     if (input.pressed("mute")) toggleSound();
     if (!medalsPanel.hidden) {

@@ -27,6 +27,18 @@
     state.stockMask = stockMask(gear, 1); //5602 closes stocked/owned equipment.
     return { status: "purchased", kind, cost, level: gear[kind] };
   }
+  /** 1A000:4B0A reads helmet025D's step from bank2C00:7CA0.
+   * The native continuous-angle adapter converts288 original units per turn
+   * at60 simulation ticks/sec. The original input/rotation state machine is
+   * still supplied by the browser adapter.
+   */
+  function airTurnRate(level, data) {
+    return (
+      data.airTurnSteps[Math.max(0, Math.min(3, level))] *
+      ((Math.PI * 2) / 288) *
+      60
+    );
+  }
   /** Original SystemII intensity/colour ladders used by palette RAM. */
   function rgb(value) {
     const intensity = [
@@ -57,6 +69,7 @@
   const api = Object.freeze({
     kinds,
     price,
+    airTurnRate,
     stockMask,
     purchase,
     rgb,
