@@ -387,7 +387,7 @@
           p.halfpipeFlight?.speed ?? p.courseFlightSpeed ?? p.romSpeed ?? 0,
         );
       if (speed <= 0) return;
-      const ceiling =
+      let ceiling =
         Math.max(
           tables.kickCeiling[Math.min(3, this.gear.shoes)] + 128,
           tables.limit[(profile & 7) * 4 + Math.min(3, this.gear.board)],
@@ -395,6 +395,11 @@
             ? tables.rampLimit[Math.min(3, this.gear.board)]
             : 0,
         ) * S.CONFIG.fakieTopSpeed;
+      // Natural slope/tow momentum may exceed the ordinary kick cap. Give
+      // that first backwards ollie the same assist, with5% chain headroom.
+      if (speed > (p.fakieJumpCeiling || ceiling) + 2)
+        p.fakieJumpCeiling = speed * S.CONFIG.fakieTopSpeed;
+      ceiling = Math.max(ceiling, p.fakieJumpCeiling || 0);
       const scale = Math.max(
         1,
         Math.min(S.CONFIG.fakieJumpBoost, ceiling / speed),
@@ -426,6 +431,7 @@
         facing = p.romFacingDirection ?? ((p.romDirection ?? 4) + 8) & 15;
       p.fakie = false;
       p.fakiePointAnchor = null;
+      p.fakieJumpCeiling = null;
       p.romDirection = p.romMovementDirection = facing;
       p.romFacingDirection = undefined;
       p.angle = Math.atan2(-tables.y[facing], tables.x[facing]);
@@ -1479,6 +1485,7 @@
           profile,
         );
         effect.groundRise = S.Halfpipe.groundRise(this.event?.level, p);
+        effect.groundShift = S.Halfpipe.groundShift(this.event?.level, p);
         // F064 setup occurs before the original frame's B378 clock pass.
         S.OriginalEffects.tickLandingEffect(effect, p.x, p.y);
         this.floats = this.floats.filter((f) => !f.originalLanding);
@@ -1512,7 +1519,7 @@
       const landingInput = this.input.direction();
       p.fakieSteeringTarget =
         p.fakie && landingInput.active
-          ? (this.pointHeading(landingInput) + 8) & 15
+          ? this.pointHeading({ x: landingInput.x, y: -landingInput.y })
           : null;
       p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
       p.spin = 0;
@@ -1938,15 +1945,26 @@
         this.audio.effect("skid");
         return true;
       }
+      const travel =
+        Math.hypot(p.vx, p.vy) > 1
+          ? S.OriginalContact.playerDirection(
+              { air: true, angle: Math.atan2(p.vy, p.vx) },
+              S.OriginalGround.tables,
+            )
+          : (p.romDirection ?? 4);
+      const face = (travel + (p.fakie ? 8 : 0)) & 15;
       p.groundPivot = {
         side,
-        start: p.angle,
+        start: Math.atan2(
+          -S.OriginalGround.tables.y[face],
+          S.OriginalGround.tables.x[face],
+        ),
         total: Math.PI,
         elapsed: 0,
         skid: !!double,
         vx: p.vx,
         vy: p.vy,
-        travel: p.romDirection ?? 4,
+        travel,
       };
       if (double) last.doubleUsed = true;
       else p.lastTriggerPivot = { side, time: this.elapsed, doubleUsed: false };
@@ -1989,16 +2007,14 @@
         p.romDirection = p.romMovementDirection = state.travel;
         p.romFacingDirection = p.fakie ? (state.travel + 8) & 15 : undefined;
         const direction = this.input.direction();
-        // A trigger turn changes the stance under a held stick, unlike an
-        // airborne turn which usually changes the stick heading too. Anchor
-        // point steering here so the next small adjustment cannot snap travel
-        // through 180 degrees. Rotation mode retains its reversed dial.
-        p.fakiePointAnchor =
-          p.fakie && direction.active
-            ? { input: this.pointHeading(direction), travel: state.travel }
-            : null;
+        // Holding the approach stick is not a fresh steering command when
+        // the stance changes. New input keeps left/right and mirrors only Y;
+        // rotate mode likewise keeps its normal left/right dial direction.
+        p.fakiePointAnchor = null;
         p.fakieSteeringTarget =
-          p.fakie && direction.active ? state.travel : null;
+          p.fakie && direction.active
+            ? this.pointHeading({ x: direction.x, y: -direction.y })
+            : null;
         p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
         p.romDialAngle = Math.atan2(
           -S.OriginalGround.tables.y[state.travel] * 2,
@@ -2299,8 +2315,7 @@
               : Number(this.input.held("right")) -
                 Number(this.input.held("left"))) *
               3.8 *
-              dt *
-              (p.fakie ? -1 : 1);
+              dt;
           p.romDialCounter = dialFromAngle(p.romDialAngle);
           p.romDirection = S.OriginalGround.dialDirection(p.romDialCounter);
           p.angle = isoAngle(p.romDirection);
@@ -2309,13 +2324,11 @@
           if (!p.fakie) p.romFacingDirection = undefined;
           const dial = dialFromAngle(Math.atan2(direction.y * 2, direction.x));
           const rawTarget = S.OriginalGround.dialDirection(dial);
-          // Point input describes the facing axis; while fakie the board
-          // rolls along its opposite axis. This makes steering reverse around
-          // the held direction that established the backward stance.
-          const anchor = p.fakie ? p.fakiePointAnchor : null;
-          const target = anchor
-            ? (anchor.travel + anchor.input - rawTarget + 16) & 15
-            : (rawTarget + (p.fakie ? 8 : 0)) & 15;
+          // Point controls mirror only the vertical input while backwards.
+          // Left/right remain unchanged, as requested for both entry methods.
+          const target = p.fakie
+            ? this.pointHeading({ x: direction.x, y: -direction.y })
+            : rawTarget;
           let current = p.romDirection;
           if (current === undefined)
             current = S.OriginalGround.dialDirection(dialFromAngle(p.angle));

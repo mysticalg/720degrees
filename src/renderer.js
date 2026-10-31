@@ -130,7 +130,7 @@
         c.globalAlpha = Math.min(1, f.life);
         if (f.originalLanding)
           this.descriptorSkater(
-            f.x,
+            f.x + (f.groundShift || 0),
             f.y - (f.groundRise || 0),
             0,
             false,
@@ -1197,4 +1197,3 @@
   }
   S.Renderer = Renderer;
 })();
-

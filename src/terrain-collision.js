@@ -27,7 +27,7 @@
     return (
       !sample.blocked &&
       !(
-        sample.profile === 17 &&
+        [1, 17].includes(sample.profile) &&
         level?.halfpipeWallAt &&
         !level.halfpipeWallAt(x, y)
       ) &&

@@ -71,10 +71,10 @@ const frozen = pipe.groundRise(artwork, {
 assert.equal(frozen, pipe.riseForWall(artwork, projectedWall, 1));
 assert.equal(
   pipe.riseForWall({ name: "ramp-1" }, { ...projectedWall, rawProfile: 1 }, 1),
-  0,
+  64,
 );
 console.log(
-  "PASS original-art south coping projection, frozen aerial plane and unchanged north wall",
+  "PASS original-art coping projection and frozen aerial plane",
 );
 
 const lower = pipe.projectSlopePoint(artwork, { x: 688, y: 744 });

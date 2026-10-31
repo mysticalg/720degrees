@@ -16,6 +16,7 @@
   class Level {
     constructor(info) {
       Object.assign(this, info);
+      if (info.name === "ramp-1") this.start = { x: 676, y: 688 };
       if (this.kind === "ramp")
         this.halfpipeWallAt = (x, y) => S.Halfpipe.wallAt(this, x, y);
       // Native E908-EA5C decompression supplies the original CPU-visible

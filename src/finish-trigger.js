@@ -1,18 +1,48 @@
-/** Larger course finish columns. Geometry follows original type10 tiles;
- * height is deliberately excluded so an ollie cannot clear the trigger.
+/** Course finish strip just beyond the original type10 finish tiles.
+ * A swept ground-plane crossing catches airborne and fast skaters without
+ * expanding the trigger onto the approach side of the painted line.
  */
 (() => {
   function create(cells, columns, flags, hull) {
-    const points = [];
+    const tiles = [];
     for (let i = 0; i < cells.length; i++) {
-      if (flags[cells[i] & 8191] !== 10) continue;
-      const x = (i % columns) * 8,
-        y = Math.floor(i / columns) * 8;
-      // Expand every original tile, then retain one diagonal convex boundary.
-      for (const dx of [-48, 56])
-        for (const dy of [-32, 40]) points.push({ x: x + dx, y: y + dy });
+      if (flags[cells[i] & 8191] === 10)
+        tiles.push({ x: (i % columns) * 8, y: Math.floor(i / columns) * 8 });
     }
-    return points.length ? hull(points) : null;
+    if (!tiles.length) return null;
+    // The course artwork has either isometric diagonal finish orientation.
+    // Recover it from the tile run, using the ground plane (x, 2*y). Courses
+    // progress towards +y, so choose the downstream normal consistently.
+    const meanX = tiles.reduce((sum, p) => sum + p.x, 0) / tiles.length;
+    const meanY = tiles.reduce((sum, p) => sum + p.y, 0) / tiles.length;
+    const covariance = tiles.reduce(
+      (sum, p) => sum + (p.x - meanX) * (p.y - meanY),
+      0,
+    );
+    const sign = covariance > 0 ? -1 : 1;
+    let far = -Infinity,
+      left = Infinity,
+      right = -Infinity;
+    for (const tile of tiles)
+      for (const dx of [0, 8])
+        for (const dy of [0, 8]) {
+          const x = tile.x + dx,
+            y = tile.y + dy;
+          far = Math.max(far, sign * x + 2 * y);
+          const along = x - sign * 2 * y;
+          left = Math.min(left, along);
+          right = Math.max(right, along);
+        }
+    // Four coordinate units put the leading edge just past the final paint
+    // tile. Side padding and downstream depth cannot trigger an early finish.
+    const points = [];
+    for (const along of [left - 48, right + 48])
+      for (const normal of [far + 4, far + 52])
+        points.push({
+          x: (along + sign * normal) / 2,
+          y: (normal - sign * along) / 4,
+        });
+    return hull(points);
   }
   /** Clip the whole movement segment against a convex polygon. This catches
    * fast crossings even when neither frame ends inside the finish strip.
