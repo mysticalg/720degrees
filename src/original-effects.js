@@ -93,7 +93,7 @@
     return sequence[Math.floor(Math.max(0, frames) / 5) % sequence.length];
   }
   /** E07C/E086 and5018: initial250-tick speed step, then FE0D[class].
-   * Pursuit positioning remains the native browser adapter.
+   * Compatibility estimator; live pursuit now keeps the original delay/stage fields.
    */
   function beeStage(frames, difficulty = 1) {
     const delay =
@@ -103,6 +103,137 @@
       7,
       1 + (frames < 250 ? 0 : 1 + Math.floor((frames - 250) / delay)),
     );
+  }
+  const beeIntervals = [250, 250, 245, 240, 235, 230, 225, 200, 175, 150, 150];
+  const beeWord = (n) => n & 65535,
+    beeSigned = (n) => (n << 16) >> 16;
+  /** E0C2-E102: spawn around the wrapping camera, behind player motion. */
+  function beginBeePursuit(cameraX, cameraY, playerDX, playerDY, appearance) {
+    return {
+      x: beeWord(cameraX + (beeSigned(playerDX) < 0 ? 0x8e00 : 0xf200)),
+      y: beeWord(-cameraY + (beeSigned(playerDY) < 0 ? 0x6e00 : 0x1200)),
+      dx: 0,
+      dy: 0,
+      delay: 0,
+      speedClock: 250,
+      stage: 1,
+      direction: 255,
+      appearance,
+      form: 0,
+      animationFrames: 0,
+      firstTick: true,
+    };
+  }
+  /** Bank3800:4F98-5016: biased eight-way pursuit, not an atan2 aim.
+   * All additions wrap before signed tests;01C4 contributes nine frame bits.
+   */
+  function beeHeading(state, player, frame) {
+    const x = beeSigned(beeWord(player.x - state.x + 0x500 + (frame & 511)));
+    const y = beeSigned(beeWord(player.y - state.y + player.height + 0x500));
+    if (beeSigned(beeWord(Math.abs(x))) < 512) return y < 0 ? 12 : 4;
+    if (beeSigned(beeWord(Math.abs(y))) < 512) return x < 0 ? 8 : 0;
+    let direction = x < 0 ? 6 : 2;
+    if (y < 0) direction = 16 - direction;
+    return direction;
+  }
+  /** Bank3800:5018-50C6 + E13A-E1E0, then B378 motion. Entropy is
+   * supplied in place of9152's cabinet random buffer. The outer clock must
+   * tick0F22 once, just as85C4-85CC does, independently of retargeting.
+   */
+  function tickBeePursuit(
+    state,
+    player,
+    camera,
+    frame,
+    difficulty,
+    readMotionWord,
+    randomByte,
+  ) {
+    // E036 runs after85C4's global clock on the spawn frame, then calls
+    //5018 immediately. Its freshly assigned250 must survive that first call.
+    if (state.firstTick) state.firstTick = false;
+    else if (state.speedClock > 0) state.speedClock--;
+    state.delay = beeWord(state.delay - 1);
+    const screenX = beeWord(state.x - camera.x);
+    const screenY = beeWord(state.y + camera.y);
+    const outside =
+      (screenX > 0x8200 && screenX < 0xf000) ||
+      !(beeSigned(screenY) >= 0x1000 || screenY <= 0x9000);
+    let inheritX = 0,
+      inheritY = 0;
+    if (outside) {
+      inheritX = player.dx;
+      inheritY = beeWord(player.dy + player.dz);
+      state.delay = 65535;
+    }
+    if (beeSigned(state.delay) <= 0) {
+      if (state.speedClock <= 0) {
+        if (state.stage <= 6) state.stage++;
+        state.speedClock = beeIntervals[difficulty] || 250;
+      }
+      const direction = beeHeading(state, player, frame);
+      const index = (direction * 8 + state.stage) * 2;
+      state.dx = beeSigned(
+        beeWord(readMotionWord(0x4138 + index) * 2 + inheritX),
+      );
+      state.dy = beeSigned(
+        beeWord(readMotionWord(0x4238 + index) * 2 + inheritY),
+      );
+      if (state.direction !== direction) {
+        state.direction = direction;
+        state.form = state.stage >= 4 ? state.appearance : 0;
+        state.animationFrames = 0;
+      }
+      state.delay = beeSigned(state.delay) < 0 ? 5 : (randomByte() & 15) + 16;
+    }
+    state.x = beeWord(state.x + state.dx);
+    state.y = beeWord(state.y + state.dy);
+    state.animationFrames++;
+    return state;
+  }
+  /** E222-E236 enters capture only from city phase1. The global0F22
+   * clock gives60 ticks before bank3800:5BD4 processes the terminal phase.
+   * The caller still owns that later life/progression decision.
+   */
+  function beginBeeCapture(phase = 1) {
+    return phase === 1 ? { phase: 8, timer: 60, finished: false } : null;
+  }
+  function tickBeeCapture(state) {
+    if (state.phase !== 8 || state.finished) return false;
+    if (state.timer > 0) state.timer--;
+    if (state.timer !== 0) return false;
+    state.finished = true;
+    return true;
+  }
+  /** Bank3800:5BDA-5C60, fixedFE9E.027B starts at1 (4240), and
+   * increments on accepted continuation (5DC4), not on capture itself.
+   */
+  function beeContinueLimit(settings) {
+    return [2, 0, 1, 3][(settings >> 4) & 3];
+  }
+  function beginBeeContinue(plays, settings = 0) {
+    const phase = (plays & 255) > beeContinueLimit(settings) ? 5 : 9;
+    return { phase, plays: plays & 255, seconds: 10, ticks: 60 };
+  }
+  /** Bank16000 CPU7A4A-7A6C's shared countdown, composed at60Hz. */
+  function tickBeeContinue(state) {
+    if (state.phase !== 9 || !state.ticks) return false;
+    if (--state.ticks) return false;
+    state.seconds = beeWord(state.seconds - 1);
+    if (state.seconds) state.ticks = 60;
+    else state.phase = 5;
+    return true;
+  }
+  /** 5DA6-5DC4 / E78E: input/credit admission is caller supplied. The
+   * initial10 countdown digit does not accept input;9..1 do.
+   */
+  function acceptBeeContinue(state, pressed, creditAccepted) {
+    if (state.phase !== 9 || state.seconds > 9 || !pressed || !creditAccepted)
+      return false;
+    state.plays = (state.plays + 1) & 255;
+    state.seconds = state.ticks = 0;
+    state.phase = 0;
+    return true;
   }
   /** F064-F0FA setup, original actor53. index0..9 means100..1000.
    * Native coordinates are pixels; the controller comparisons below convert
@@ -171,6 +302,15 @@
     beeAnimations,
     chasingBeeEntry,
     beeStage,
+    beginBeePursuit,
+    beeHeading,
+    tickBeePursuit,
+    beginBeeCapture,
+    tickBeeCapture,
+    beeContinueLimit,
+    beginBeeContinue,
+    tickBeeContinue,
+    acceptBeeContinue,
   });
   if (typeof module !== "undefined") module.exports = api;
   else window.Skate720.OriginalEffects = api;

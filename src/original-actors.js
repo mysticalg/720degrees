@@ -120,7 +120,9 @@
     if (next & 32768) {
       pointer = next & 32767;
       actor.phase = 0;
-      if (actor.stopOnLoop) actor.rate = 0;
+      // B3D0 tests the current route flag, not an immutable type property.
+      // Controllers can change this bit while an animation is running.
+      if (actor.routeFlags & 32) actor.rate = 0;
     }
     actor.pointer = pointer;
     actor.dirty = ((actor.dirty || 0) | 24) & 255;
@@ -171,10 +173,116 @@
     actor.routeFlags = ((actor.routeFlags || 0) | 8) & 255;
     return true;
   }
+  /** CBD4, CC0A-CC56 and CD82-CDBE share CB64's deadline gate.
+   * Category0 scenery stops its controller, category5 refreshes viewport
+   * admission every16 ticks, category6 retires at its collection deadline.
+   * Category9 effects wait15 ticks while either flag06 bit is still set;
+   * only the cleared flags admit retirement. Callers own registry/budgets.
+   */
+  function passiveActorStep(actor, category) {
+    if (![0, 5, 6, 9].includes(category) || !trafficRouteDue(actor))
+      return null;
+    if (category === 0) {
+      actor.duration = 0;
+      return null;
+    }
+    if (category === 5) {
+      actor.duration = 16;
+      return "viewport";
+    }
+    if (category === 9 && actor.flags & 6) {
+      actor.duration = 15;
+      return null;
+    }
+    return "retire";
+  }
+  /** CC5A-CC8A follows CB64's shared deadline gate. An entered park's
+   * gate clears its contact mask and advances CA4C; otherwise it stops.
+   */
+  function gateRouteDue(actor, memory) {
+    if (!trafficRouteDue(actor)) return false;
+    const group = memory.readTraitByte(0x4000 + actor.bitmapIndex) & 15;
+    if (group && memory.readRamByte(0x0ea4) & (1 << (group - 1))) {
+      actor.extraPointer = 0;
+      return true;
+    }
+    actor.dx = actor.dy = actor.duration = 0;
+    return false;
+  }
+  /** CA0C-CA48 / CDD0-CDF8: a category3 route marker signals the
+   * other static record at the same packed position. Search backwards,
+   * excluding the sender, as the cabinet does (duplicates are meaningful).
+   * C98E advances the recipient's directory once and starts rate5.
+   * The caller then continues ordinary CA4C routing for the sender.
+   */
+  function findStaticPartner(actor, packed, memory) {
+    const readWord = (a) =>
+      memory.readRamByte(a) | (memory.readRamByte(a + 1) << 8);
+    for (let slot = signed(readWord(0x09ae)); slot >= 0; slot--) {
+      if (slot !== actor.slot && readWord(0x0af8 + slot * 2) === word(packed))
+        return slot;
+    }
+    return -1;
+  }
+  function advancePartnerPose(recipient, rate, memory) {
+    // Only live browser actors have a descriptor adapter. Do not attach a
+    // pose to an unrelated sprite when the registry record is offscreen.
+    if (!recipient || recipient.sprite === memory.readRamByte(0x0e6a))
+      return false;
+    let pointer = word(recipient.pointer + 2);
+    const next = memory.readTypeWord(pointer);
+    if (next & 32768) pointer = next & 32767;
+    recipient.pointer = pointer;
+    recipient.flags = ((recipient.flags || 0) | 24) & 255;
+    recipient.countdown = recipient.rate = rate;
+    return true;
+  }
+  function signalRoutePartner(actor, memory, activeActor) {
+    if (actor.routeFlags & 1) return null;
+    if (!(memory.readTraitByte(0x4000 + actor.bitmapIndex) & 16)) return null;
+    const slot = findStaticPartner(actor, actor.packed, memory);
+    const recipient = slot < 0 ? null : activeActor(slot);
+    if (advancePartnerPose(recipient, 5, memory)) return recipient;
+    return null;
+  }
+  /** CC8C-CD80, FDDE's three category8 branches (paired actors43/44).
+   * The route marker's low nibble chooses ordinary movement, a pose reset,
+   * or a throw/handoff. CCEC searches +0400 first, then +0600 only when no
+   * record exists. A paused partner resumes at rate4 for0700 ticks. After
+   * CA4C, the sender pauses unless it is still in an intermediate turn.
+   * route() must update actor.routeFlags before this final test.
+   */
+  function updatePairedRoute(actor, memory, activeActor, route) {
+    const branch = memory.readTraitByte(0x4000 + actor.bitmapIndex) & 15;
+    let recipient = null;
+    if (branch === 1) {
+      actor.pointer = memory.readTypeWord(word(0x5408 + (actor.kind - 43) * 2));
+    } else if (branch === 2 && !(actor.routeFlags & 1)) {
+      let slot = findStaticPartner(actor, actor.packed + 0x400, memory);
+      if (slot < 0)
+        slot = findStaticPartner(actor, actor.packed + 0x600, memory);
+      const candidate = slot < 0 ? null : activeActor(slot);
+      if (candidate && candidate.rate & 128) {
+        advancePartnerPose(candidate, 4, memory);
+        candidate.duration = 0x700;
+        recipient = candidate;
+      }
+    }
+    route();
+    if (branch === 2 && !(actor.routeFlags & 1)) {
+      actor.rate = ((actor.rate || 0) | 128) & 255;
+      actor.duration = 0x7fff;
+    }
+    return recipient;
+  }
   const api = Object.freeze({
     stepMotionActor,
     reprojectTurn,
     trafficRouteDue,
+    passiveActorStep,
+    gateRouteDue,
+    signalRoutePartner,
+    updatePairedRoute,
     tickDescriptor,
     configureMotion,
     selectRouteAnimation,

@@ -49,6 +49,19 @@
       this.cash = 100;
       this.tickets = 1;
       this.lives = 3;
+      this.originalCityClock = S.OriginalCityClock.reset();
+      this.cityTimer = S.OriginalCityClock.seconds(this.originalCityClock);
+      this.originalPlayCount = 1;
+      this.continueSettings = 0;
+      this.ticketSettings = 0;
+      this.ticketProgress = S.OriginalTickets.begin(
+        this.continueSettings,
+        this.ticketSettings,
+      );
+      this.nextTicket = this.ticketProgress.threshold;
+      this.beeContinue = null;
+      this.cashTally = null;
+      this.parkState = S.OriginalParks.begin(this.experienced);
       this.gear = { helmet: 0, shoes: 0, board: 0, pads: 0 };
       this.shopState = {
         stockMask: 0,
@@ -59,6 +72,11 @@
       };
       this.clears = { ramp: 0, downhill: 0, jump: 0, slalom: 0 };
       this.medals = [];
+      this.lastLandingAward = null;
+      this.landingScore = S.OriginalLandingScore.createState(
+        1,
+        S.LANDING_SCORE_DATA,
+      );
       this.highScore = 0;
       try {
         this.highScore =
@@ -185,7 +203,10 @@
       // D2AE queues every original starting actor, not only category1 traffic.
       // Later city classes also contain spectators and paired frisbee actors.
       this.pendingTrafficSlots = [];
-      for (const object of S.ACTOR_TABLE_DATA.cityInitial["1"]) {
+      for (const object of [
+        ...S.ACTOR_TABLE_DATA.gateInitial,
+        ...S.ACTOR_TABLE_DATA.cityInitial["1"],
+      ]) {
         const placement = S.OriginalObjectRegistry.enqueue(
           object.packed,
           object.kind,
@@ -207,9 +228,17 @@
       this.beeAppearanceCycle = 0;
       this.score = 0;
       this.cash = practice ? 900 : 100;
-      this.tickets = practice ? 99 : 1;
+      this.ticketProgress = S.OriginalTickets.begin(
+        this.continueSettings,
+        this.ticketSettings,
+      );
+      this.tickets = practice ? 99 : this.ticketProgress.tickets;
       this.lives = 3;
-      this.nextTicket = 3000;
+      this.originalPlayCount = 1;
+      this.beeContinue = null;
+      this.cashTally = null;
+      this.parkState = S.OriginalParks.begin(this.experienced);
+      this.nextTicket = this.ticketProgress.threshold;
       this.gear = { helmet: 0, shoes: 0, board: 0, pads: 0 };
       this.shopState = {
         stockMask: 0,
@@ -220,6 +249,11 @@
       };
       this.clears = { ramp: 0, downhill: 0, jump: 0, slalom: 0 };
       this.medals = [];
+      this.lastLandingAward = null;
+      this.landingScore = S.OriginalLandingScore.createState(
+        1,
+        S.LANDING_SCORE_DATA,
+      );
       this.floats = [];
       this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
       this.resetCityClock();
@@ -236,9 +270,8 @@
       this.audio.playStartCue();
       this.changed?.();
     }
-    /** Original banner types93/94/95: open flag, ticket needed, park closed.
-     * The native progression adapter supplies availability; the sign uses
-     * the exact matching type directory, dimensions and original palette.
+    /** Original banner types93/94/95, using E6FE's played/rotation mask
+     * separately from the entry and temporary-disable guards.
      */
     updateParkSigns() {
       const m = this.actorMemory;
@@ -250,11 +283,11 @@
             ? a
             : b,
         );
-        const kind = !this.available(gate.kind)
-          ? 95
-          : !this.practice && this.tickets < 1
-            ? 94
-            : 93;
+        const closed =
+          !this.practice &&
+          S.OriginalParks.closedMask(this.parkState) &
+            (1 << S.OriginalParks.kinds.indexOf(gate.kind));
+        const kind = closed ? 95 : !this.practice && this.tickets < 1 ? 94 : 93;
         if (kind === actor.kind) continue;
         actor.kind = kind;
         actor.pointer = m.readTypeWord(0x5f7c + kind * 2);
@@ -265,8 +298,13 @@
     }
     resetCityClock() {
       this.pedestrianReward = { kind: 255, index: 5 };
-      this.cityTimer = S.CONFIG.cityTime;
+      this.originalCityClock = S.OriginalCityClock.reset(
+        this.mapDifficulty || 1,
+        this.continueSettings || 0,
+      );
+      this.cityTimer = S.OriginalCityClock.seconds(this.originalCityClock);
       this.bees = null;
+      this.beeCapture = null;
       this.beeWarningFrames = 0;
       this.warned = false;
     }
@@ -282,11 +320,19 @@
       if (trackEvent && this.event && this.mode === "event")
         this.event.points += points;
       if (label) this.popup(label);
-      if (!this.practice && this.score >= this.nextTicket) {
-        this.tickets = Math.min(4, this.tickets + 1);
-        this.nextTicket += 10000;
-        this.tell("PARK TICKET EARNED!", 3);
-        this.audio.effect("coin");
+      if (!this.practice) {
+        this.ticketProgress.tickets = this.tickets;
+        const awards = S.OriginalTickets.award(
+          this.ticketProgress,
+          this.score,
+          ["gameover", "victory"].includes(this.mode),
+        );
+        this.tickets = this.ticketProgress.tickets;
+        this.nextTicket = this.ticketProgress.threshold;
+        if (awards && !["gameover", "victory"].includes(this.mode)) {
+          this.tell("PARK TICKET EARNED!", 3);
+          this.audio.effect("coin");
+        }
       }
       if (this.score > this.highScore) {
         this.highScore = this.score;
@@ -298,7 +344,10 @@
     available(kind) {
       return (
         this.practice ||
-        this.clears[kind] === Math.min(...Object.values(this.clears))
+        S.OriginalParks.available(
+          this.parkState,
+          S.OriginalParks.kinds.indexOf(kind),
+        )
       );
     }
     /** Contact flags5..8 select a shop region. The original5326 consumes
@@ -397,13 +446,40 @@
         this.tell("NEED A TICKET \u00b7 JUMP AND SPIN TO EARN POINTS", 3);
         return;
       }
-      if (!this.practice) this.tickets--;
+      if (!this.practice) {
+        this.ticketProgress.tickets = this.tickets;
+        this.tickets = S.OriginalTickets.change(this.ticketProgress, -1);
+      }
       this.cityEntryPosition = { x: this.player.x, y: this.player.y };
+      const parkIndex = S.OriginalParks.kinds.indexOf(target.kind);
+      if (!this.practice) {
+        S.OriginalParks.enter(this.parkState, parkIndex);
+        this.trafficRuntime.setEnteredParks(this.parkState.entered);
+        // The browser enters the course directly; the cabinet has a separate
+        // transition before CPU662A records this played bit.
+        S.OriginalParks.startCourse(this.parkState, parkIndex);
+      }
       this.event = S.makeEvent(
         target.kind,
         this.clears[target.kind] + 1,
         this.experienced,
+        this.practice
+          ? null
+          : S.OriginalParks.courseClass(this.parkState, parkIndex),
       );
+      //6AF0 resets landing count;6AFE resets repetitions except the ramp's
+      //separate7F80 path.0FE2 fatigue survives scene changes.
+      this.landingScore.landings = 0;
+      if (target.kind !== "ramp")
+        S.OriginalLandingScore.resetRepeats(
+          this.landingScore,
+          0,
+          this.mapDifficulty,
+          S.LANDING_SCORE_DATA,
+        );
+      this.event.landingScore = this.landingScore;
+      if (target.kind === "ramp")
+        this.event.originalRampScore = S.OriginalRampScore.begin();
       this.mode = "event";
       const spawn = this.event.level.start;
       this.resetPlayer(spawn.x, spawn.y);
@@ -995,6 +1071,14 @@
         baseHeight: setup.targetHeight,
         jumping,
         entryDirection,
+        //5264 writes scoring fields even when7D3E selects no marker stream.
+        //Keep those numeric fields independently of the render controller.
+        scoreState: {
+          action: setup.action,
+          variant: setup.variant,
+          completed: 0,
+          flags: setup.flags,
+        },
         trick:
           setup.action === 0x4f
             ? "grind"
@@ -1507,9 +1591,10 @@
         (landingFacing - (p.romMovementDirection ?? p.romDirection ?? 4) + 16) &
         15;
       let award;
-      if (kind === 2 || kind === 4) {
-        const state = (this.event.landingScore ||=
-          S.OriginalLandingScore.createState());
+      //9AF4-9B02 routes all ordinary non-ramp landings through7ADA;
+      //7E44 is a separate E2F2 caller, not the city/slalom fallback.
+      if (kind !== 3) {
+        const state = this.landingScore;
         award = S.OriginalLandingScore.award(
           {
             kind,
@@ -1527,22 +1612,36 @@
             ),
             profile: landingSurface.profile,
             target: landingSurface.type === 15,
-            classIndex: this.event.difficulty,
+            classIndex: this.event?.difficulty ?? this.mapDifficulty,
           },
           state,
           S.LANDING_SCORE_DATA,
         );
         award.deferred = kind === 4;
-        this.event.lastLandingAward = {
+        const holder = this.event || this;
+        holder.lastLandingAward = {
           ...award,
           spin: Math.round(degrees),
           gap: (p.scoreGapFrames || 0) > 0,
         };
-      } else
-        award = S.OriginalRoutines.airtimeAward(
-          Math.round(p.airTime * 60),
-          kind,
+      } else {
+        //9B02 dispatches7E98 while the original ramp action/segment state
+        //still exists. Flat halfpipe ollies take its031F=1 no-award branch.
+        const ramp = p.rampAnimation || p.halfpipeFlight?.scoreState;
+        award = S.OriginalRampScore.award(
+          {
+            action: ramp?.action ?? 1,
+            variant: ramp?.variant ?? 0,
+            completed: ramp?.completed ?? 0,
+            flags: ramp?.flags ?? 0,
+            frames: Math.round(p.airTime * 60),
+            rotation: (p.spin * 288) / (Math.PI * 2),
+          },
+          (this.event.originalRampScore ||= S.OriginalRampScore.begin()),
+          S.LANDING_SCORE_DATA,
         );
+        this.event.lastLandingAward = { ...award, spin: Math.round(degrees) };
+      }
       if (award.deferred) {
         this.event.originalPendingPoints =
           ((this.event.originalPendingPoints || 0) + award.points) & 65535;
@@ -1657,8 +1756,7 @@
       if (this.event) {
         this.event.crashes++;
         this.event.timer = Math.max(0, this.event.timer - 1.5);
-      } else if (!this.practice)
-        this.cityTimer = Math.max(0, this.cityTimer - 2);
+      }
     }
     /** Original bail state1 with native map/collision adapters. */
     updateBail(dt) {
@@ -1735,17 +1833,79 @@
     }
     caughtByBees() {
       if (this.practice) return;
-      this.lives--;
-      this.audio.effect("crash");
-      if (this.lives <= 0) {
-        this.mode = "gameover";
-        this.audio.pauseMusic();
+      this.beeContinue = S.OriginalEffects.beginBeeContinue(
+        this.originalPlayCount,
+        this.continueSettings,
+      );
+      this.lives = Math.max(
+        0,
+        S.OriginalEffects.beeContinueLimit(this.continueSettings) -
+          this.originalPlayCount +
+          1,
+      );
+      if (this.beeContinue.phase === 5) this.finishBeeRun();
+      else {
+        this.mode = "continue";
         this.changed?.();
-        return;
       }
+    }
+    finishBeeRun() {
+      this.mode = "gameover";
+      this.beeContinue = null;
+      this.beginCashTally();
+      this.audio.pauseMusic();
+      this.changed?.();
+    }
+    beginCashTally() {
+      if (this.cashTally) return; //Terminal input/retries must never award twice.
+      this.cashTally = S.OriginalEventResult.beginCashTally(
+        this.cash,
+        this.parkState.advancedSkill,
+        this.continueSettings,
+      );
+    }
+    acceptBeeContinue() {
+      // A browser button supplies a free cabinet credit; no payment/network
+      // action is performed. The ROM's phase/count/input guards still apply.
+      if (
+        !this.beeContinue ||
+        !S.OriginalEffects.acceptBeeContinue(this.beeContinue, true, true)
+      )
+        return;
+      this.originalPlayCount = this.beeContinue.plays;
+      this.ticketProgress.tickets = this.tickets;
+      S.OriginalTickets.continueTicket(this.ticketProgress);
+      this.tickets = this.ticketProgress.tickets;
+      this.beeContinue = null;
+      S.OriginalParks.returnToCity(this.parkState);
+      this.trafficRuntime.setEnteredParks(this.parkState.entered);
+      this.mode = "city";
       this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
       this.resetCityClock();
-      this.tell(`THE BEES GOT YOU \u00b7 ${this.lives} BOARDS LEFT`, 4);
+      this.tell("BACK TO SKATE CITY", 3);
+      this.changed?.();
+    }
+    /** A5B8-A606: original bee mask/height admission is checked by the
+     * caller. Select the source impact side/speed, bail, retire the swarm,
+     * then E222 delays the existing native life-loss adapter by60 ticks.
+     */
+    beginBeeCapture(actor) {
+      if (this.practice || this.beeCapture) return;
+      const p = this.player,
+        read = this.objectRegistry.readContactWord;
+      if (!p.originalGate?.mode) {
+        const side = S.OriginalContact.impactSide(
+          S.OriginalContact.playerContact(p, read, S.OriginalGround.tables),
+          S.OriginalContact.actorContact(actor, actor.extraPointer, read),
+          read,
+        );
+        p.romDirection = p.romMovementDirection = side ? 4 : 12;
+      }
+      p.romSpeed = 0x514;
+      this.crash("THE BEES GOT YOU", { force: true });
+      this.bees = null;
+      this.warned = false;
+      this.beeCapture = S.OriginalEffects.beginBeeCapture();
     }
     finishEvent() {
       if (this.mode !== "event") return;
@@ -1760,11 +1920,7 @@
       const originalResult = S.OriginalEventResult.result(
         e.kind,
         race ? e.originalRaceCounter : e.originalPendingPoints || 0,
-        S.OriginalRoutines.setupTableIndex(
-          e.difficulty,
-          selector,
-          this.medals.length,
-        ),
+        e.difficulty,
         S.EVENT_RESULT_DATA,
       );
       e.originalResult = originalResult;
@@ -1810,6 +1966,21 @@
         packedMedal: originalResult?.packedMedal ?? null,
       });
       this.clears[e.kind] = Math.min(4, this.clears[e.kind] + 1);
+      if (!this.practice) {
+        e.originalPackedResult = S.OriginalParks.recordResult(
+          this.parkState,
+          selector,
+          originalResult.packedMedal,
+        );
+        //697C reaches terminal phase5 before6D40/7140 on the final result.
+        if (!S.OriginalParks.runFinished(this.parkState)) {
+          S.OriginalParks.finishCourse(this.parkState);
+          this.mapDifficulty = S.OriginalParks.advanceClass(
+            this.parkState,
+            selector,
+          );
+        }
+      }
       this.result = {
         medal,
         cash,
@@ -1870,9 +2041,9 @@
       return best || { ...this.city.spawn };
     }
     continueAfterEvent() {
-      if (Object.values(this.clears).every((count) => count >= 4)) {
-        this.addScore(this.cash * 10);
+      if (!this.practice && S.OriginalParks.runFinished(this.parkState)) {
         this.mode = "victory";
+        this.beginCashTally();
         this.audio.pauseMusic();
         this.changed?.();
         return;
@@ -1880,13 +2051,20 @@
       const gate = this.city.gates.find((g) => g.kind === this.event.kind);
       this.event = null;
       this.mode = "city";
+      S.OriginalParks.returnToCity(this.parkState);
+      S.OriginalLandingScore.resetRepeats(
+        this.landingScore,
+        0,
+        this.mapDifficulty,
+        S.LANDING_SCORE_DATA,
+      );
+      this.trafficRuntime.setEnteredParks(this.parkState.entered);
       const position = this.cityReturnPosition(gate);
       this.resetPlayer(position.x, position.y);
       this.camera = { ...position };
       this.cityEntryPosition = null;
-      // Every visit awards enough points toward the next ticket; a consolation
-      // ticket prevents a low-scoring first park from trapping a beginner.
-      this.tickets = Math.max(1, this.tickets);
+      // Ordinary park returns do not refill tickets. EFDC awards them through
+      // score thresholds;5DF6 supplies a zero-ticket refill on continue only.
       this.shopState.visitMask = 0;
       this.shopState.stockMask = S.OriginalEquipment.stockMask(this.gear, 3);
       this.shopState.attemptMask = 0;
@@ -1897,6 +2075,8 @@
     /** Original pending route clock followed by active traffic scheduling. */
     updatePendingTraffic() {
       this.trafficRuntime.setDifficulty(this.mapDifficulty);
+      // DA02 uses entered0EA4, not the separate played/closed0F29 mask.
+      this.trafficRuntime.setEnteredParks(this.parkState.entered);
       const memory = this.objectRegistry;
       const resolve = S.OriginalRoutines.resolveObjectPlacement;
       const advance = (slot, placement, alternate) => {
@@ -2248,11 +2428,34 @@
       return true;
     }
     update(dt) {
+      if (
+        !this.paused &&
+        this.cashTally &&
+        this.cashTally.phase !== "done" &&
+        ["gameover", "victory"].includes(this.mode)
+      ) {
+        const awards = S.OriginalEventResult.tickCashTally(this.cashTally);
+        this.cash = this.cashTally.cash;
+        for (const award of awards) this.addScore(award, undefined, false);
+        this.changed?.();
+        return;
+      }
+      if (!this.paused && this.mode === "continue") {
+        if (S.OriginalEffects.tickBeeContinue(this.beeContinue)) {
+          if (this.beeContinue.phase === 5) this.finishBeeRun();
+          else this.changed?.();
+        }
+        return;
+      }
       if (this.paused || !["city", "event"].includes(this.mode)) return;
       if (!(this.event?.level || this.city.level).ready) return;
       const p = this.player,
         e = this.event;
       this.elapsed += dt;
+      S.OriginalLandingScore.tickFatigue(
+        this.landingScore,
+        Math.round(this.elapsed * 60),
+      );
       if (e?.kind === "jump") S.OriginalTargetPalette.tick(e);
       for (const crack of this.cracks) S.OriginalCracks.tick(crack);
       if (this.mode === "city") this.updateParkSigns();
@@ -2303,6 +2506,13 @@
       p.kickClock = p.kickAnimation
         ? ((3 - p.kickAnimation.phase) * (p.kickAnimation.rate + 1)) / 60
         : 0;
+      if (this.beeCapture) {
+        if (S.OriginalEffects.tickBeeCapture(this.beeCapture)) {
+          this.beeCapture = null;
+          this.caughtByBees();
+        } else if (p.bail) this.updateBail(dt);
+        return;
+      }
       if (p.bail) {
         this.updateBail(dt);
         return;
@@ -2311,6 +2521,13 @@
         p.fallen = Math.max(0, p.fallen - dt);
         return;
       }
+      if (p.air && p.originalGate?.mode) {
+        // 4AD4 clocks an airborne correction too; do not restore its launch
+        // velocity here, because the ordinary airborne gravity has advanced.
+        p.originalGate.movementState = 0;
+        S.OriginalGateContact.steer(p.originalGate, p.romDirection ?? 4);
+      }
+      if (this.updateGateMotion(dt)) return;
       if (this.updateVehicleTow(dt)) return;
       this.tryCurbGrind();
       if (this.updateCurbGrind(dt)) return;
@@ -2838,6 +3055,94 @@
         ) === true
       );
     }
+    /** Map the native facing/travel split to the original signed speed. */
+    applyGateState(state) {
+      const p = this.player,
+        rom = S.OriginalGround;
+      const movement =
+        state.speed < 0 ? (state.heading + 8) & 15 : state.heading;
+      p.fakie = state.speed < 0;
+      p.romFacingDirection = p.fakie ? state.heading : undefined;
+      p.romDirection = p.romMovementDirection = movement;
+      p.romSpeed = Math.abs(state.speed);
+      p.angle = Math.atan2(
+        -rom.tables.y[state.heading],
+        rom.tables.x[state.heading],
+      );
+      p.romDialAngle = Math.atan2(
+        -rom.tables.y[state.heading] * 2,
+        rom.tables.x[state.heading],
+      );
+      const v = rom.velocity(state.speed, state.heading);
+      p.vx = ((v.dx + v.fractionX / 256) * 60) / 64;
+      p.vy = (-(v.dy + v.fractionY / 256) * 60) / 64;
+      if (p.air) {
+        p.romVerticalVelocity = state.vertical;
+        p.vz = (state.vertical * 60) / 64;
+        p.takeoffAngle = p.angle;
+        p.spin = 0;
+      }
+    }
+    gateContact(actor) {
+      const p = this.player;
+      const state = (p.originalGate ||= {
+        contactProfile: 254,
+        target: -1,
+        mode: 0,
+        clock: 0,
+      });
+      Object.assign(state, {
+        heading: p.romFacingDirection ?? p.romDirection ?? 4,
+        speed: Math.round((p.romSpeed || 0) * (p.fakie ? -1 : 1)),
+        vertical: p.romVerticalVelocity || 0,
+        movementState: p.air ? 0 : 1,
+        action: p.air ? 5 : 0,
+      });
+      if (
+        S.OriginalGateContact.contact(
+          state,
+          actor.kind,
+          S.OriginalGround.terrainTableReader(S.TERRAIN_TABLES).readByte,
+        )
+      ) {
+        this.applyGateState(state);
+        this.latchFakieSteering(p.romMovementDirection);
+      }
+    }
+    /** Native XY adapter for the translated gate steering interval. Ordinary
+     * steering resumes when4AD4/4DEC releases the original correction latch.
+     */
+    updateGateMotion(dt) {
+      const p = this.player,
+        state = p.originalGate;
+      if (!state?.mode || p.air) return false;
+      const input = this.input.direction();
+      const desired = input.active ? this.pointHeading(input) : state.heading;
+      S.OriginalGateContact.steer(state, desired);
+      this.applyGateState(state);
+      // Use the same diagonal terrain sweep as ordinary movement. Omitting
+      // its origin falls back to a point rejection at the booth corners.
+      p.terrainStepOrigin = { x: p.x, y: p.y };
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      this.collideWithRecoveredTerrain();
+      // Native diagonal-corner escape: a booth can project this gate's
+      // correction to zero XY speed. Release the forced target to3F so the
+      // player can steer away; retain the original signed coast and mask.
+      if (
+        p.diagonalContacts &&
+        Math.hypot(p.vx, p.vy) < 0.01 &&
+        state.target >= 0 &&
+        state.target < 63
+      ) {
+        state.target = 63;
+      }
+      state.currentProfile = 0;
+      this.updateCity(dt);
+      this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
+      this.camera.y += (p.y - this.camera.y) * Math.min(1, dt * 7);
+      return true;
+    }
     mapSkatingInput() {
       return {
         kick: this.input.held("kick"),
@@ -2855,6 +3160,7 @@
       this.mapInputSnapshot = this.mapSkatingInput();
     }
     updateCity(dt) {
+      if (this.beeCapture) return;
       const p = this.player;
       this.mapFrames = Math.max(0, this.mapFrames - 1);
       if (this.mapFrames > 0) {
@@ -2944,8 +3250,19 @@
         this.interact({ ...gate, type: "park" });
         if (this.mode !== "city") return;
       }
-      if (!this.practice) this.cityTimer -= dt;
-      if (this.cityTimer <= 0 && !this.warned) {
+      if (!this.practice) {
+        S.OriginalCityClock.tick(
+          this.originalCityClock,
+          this.warned ? 1 : 0,
+          0,
+          p.vehicleTow ? 1 : 0,
+        );
+        this.cityTimer = S.OriginalCityClock.seconds(this.originalCityClock);
+      }
+      const warningWasActive = this.warned;
+      // CPU7982-7996 waits for the original bail action1 to finish before
+      // entering warning phase1. E036 separately waits for grounded skating.
+      if (this.cityTimer <= 0 && !this.warned && !p.bail) {
         this.warned = true;
         // E02E gives the warning120 frames before E036 admits a swarm.
         this.beeWarningFrames = 120;
@@ -2953,6 +3270,7 @@
         this.audio.clip("bees");
       }
       if (
+        warningWasActive &&
         this.warned &&
         !this.bees &&
         this.beeWarningFrames > 0 &&
@@ -2969,27 +3287,85 @@
             born: this.elapsed,
             appearance: [2, 6, 4, 3, 1, 5][this.beeAppearanceCycle],
           };
+          const m = this.trafficRuntime;
+          this.bees.originalPursuit = S.OriginalEffects.beginBeePursuit(
+            m.read(0x01a8),
+            m.read(0x01aa),
+            Math.round((p.vx * 64) / 60),
+            Math.round((-p.vy * 64) / 60),
+            this.bees.appearance,
+          );
+          const word = (n) => n & 65535,
+            signed = (n) => (n << 16) >> 16;
+          this.bees.x =
+            p.x +
+            signed(this.bees.originalPursuit.x - word((p.x - 40) * 64)) / 64;
+          this.bees.y =
+            p.y -
+            signed(
+              this.bees.originalPursuit.y - word(0xa000 - (p.y + 11) * 64),
+            ) /
+              64;
         }
       }
       if (this.bees) {
-        const dx = p.x - this.bees.x,
-          dy = p.y - this.bees.y,
-          length = Math.hypot(dx, dy) || 1;
-        const frames = Math.floor((this.elapsed - this.bees.born) * 60);
-        this.bees.stage = S.OriginalEffects.beeStage(
-          frames,
-          this.mapDifficulty,
+        const word = (n) => n & 65535,
+          signed = (n) => (n << 16) >> 16;
+        const pursuit = this.bees.originalPursuit;
+        if (pursuit) {
+          const player = {
+            x: word(Math.round((p.x - 40) * 64)),
+            y: word(Math.round(0xa000 - (p.y + 11) * 64)),
+            height: Math.round(p.z * 64),
+            dx: Math.round((p.vx * 64) / 60),
+            dy: Math.round((-p.vy * 64) / 60),
+            dz: Math.round(((p.vz || 0) * 64) / 60),
+          };
+          const runtime = this.trafficRuntime;
+          const before = { x: pursuit.x, y: pursuit.y };
+          S.OriginalEffects.tickBeePursuit(
+            pursuit,
+            player,
+            { x: runtime.read(0x01a8), y: runtime.read(0x01aa) },
+            Math.round(this.elapsed * 60),
+            this.mapDifficulty,
+            runtime.memory.readMotionWord,
+            () => S.OriginalPopulation.nextBufferedRandom(runtime.entropy),
+          );
+          this.bees.x += signed(pursuit.x - before.x) / 64;
+          this.bees.y -= signed(pursuit.y - before.y) / 64;
+          this.bees.stage = pursuit.stage;
+          this.bees.direction = pursuit.direction;
+          this.bees.enraged = pursuit.form !== 0;
+          this.bees.animationFrames = pursuit.animationFrames;
+        }
+        const m = this.trafficRuntime.memory;
+        // C618 initializes type4 with direction6. E13A changes the body
+        // directory only, so its6110 contact-mask directory stays fixed.
+        const pointer = m.readTypeWord(
+          m.readTypeWord(0x6118) + m.readFixedByte(0xfdba + 6),
         );
-        this.bees.enraged = this.bees.stage >= 4;
-        this.bees.direction = S.Halfpipe.heading(
-          Math.atan2(dy, dx),
-          S.OriginalGround.tables,
-        );
-        const speed = 130 + (this.bees.stage - 1) * 16;
-        this.bees.x += (dx / length) * speed * dt;
-        this.bees.y += (dy / length) * speed * dt;
-        if (length < 22 || this.cityTimer < -S.CONFIG.beeGrace)
-          this.caughtByBees();
+        const actor = {
+          kind: 4,
+          sprite: 7,
+          actorX: this.bees.x - 40,
+          actorY: this.bees.y + 11,
+          extraPointer: pointer,
+          height: 0,
+        };
+        if (
+          !this.practice &&
+          S.OriginalContact.responseCode(
+            4,
+            !p.air,
+            Math.round(p.z * 64),
+            m.readTypeByte,
+          ) === 2 &&
+          this.actorMaskContact(actor)
+        ) {
+          this.beginBeeCapture(actor);
+          return;
+        }
       }
       if (!p.bail) {
         this.tryVehicleTow();
@@ -3005,25 +3381,28 @@
               ) &&
               this.actorMaskContact(actor),
           );
-        if (!contact) p.lastOriginalContact = 0;
-        else {
+        if (!contact) {
+          p.lastOriginalContact = 0;
+          if (p.originalGate) p.originalGate.currentProfile = 0;
+        } else {
           const code = S.OriginalContact.responseCode(
             contact.kind,
             !p.air,
             Math.round(p.z * 64),
             this.objectRegistry.readTypeByte,
           );
+          if (code === 9 && (contact.kind === 19 || contact.kind === 20)) {
+            this.gateContact(contact);
+            p.lastOriginalContact = contact.sprite;
+            return;
+          }
           // A6A6-A6EE: contact response4 turns a point pickup into its
           // original seven-tick animation, awards FCFA[kind-72], and clears
           // its mask so the same pickup cannot pay out twice.
           if (code === 4 && contact.kind >= 72 && contact.kind <= 82) {
             const points = S.OriginalContact.pickupPoints(contact.kind);
             this.addScore(points);
-            contact.extraPointer = 0;
-            contact.flags |= 0x60;
-            contact.rate = 7;
-            contact.duration = 0x80;
-            contact.pickupTicks = 0x80;
+            S.OriginalContact.collectPointPickup(contact);
             this.trafficRuntime.sync(contact);
             this.audio.effect("coin");
             return;
@@ -3321,14 +3700,20 @@
     updateEvent(dt) {
       const e = this.event,
         p = this.player;
+      const activeActors = [];
       for (const actor of e.actors || []) {
+        const category = actor.kind === 23 || actor.kind === 24 ? 9 : 0;
+        if (S.OriginalActors.passiveActorStep(actor, category) === "retire")
+          continue;
         const motion = S.OriginalActors.stepMotionActor(
           actor,
           this.actorMemory,
         );
         actor.actorX += motion.dx / 64;
         actor.actorY -= motion.dy / 64;
+        activeActors.push(actor);
       }
+      if (e.actors) e.actors = activeActors;
       e.elapsed += dt;
       if (e.kind === "slalom" || e.kind === "downhill") {
         // CPU7A74: every16th global frame, active phase3 only. Original
@@ -3348,7 +3733,7 @@
       } else {
         if (e.kind === "slalom") {
           const previous = e.gateProbe || { x: p.x, y: p.y };
-          if (!p.air && !p.bail)
+          if (!p.bail)
             for (const gate of e.gates) {
               if (gate.hit || gate.missed) continue;
               // Sweep the board against the original pass mask, so a fast
@@ -3363,27 +3748,66 @@
                   ),
                 ),
               );
-              let passed = false;
-              for (let n = 1; n <= steps && !passed; n++) {
+              let contact = null;
+              const read = this.objectRegistry.readContactWord;
+              // A57C-A5AE admits airborne contacts up to6631[kind]<<8.
+              // Slalom flags use127 (508px), rather than a blanket air veto.
+              const touches = (actor, response) =>
+                actor &&
+                S.OriginalContact.responseCode(
+                  actor.kind,
+                  !p.air,
+                  Math.round(p.z * 64) - (actor.height || 0),
+                  this.objectRegistry.readTypeByte,
+                ) === response &&
+                this.actorMaskContact(actor);
+              for (let n = 1; n <= steps && !contact; n++) {
                 p.x = previous.x + ((end.x - previous.x) * n) / steps;
                 p.y = previous.y + ((end.y - previous.y) * n) / steps;
-                passed = this.actorMaskContact(gate.actor);
+                // The later-queued type25 pole has original scan priority
+                // over its26..35 pass partner at the same packed position.
+                if (touches(gate.companion, 11))
+                  contact = { pole: true, side: 1 };
+                else if (touches(gate.actor, 10))
+                  contact = {
+                    pole: false,
+                    side: S.OriginalContact.impactSide(
+                      S.OriginalContact.playerContact(
+                        p,
+                        read,
+                        S.OriginalGround.tables,
+                      ),
+                      S.OriginalContact.actorContact(
+                        gate.actor,
+                        gate.actor.extraPointer,
+                        read,
+                      ),
+                      read,
+                    ),
+                  };
               }
               p.x = end.x;
               p.y = end.y;
-              if (passed) {
-                gate.hit = true;
-                e.gatesHit++;
-                // A7D6 updates the race counter; A7F0 selects frame2 (+4).
-                e.originalRaceCounter = Math.min(
-                  128,
-                  (e.originalRaceCounter || 0) + 6,
+              if (contact && gate.companion) {
+                const state = {
+                  counter: e.originalRaceCounter || 0,
+                  statusFlags: e.originalStatusFlags || 0,
+                };
+                const passed = S.OriginalContact.slalomContact(
+                  gate.actor,
+                  gate.companion,
+                  state,
+                  contact.side,
+                  contact.pole,
                 );
+                gate.hit = passed;
+                gate.missed = !passed;
+                if (passed) e.gatesHit++;
+                e.originalRaceCounter = state.counter;
+                e.originalStatusFlags = state.statusFlags;
                 e.timer = e.originalRaceCounter;
-                gate.actor.pointer += 4;
-                if (gate.companion) gate.companion.pointer += 4;
-                this.popup("GATE +6"); // A7D6 extends the race counter, not an immediate score award.
-                this.audio.effect("coin");
+                this.popup(passed ? "GATE +6" : "MISSED GATE");
+                if (passed) this.audio.effect("coin");
               }
             }
           e.gateProbe = { x: p.x, y: p.y };
@@ -3465,6 +3889,12 @@
         score: this.score,
         cash: this.cash,
         tickets: this.tickets,
+        ticketProgress: this.ticketProgress,
+        parkState: this.parkState,
+        landingScore: this.landingScore,
+        lastLandingAward:
+          this.event?.lastLandingAward || this.lastLandingAward || null,
+        cashTally: this.cashTally,
         lives: this.lives,
         gear: this.gear,
         clears: this.clears,
@@ -3481,7 +3911,10 @@
           visitedMask: this.mapVisitMask,
         },
         cityTimer: this.practice ? null : +this.cityTimer?.toFixed(1),
+        originalCityClock: this.originalCityClock,
         bees: this.bees,
+        beeCapture: this.beeCapture,
+        beeContinue: this.beeContinue,
         cityActors:
           this.mode === "city"
             ? this.cityActors

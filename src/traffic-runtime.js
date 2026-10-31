@@ -73,7 +73,10 @@
         this.memory,
       );
       this.write(0x09ae, 65535);
-      for (const record of this.S.ACTOR_TABLE_DATA.cityInitial[difficulty]) {
+      for (const record of [
+        ...this.S.ACTOR_TABLE_DATA.gateInitial,
+        ...this.S.ACTOR_TABLE_DATA.cityInitial[difficulty],
+      ]) {
         const result = this.S.OriginalObjectRegistry.enqueue(
           record.packed,
           record.kind,
@@ -88,6 +91,20 @@
         if (result.status !== 0) continue;
       }
       this.difficulty = difficulty;
+    }
+    /** DA02/70E8: wake only the active gate for a newly entered park.
+     * This0EA4 mask is independent of the played/closed mask0F29.
+     */
+    setEnteredParks(mask) {
+      const changed = mask & ~this.memory.readRamByte(0x0ea4);
+      this.memory.writeRamByte(0x0ea4, mask);
+      if (!changed) return;
+      for (const actor of this.actors.values()) {
+        if (this.memory.readTypeByte(0x623f + actor.kind) !== 7) continue;
+        const group =
+          this.memory.readTraitByte(0x4000 + actor.bitmapIndex) & 15;
+        if (group && changed & (1 << (group - 1))) actor.duration = 1;
+      }
     }
     read(a) {
       return this.memory.readRamByte(a) | (this.memory.readRamByte(a + 1) << 8);
@@ -290,30 +307,82 @@
       actor.actorY =
         (row + 1) * 256 + signed(0xa000 - actor.y - (row + 1) * 256 * 64) / 64;
     }
-    frame(camera, width, height) {
+    /** CB56-CDC8 visits controllers by descending sprite, independently of
+     * B378-B4AE's descending motion pass. Keep that ordering in the native
+     * 60Hz composition: a partner's signal must reach its descriptor before
+     * any actor advances that descriptor/moves this tick. Map insertion order
+     * reflects camera activation, not the original sprite scheduler.
+     */
+    advanceActors() {
       const S = this.S,
         m = this.memory;
-      this.camera(camera, width, height);
-      S.OriginalContact.tickActorRecovery(this.actorRecovery, (sprite) =>
-        [...this.actors.values()].find((actor) => actor.sprite === sprite),
+      const ordered = [...this.actors.values()].sort(
+        (a, b) => b.sprite - a.sprite,
       );
-      for (const actor of this.actors.values()) {
-        if (actor.pickupTicks !== undefined && --actor.pickupTicks <= 0) {
-          this.remove(actor.slot);
-          continue;
-        }
-        // A grabbed car keeps its native towing assist for this visible trip.
-        // Advance the original motion/route controller at each extra clock,
-        // rather than scaling displacement past a pending turn or junction.
-        for (let clock = 0; clock < (actor.towBoost || 1); clock++) {
-          // Category0 scenery has a descriptor clock but no route controller.
-          // Categories1/3/8 share CA4C routing; paired NPC handoffs remain
-          // a separate controller from this movement/animation adapter.
+      const live = ordered;
+      // Towing is an explicit native assist. Extra car clocks still use
+      // controller then motion, including turns, rather than scaled XY.
+      const clocks = Math.max(1, ...live.map((actor) => actor.towBoost || 1));
+      for (let clock = 0; clock < clocks; clock++) {
+        for (const actor of live) {
           if (
-            [1, 3, 8].includes(m.readTypeByte(0x623f + actor.kind)) &&
-            S.OriginalActors.trafficRouteDue(actor)
+            clock >= (actor.towBoost || 1) ||
+            this.actors.get(actor.slot) !== actor
           )
+            continue;
+          const category = m.readTypeByte(0x623f + actor.kind);
+          const passive = S.OriginalActors.passiveActorStep(actor, category);
+          // remove() returns the original population budget and requests
+          // replacement. Passive category6/9 have the type16 budget flag.
+          if (passive === "retire") {
+            this.remove(actor.slot);
+            continue;
+          }
+          if (passive === "viewport") {
+            this.sync(actor);
+            S.OriginalActorSpawning.processRecord(actor.slot, m, {
+              retire: (slot) => this.retire(slot),
+              // This actor's registry entry is active. A pending entry is
+              // handled by the ordinary visibility scanner, not respawned.
+              spawn: () => {},
+            });
+            if (this.actors.get(actor.slot) !== actor) continue;
+          }
+          // Category0 scenery has a descriptor clock but no route controller.
+          // Categories1/3/8 share CA4C routing. Categories3/8 also signal
+          // their original partner poses before advancing the sender.
+          if (category === 7 && S.OriginalActors.gateRouteDue(actor, m))
             this.route(actor);
+          if (
+            [1, 3, 8].includes(category) &&
+            S.OriginalActors.trafficRouteDue(actor)
+          ) {
+            if (category === 3) {
+              const partner = S.OriginalActors.signalRoutePartner(
+                actor,
+                m,
+                (slot) => this.actors.get(slot),
+              );
+              if (partner) this.sync(partner);
+            }
+            if (category === 8) {
+              const partner = S.OriginalActors.updatePairedRoute(
+                actor,
+                m,
+                (slot) => this.actors.get(slot),
+                () => this.route(actor),
+              );
+              if (partner) this.sync(partner);
+            } else this.route(actor);
+          }
+          this.sync(actor);
+        }
+        for (const actor of live) {
+          if (
+            clock >= (actor.towBoost || 1) ||
+            this.actors.get(actor.slot) !== actor
+          )
+            continue;
           const motion = S.OriginalActors.stepMotionActor(actor, m);
           actor.x = word(actor.x + motion.dx);
           actor.y = word(actor.y + motion.dy);
@@ -321,6 +390,15 @@
           this.sync(actor);
         }
       }
+    }
+    frame(camera, width, height) {
+      const S = this.S,
+        m = this.memory;
+      this.camera(camera, width, height);
+      S.OriginalContact.tickActorRecovery(this.actorRecovery, (sprite) =>
+        [...this.actors.values()].find((actor) => actor.sprite === sprite),
+      );
+      this.advanceActors();
       if (this.population.total) {
         S.OriginalPopulation.spawnOne(
           this.population,
@@ -374,7 +452,6 @@
                 const flags = m.readTypeByte(0x6438 + actor.kind);
                 actor.columns = m.readTypeByte(0x5c96 + actor.kind);
                 actor.palette = (flags >> 4) & 3;
-                actor.stopOnLoop = !!(flags & 4);
                 this.actors.set(s, actor);
                 this.sync(actor);
               }

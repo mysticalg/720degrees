@@ -13,6 +13,7 @@ data={'source':'Original actor type, object/coordinate, motion and fixed tables'
  'motion':enc(0x23ff8,0x408),'fixed':enc(0xfd80,0x50),'fixedBase':0xfd80}
 def tb(a):return r[(0x28000+a-0x4000) if a<0x6000 else (0x20000+a-0x6000)]
 def tw(a):return tb(a)|(tb(a+1)<<8)
+data['gateInitial']=[{'kind':tb(0x70e4+i),'packed':tw(0x70e8+i*2)} for i in range(4)]
 data['trafficInitial']={}
 data['cityInitial']={}
 for difficulty in range(1,11):

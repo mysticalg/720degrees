@@ -50,7 +50,51 @@
       source: "ROM6B84 threshold scaling /6E38 medal /67D8 cash",
     };
   }
-  const api = { thresholds, medal, cash, result };
+  /** Bank3800:5EA8-5F34. These clocks cover the cash-bonus section;
+   * preceding alpha-message/scene presentation is supplied by the browser.
+   */
+  function beginCashTally(value, advancedSkill = false, settings = 0) {
+    return {
+      cash: word(value),
+      phase: "lead",
+      total: 0,
+      delay: 120 + (!advancedSkill && (settings & 48) !== 16 ? 120 : 0),
+    };
+  }
+  function tickCashTally(state) {
+    const awards = [];
+    if (state.phase === "done") return awards;
+    if (state.phase === "lead" || state.phase === "tail") {
+      if (--state.delay > 0) return awards;
+      if (state.phase === "tail" || signed(state.cash) <= 0)
+        state.phase = "done";
+      else state.phase = "cash";
+      return awards;
+    }
+    if (!state.cash) {
+      state.phase = "tail";
+      state.delay = 60;
+      return awards;
+    }
+    //5EF6 always consumes one dollar. Only if the remainder is signed>10
+    //does5F0A consume another ten. Preserve the two distinct EF24 awards.
+    state.cash = word(state.cash - 1);
+    awards.push(10);
+    if (signed(state.cash) > 10) {
+      state.cash = word(state.cash - 10);
+      awards.push(100);
+    }
+    state.total += awards.reduce((sum, award) => sum + award, 0);
+    return awards;
+  }
+  const api = {
+    thresholds,
+    medal,
+    cash,
+    result,
+    beginCashTally,
+    tickCashTally,
+  };
   if (typeof module !== "undefined") module.exports = api;
   else window.Skate720.OriginalEventResult = api;
 })();

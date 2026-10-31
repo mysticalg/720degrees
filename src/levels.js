@@ -157,12 +157,11 @@
       }
       return cache.get(name);
     },
-    course(kind, round, experienced = false) {
+    course(kind, round, experienced = false, originalClass = null) {
       // The original class-to-map directory contains six variants for ten classes.
-      const difficulty = Math.min(
-        10,
-        1 + (round - 1) * 2 + (experienced ? 3 : 0),
-      );
+      const difficulty =
+        originalClass ??
+        Math.min(10, 1 + (round - 1) * 2 + (experienced ? 3 : 0));
       const variant = data.classVariants[difficulty];
       return this.get(kind === "ramp" ? "ramp-1" : `${kind}-${variant + 1}`);
     },

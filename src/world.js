@@ -25,12 +25,11 @@
     // Solid actor contact uses recovered masks in the game contact stage.
     obstacles: [],
   });
-  S.makeEvent = (kind, round, experienced = false) => {
-    const level = S.Levels.course(kind, round, experienced);
-    const difficulty = Math.min(
-      10,
-      1 + (round - 1) * 2 + (experienced ? 3 : 0),
-    );
+  S.makeEvent = (kind, round, experienced = false, originalClass = null) => {
+    const level = S.Levels.course(kind, round, experienced, originalClass);
+    const difficulty =
+      originalClass ??
+      Math.min(10, 1 + (round - 1) * 2 + (experienced ? 3 : 0));
     const course = {
       kind,
       round,
@@ -66,7 +65,12 @@
     });
     if (kind === "slalom") {
       const variant = Number(level.name.split("-").at(-1)) - 1;
-      course.actors = S.SLALOM_DATA[variant].map((actor) => ({ ...actor }));
+      course.actors = S.SLALOM_DATA[variant].map((actor) => ({
+        ...actor,
+        // B5EE-B5F2's allocated-sprite route state, before C618 setup.
+        routeFlags: 4,
+        duration: 0,
+      }));
       // The checkpoints now coincide with the original placed flags rather
       // than ten guessed points spread uniformly down the map.
       course.gates = course.actors

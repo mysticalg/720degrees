@@ -108,7 +108,8 @@
           !game.practice &&
           !game.leaderboardAssisted &&
           game.score > 0 &&
-          ["gameover", "victory"].includes(game.mode);
+          ["gameover", "victory"].includes(game.mode) &&
+          (!game.cashTally || game.cashTally.phase === "done");
         enter.hidden = !eligible || !!run?.saved;
         if (!eligible) {
           form.hidden = true;

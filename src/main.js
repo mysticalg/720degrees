@@ -49,20 +49,35 @@
     leaderboard.sync();
     menu.hidden = game.mode !== "title";
     pause.hidden = !game.paused;
-    result.hidden = !["result", "gameover", "victory"].includes(game.mode);
-    if (game.mode === "result") {
+    result.hidden = !["result", "continue", "gameover", "victory"].includes(
+      game.mode,
+    );
+    button.disabled = false;
+    document.querySelector("#end-run").hidden = game.mode !== "continue";
+    if (game.mode === "continue") {
+      document.querySelector("#result-title").textContent = "CONTINUE?";
+      document.querySelector("#result-copy").textContent =
+        `THE BEES GOT YOU\n${game.beeContinue.seconds}\nSCORE ${S.format(game.score)}`;
+      button.textContent = "CONTINUE SKATING";
+      button.disabled = game.beeContinue.seconds > 9;
+    } else if (game.mode === "result") {
       const r = game.result;
       document.querySelector("#result-title").textContent =
         r.medal === "PARTICIPATION" ? "KEEP PRACTISING" : `${r.medal} MEDAL!`;
       document.querySelector("#result-copy").textContent =
-        `${r.kind.toUpperCase()} PARK · CLASS ${game.event.round}\n${S.format(r.points)} points · $${r.cash} prize\n${S.format(r.bonus)} points added to total`;
+        `${r.kind.toUpperCase()} PARK · CLASS ${game.event.difficulty}\n${S.format(r.points)} points · $${r.cash} prize\n${S.format(r.bonus)} points added to total`;
       button.textContent = "BACK TO SKATE CITY";
     } else if (game.mode === "gameover" || game.mode === "victory") {
       document.querySelector("#result-title").textContent =
         game.mode === "victory" ? "YOU OWN SKATE CITY!" : "SKATE OR DIE.";
       document.querySelector("#result-copy").textContent =
         `${game.mode === "victory" ? "All sixteen events completed." : "The bees caught up with you."}\nFINAL SCORE ${S.format(game.score)}\nBEST ${S.format(game.highScore)}`;
-      button.textContent = "SKATE AGAIN";
+      const tallying = game.cashTally && game.cashTally.phase !== "done";
+      if (tallying)
+        document.querySelector("#result-copy").textContent =
+          `CASH BONUS\nCASH $${game.cash} · +${S.format(game.cashTally.total)} POINTS\nSCORE ${S.format(game.score)}`;
+      button.textContent = tallying ? "COUNTING CASH…" : "SKATE AGAIN";
+      button.disabled = !!tallying;
     }
   }
   game.changed = syncScreen;
@@ -145,7 +160,11 @@
       closeMedals();
       return;
     }
-    if (!["city", "event"].includes(game.mode)) return;
+    if (
+      !["city", "event", "continue"].includes(game.mode) &&
+      !(game.cashTally && game.cashTally.phase !== "done")
+    )
+      return;
     previousFrame = null;
     accumulator = 0;
     game.paused = !game.paused;
@@ -198,6 +217,12 @@
   };
   document.querySelector("#sound").onclick = toggleSound;
   function syncMusic() {
+    const soundtrack = document.querySelector("#soundtrack-toggle");
+    soundtrack.textContent = `SOUNDTRACK: ${audio.soundtrack === "original" ? "ORIGINAL" : "SURF ROCK"}`;
+    soundtrack.setAttribute(
+      "aria-label",
+      `Switch to ${audio.soundtrack === "original" ? "Surf Rock" : "Original"} soundtrack`,
+    );
     const muted = audio.musicMuted;
     const control = document.querySelector("#music-mute");
     control.textContent = muted ? "MUSIC OFF" : "MUSIC ON";
@@ -208,6 +233,10 @@
     document.querySelector("#music-level").value =
       `${Math.round(audio.musicVolume * 100)}%`;
   }
+  document.querySelector("#soundtrack-toggle").onclick = () => {
+    audio.setSoundtrack(audio.soundtrack === "original" ? "surf" : "original");
+    syncMusic();
+  };
   document.querySelector("#music-mute").onclick = () => {
     audio.toggleMusic();
     syncMusic();
@@ -220,15 +249,18 @@
   document.querySelector("#fullscreen").onclick = fullscreen;
   button.onclick = () => {
     if (game.mode === "result") game.continueAfterEvent();
+    else if (game.mode === "continue") game.acceptBeeContinue();
     else start(game.practice);
     canvas.focus();
   };
+  document.querySelector("#end-run").onclick = () => game.finishBeeRun();
   // Suspend when changing tabs so the player cannot lose to an invisible timer.
   document.addEventListener("visibilitychange", () => {
     if (
       document.hidden &&
       !game.paused &&
-      ["city", "event"].includes(game.mode)
+      (["city", "event", "continue"].includes(game.mode) ||
+        (game.cashTally && game.cashTally.phase !== "done"))
     )
       togglePause();
   });
@@ -246,6 +278,17 @@
         input.pressed("jump")
       )
         closeMedals();
+      return;
+    }
+    if (game.mode === "continue") {
+      if (game.paused && input.pressed("pause")) togglePause();
+      else if (
+        !game.paused &&
+        (input.pressed("enter") ||
+          input.pressed("jump") ||
+          input.pressed("pause"))
+      )
+        button.click();
       return;
     }
     if (input.pressed("pause")) togglePause();
@@ -297,6 +340,7 @@
         accumulator -= S.CONFIG.step;
       }
     }
+    audio.syncMusic(game);
     audio.foley.update(game, delta);
     const padLabel = input.padName
       ? `${input.padName} · ${input.controlMode.toUpperCase()} MODE`
@@ -322,6 +366,7 @@
     handleActions();
     const steps = Math.max(1, Math.round(ms / (1000 / 60)));
     for (let i = 0; i < steps; i++) game.update(S.CONFIG.step);
+    audio.syncMusic(game);
     renderer.draw(game);
   };
   window.render_game_to_text = () =>

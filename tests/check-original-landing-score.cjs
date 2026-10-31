@@ -65,3 +65,50 @@ for (const kind of [2, 4])
 console.log(
   "PASS original landing score: spin signs, target modifier, repeated-trick exhaustion/refill and80 frame/rotation boundaries",
 );
+
+assert.deepEqual(Array.from(d.resetQuota), [2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+for (const kind of [0, 1]) {
+  const plain = score.award({ ...base, kind }, score.createState(), d);
+  const spin = score.award(
+    { ...base, kind, rotation: 288 },
+    score.createState(),
+    d,
+  );
+  assert(
+    spin.points > plain.points,
+    "City/slalom spin must affect original score",
+  );
+}
+//Two distinct, positive first-use signatures at class1 replenish all entries.
+const variety = score.createState(1, d);
+variety.repeats[7] = 0;
+score.award({ ...base, kind: 0, frames: 32, gapCount: 0 }, variety, d);
+assert.equal(variety.resetQuota, 1);
+assert.equal(variety.repeats[7], 0);
+score.award(
+  { ...base, kind: 0, frames: 32, gapCount: 0, rotation: 144 },
+  variety,
+  d,
+);
+assert.equal(variety.resetQuota, 2);
+assert.equal(variety.repeats[7], 3);
+assert.equal(variety.repeats[2], 2); //Decrement occurs AFTER the reset.
+const q = variety.resetQuota;
+variety.repeats[7] = 0;
+score.resetRepeats(variety, 2, 1, d);
+assert.equal(variety.repeats[7], 2);
+assert.equal(variety.resetQuota, q);
+variety.fatigue = 128;
+for (let frame = 1; frame < 32; frame++) score.tickFatigue(variety, frame);
+assert.equal(variety.fatigue, 128);
+score.tickFatigue(variety, 32);
+assert.equal(variety.fatigue, 64);
+score.tickFatigue(variety, 64);
+assert.equal(variety.fatigue, 32);
+const rollover = score.createState(1, d);
+rollover.landings = 255;
+score.award({ ...base }, rollover, d);
+assert.equal(rollover.landings, 0);
+console.log(
+  "PASS city/slalom spin-sensitive scores, original4649 quotas/reset ordering, long-air partial recovery and32-frame fatigue decay",
+);

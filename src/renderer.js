@@ -587,7 +587,7 @@
         if (S.distance(game.player, gate) < 170) {
           this.diamond(gate.x, gate.y, 35, 17, "#fff53022", "#fff533");
           this.text(
-            `CLASS ${Math.min(10, 1 + game.clears[gate.kind] * 2)}`,
+            `CLASS ${game.practice ? Math.min(10, 1 + game.clears[gate.kind] * 2 + (game.experienced ? 3 : 0)) : S.OriginalParks.courseClass(game.parkState, S.OriginalParks.kinds.indexOf(gate.kind))}`,
             gate.x,
             gate.y - 48,
             "#fff54c",
@@ -1071,7 +1071,7 @@
       // verified default bee loop is separate and uses four palette1 columns.
       const effects = S.OriginalEffects;
       const entry = effects.chasingBeeEntry(
-        Math.floor((time - (bees.born || 0)) * 60),
+        bees.animationFrames ?? Math.floor((time - (bees.born || 0)) * 60),
         bees.direction || 0,
         bees.enraged || false,
         bees.appearance ?? 4,

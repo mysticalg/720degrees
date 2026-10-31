@@ -3,7 +3,7 @@ window.Skate720 = {};
 (() => {
   const S = window.Skate720;
   S.CONFIG = Object.freeze({
-    version: "0.98",
+    version: "0.99",
     width: 512,
     height: 384,
     step: 1 / 60,
@@ -20,8 +20,6 @@ window.Skate720 = {};
     // Small native downhill push per fresh press, above the flat kick envelope.
     downhillKickImpulse: 48,
     downhillKickLimit: 2400,
-    cityTime: 45,
-    beeGrace: 18,
     rounds: 4,
   });
   S.PARKS = ["ramp", "downhill", "jump", "slalom"];

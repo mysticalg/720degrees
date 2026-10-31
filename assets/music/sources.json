@@ -1,0 +1,148 @@
+{
+  "tracklist_source": "https://downloads.khinsider.com/game-soundtracks/album/720-degrees-atari-system-2-arcade",
+  "tracks": [
+    {
+      "index": 1,
+      "title": "Credit",
+      "selected_file": "01-credit.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 21.2,
+      "sha256": "cffdfe4025b0233802da57b59eaea8494874e30f089279266c9535a92b005873",
+      "rom_command": "0x24",
+      "suno_url": "https://suno.com/song/9d9b5fa7-d9f6-4cc2-94a2-de106adc9f42"
+    },
+    {
+      "index": 2,
+      "title": "Select",
+      "selected_file": "02-select.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 63.2,
+      "sha256": "5662ccddaba1c27fc50abcbb531f02606531e3a1c9b93cbd415db2244567040f",
+      "rom_command": "0x25",
+      "suno_url": "https://suno.com/song/c5e527f6-05a6-4bb0-b5eb-6f264542fbe8"
+    },
+    {
+      "index": 3,
+      "title": "Slalom Park",
+      "selected_file": "03-slalom-park.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 59.839979,
+      "sha256": "64122036f8087f6d9afc004a4285962d5eff4d1241b19320cb948c465049e2ff",
+      "rom_command": "0x36"
+    },
+    {
+      "index": 4,
+      "title": "Downhill Park",
+      "selected_file": "04-downhill-park.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 109.599979,
+      "sha256": "85eb3c04c9dc66ad6e973562357ee59e09327e2ba55e0289e8234df155aaa268",
+      "rom_command": "0x37"
+    },
+    {
+      "index": 5,
+      "title": "Ramp Park",
+      "selected_file": "05-ramp-park.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 62.439979,
+      "sha256": "84dbfddfef2062a2ba307b294223dad08006d03cbdb8deb62ebe5d1625755681",
+      "rom_command": "0x38"
+    },
+    {
+      "index": 6,
+      "title": "Jump Park",
+      "selected_file": "06-jump-park.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 98.519979,
+      "sha256": "5bc41cd9638e9a0d060a45e3f5d199abc2e3004bad946201b65de93e8bdf9bc8",
+      "rom_command": "0x39"
+    },
+    {
+      "index": 7,
+      "title": "Skate City 1",
+      "selected_file": "07-skate-city-1.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 109.04,
+      "sha256": "3b2b7627c85aeeaad0fca742315203c76be8521513aedebc8dfe6325531ac54f",
+      "rom_command": "0x3a",
+      "suno_url": "https://suno.com/song/83b9e2b7-1c5b-4ba3-85b9-555717ab6ac1"
+    },
+    {
+      "index": 8,
+      "title": "Skate City 2",
+      "selected_file": "08-skate-city-2.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 107.32,
+      "sha256": "5254475c0085c5594574647a9ed59c567ac15baf5279658d50f1be8453b0cf68",
+      "rom_command": "0x3b",
+      "suno_url": "https://suno.com/song/076deb72-faae-4a84-a916-24acfbff0aca"
+    },
+    {
+      "index": 9,
+      "title": "Skate City 3",
+      "selected_file": "09-skate-city-3.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 77.6,
+      "sha256": "ab272c0afb6beeed9a4cb296fc97a1863238bb9b2c2bc80b229207637752b1cd",
+      "rom_command": "0x3c",
+      "suno_url": "https://suno.com/song/53b336ea-0a7c-4fba-b397-dc63475e8485"
+    },
+    {
+      "index": 10,
+      "title": "Skate City 4",
+      "selected_file": "10-skate-city-4.mp3",
+      "selected_kind": "recovered existing Suno surf-rock cover",
+      "duration": 59.28,
+      "sha256": "ac962c2030717a6b42b6030a28db9acf290457a6796653a9808ac28fe34faf20",
+      "rom_command": "0x3d",
+      "suno_url": "https://suno.com/song/69b137ad-f630-475f-a7f1-5c62d490596c"
+    },
+    {
+      "index": 11,
+      "title": "Skate City 5",
+      "selected_file": "11-skate-city-5.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 112.8,
+      "sha256": "5ed7087a4bf2ca09a6bacf7e91aca7c20d65d7b68105d2cc7c4b5a01ad87bb37",
+      "rom_command": "0x3e",
+      "suno_url": "https://suno.com/song/2f25e9da-b836-4cac-b787-0db4af565c68"
+    },
+    {
+      "index": 12,
+      "title": "Skate City 6",
+      "selected_file": "12-skate-city-6.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 90.959979,
+      "sha256": "7b38245db66888afc124b6895a3aacbff8cb4c76b6e0411e413ac8359a8e3fd0",
+      "rom_command": "0x3f"
+    },
+    {
+      "index": 13,
+      "title": "Skate City 7",
+      "selected_file": "13-skate-city-7.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 171.319979,
+      "sha256": "4eee2f7bab1f23dadcd70b998bfc972b7d3c2bacbe3895db7f0c4e5c031c5667",
+      "rom_command": "0x40"
+    },
+    {
+      "index": 14,
+      "title": "Skate City 8",
+      "selected_file": "14-skate-city-8.mp3",
+      "selected_kind": "existing user-provided cover",
+      "duration": 97.839979,
+      "sha256": "6b001e786b1ba6d89003e6089ece75d3815b0684742ab51e56f400935c95b37c",
+      "rom_command": "0x41"
+    },
+    {
+      "index": 15,
+      "title": "High Score Entry",
+      "selected_file": "15-high-score-entry.mp3",
+      "selected_kind": "new Suno surf-rock cover",
+      "duration": 97.2,
+      "sha256": "44a0fe627bfe64c0106bd227cd9655d31cb6f9b32fcf1c7f96e357decacaa568",
+      "rom_command": "0x26",
+      "suno_url": "https://suno.com/song/9a425c74-e9d4-4c4a-89e0-b4702df8cbb0"
+    }
+  ]
+}

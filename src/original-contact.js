@@ -215,6 +215,41 @@
       ? [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000][kind - 72]
       : 0;
   }
+  /** A6B2-A6D8: turn a point pickup into its collected sequence. B602's
+   * column reservation is a renderer adapter; the live controller fields
+   * here feed CB64/CC1C's original128-tick retirement path.
+   */
+  function collectPointPickup(actor) {
+    actor.extraPointer = 0;
+    actor.flags = ((actor.flags || 0) | 0x60) & 255;
+    actor.routeFlags = ((actor.routeFlags || 0) | 8) & 255;
+    actor.countdown = actor.rate = 7;
+    actor.duration = 128;
+  }
+  /** A784-A862: slalom response10 uses AD70's geometric side result;
+   * kinds31..33 always take the successful branch. Response11 (the pole)
+   * always advances both directories by2 and turns its companion into24.
+   * A pass advances by4, changes the companion to23, adds6 (cap128) to
+   * the race counter and sets0FA2 bit04. No immediate score is awarded.
+   */
+  function slalomContact(actor, companion, state, side, pole = false) {
+    const passed = !pole && ((actor.kind >= 31 && actor.kind <= 33) || !side);
+    const step = passed ? 4 : 2;
+    actor.pointer = word(actor.pointer + step);
+    actor.flags = ((actor.flags || 0) | 24) & 255;
+    actor.duration = 16;
+    companion.pointer = word(companion.pointer + step);
+    companion.kind = passed ? 23 : 24;
+    companion.flags = ((companion.flags || 0) | 24) & 255;
+    companion.duration = 15;
+    if (passed) {
+      let counter = word((state.counter || 0) + 6);
+      if (signed(counter) > 128) counter = 128;
+      state.counter = counter;
+      state.statusFlags = ((state.statusFlags || 0) | 4) & 255;
+    }
+    return passed;
+  }
   /** D1B8-D1C4 and A64C-A67E: diminishing jump-over pedestrian reward.
    * FCFA supplies the score words. Repeat kinds reduce the NEXT award.
    */
@@ -445,6 +480,8 @@
     pedestrianKnockdown,
     riderCash,
     pickupPoints,
+    collectPointPickup,
+    slalomContact,
     airbornePedestrianReward,
     knockDownActor,
     saveActorMotion,
