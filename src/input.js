@@ -190,12 +190,17 @@
         this.actions.enter ||= pressed(3);
         this.actions.pause ||= pressed(9);
         this.actions.map ||= pressed(8);
-        this.throttle = Math.max(
-          pressed(0) ? 1 : 0,
-          pad.buttons[7]?.value || 0,
-        );
-        this.actions.kick ||= this.throttle > 0.06;
-        this.brake = pad.buttons[6]?.value || 0;
+        this.throttle = pressed(0) ? 1 : 0;
+        // LT/RT are grounded turn tricks. Hysteresis prevents analog jitter
+        // near the threshold from becoming unintended double taps.
+        const leftTrigger = pad.buttons[6]?.value ?? Number(pressed(6));
+        const rightTrigger = pad.buttons[7]?.value ?? Number(pressed(7));
+        this.triggerLeftHeld =
+          leftTrigger > (this.triggerLeftHeld ? 0.25 : 0.55);
+        this.triggerRightHeld =
+          rightTrigger > (this.triggerRightHeld ? 0.25 : 0.55);
+        this.actions.pivotLeft = this.triggerLeftHeld;
+        this.actions.pivotRight = this.triggerRightHeld;
         this.padSpin = (pressed(5) ? 1 : 0) - (pressed(4) ? 1 : 0);
         // The right stick is an additional proportional spin control in either mode.
         const right = pad.axes[2] || 0;

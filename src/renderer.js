@@ -50,6 +50,14 @@
         context.drawImage(this.assets["motion-indices"], 0, 0);
         this.motionIndices = context.getImageData(0, 0, 2048, 1024).data;
         this.equipmentTiles = new Map();
+        for (const key of [
+          "city-background",
+          "motion-tiles",
+          "motion-tiles-1",
+          "motion-tiles-2",
+          "motion-tiles-3",
+        ])
+          this.primeImage(this.assets[key]);
         this.ready = true;
         this.pavement = this.ctx.createPattern(this.assets.pavement, "repeat");
       });
@@ -418,9 +426,38 @@
           this.ctx.drawImage(this.imageRegion(image, x, y, 256, true), x, y);
     }
     /** Bounded LRU caches: at most 8MB of world tiles and 1MB of sprite pixels.
-     * Cropping uses a CPU-backed staging canvas; large source images never
-     * enter the frequently redrawn main canvas in Facebook's embedded browser.
+     * GPU-backed image bitmaps avoid synchronous source-canvas transfers.
+     * The fallback retains CPU staging; main draws always use small regions.
      */
+    /** Pay the one-time image upload while scenery loads, not mid-run. */
+    primeImage(image) {
+      if (typeof OffscreenCanvas !== "function" || !image?.complete) return;
+      this.primedImages ||= new WeakSet();
+      if (this.primedImages.has(image)) return;
+      try {
+        const canvas = new OffscreenCanvas(1, 1);
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, 1, 1, 0, 0, 1, 1);
+        context.getImageData(0, 0, 1, 1); // One-pixel fence completes the upload.
+        this.primedImages.add(image);
+      } catch {
+        // Optional upload warm-up must not block file:// or restricted canvases.
+      }
+    }
+    textureCanvas(width, height) {
+      if (typeof OffscreenCanvas === "function")
+        return new OffscreenCanvas(width, height);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      return canvas;
+    }
+    freezeTexture(canvas) {
+      // ImageBitmap avoids Facebook's synchronous canvas-source uploads.
+      return canvas.transferToImageBitmap
+        ? canvas.transferToImageBitmap()
+        : canvas;
+    }
     imageRegion(image, x, y, size, opaque = false) {
       if (x < 0 || y < 0 || x >= image.width || y >= image.height) {
         if (!this.emptyImageRegion) {
@@ -445,11 +482,15 @@
         cache.set(key, tile);
         return tile;
       }
-      tile = document.createElement("canvas");
-      tile.width = Math.min(size, image.width - x);
-      tile.height = Math.min(size, image.height - y);
+      tile = this.textureCanvas(
+        Math.min(size, image.width - x),
+        Math.min(size, image.height - y),
+      );
       tile
-        .getContext("2d", { alpha: !opaque, willReadFrequently: true })
+        .getContext("2d", {
+          alpha: !opaque,
+          willReadFrequently: !tile.transferToImageBitmap,
+        })
         .drawImage(
           image,
           x,
@@ -461,8 +502,12 @@
           tile.width,
           tile.height,
         );
-      if (cache.size >= (opaque ? 32 : 1024))
-        cache.delete(cache.keys().next().value);
+      tile = this.freezeTexture(tile);
+      if (cache.size >= (opaque ? 32 : 1024)) {
+        const oldest = cache.keys().next().value;
+        cache.get(oldest).close?.();
+        cache.delete(oldest);
+      }
       cache.set(key, tile);
       return tile;
     }
@@ -543,6 +588,7 @@
     /** One board-directory selection shared by drawing and contact geometry. */
     boardEntry(p, profile) {
       if (p.bail) return 0x50fa;
+      if (p.groundPivotPose) return p.groundPivotPose.board;
       if (p.curbGrindPose) return p.curbGrindPose.board;
       if (p.rampAnimation?.currentBoard !== undefined)
         return p.rampAnimation.currentBoard;
@@ -739,8 +785,8 @@
           ? p.bail.pointer
           : p.rampAnimation
             ? p.rampAnimation.currentBody
-            : p.curbGrindPose || p.skidPose
-              ? (p.curbGrindPose || p.skidPose).body
+            : p.groundPivotPose || p.curbGrindPose || p.skidPose
+              ? (p.groundPivotPose || p.curbGrindPose || p.skidPose).body
               : jumpPhase === null && !kicking
                 ? groundPose.body
                 : null,
@@ -885,9 +931,10 @@
     softShadowTile(code) {
       this.softShadowTiles ||= new Map();
       if (this.softShadowTiles.has(code)) return this.softShadowTiles.get(code);
-      const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = 20;
-      const context = canvas.getContext("2d");
+      const canvas = this.textureCanvas(20, 20);
+      const context = canvas.getContext("2d", {
+        willReadFrequently: !canvas.transferToImageBitmap,
+      });
       context.imageSmoothingEnabled = false;
       context.filter = "blur(0.45px)";
       context.drawImage(
@@ -902,10 +949,14 @@
         16,
       );
       // Bound the cache even if a future animation adds many distinct tiles.
-      if (this.softShadowTiles.size >= 256)
-        this.softShadowTiles.delete(this.softShadowTiles.keys().next().value);
-      this.softShadowTiles.set(code, canvas);
-      return canvas;
+      if (this.softShadowTiles.size >= 256) {
+        const oldest = this.softShadowTiles.keys().next().value;
+        this.softShadowTiles.get(oldest).close?.();
+        this.softShadowTiles.delete(oldest);
+      }
+      const tile = this.freezeTexture(canvas);
+      this.softShadowTiles.set(code, tile);
+      return tile;
     }
     /** Recolour original indexed pixels using recovered palette-RAM words.
      * Cached16px tiles avoid copying/repainting a full atlas during play.
@@ -914,9 +965,10 @@
       const key =
         code + ":" + palette.map((color) => color.join(",")).join(";");
       if (this.equipmentTiles.has(key)) return this.equipmentTiles.get(key);
-      const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = 16;
-      const context = canvas.getContext("2d"),
+      const canvas = this.textureCanvas(16, 16);
+      const context = canvas.getContext("2d", {
+          willReadFrequently: !canvas.transferToImageBitmap,
+        }),
         image = context.createImageData(16, 16);
       const left = (code % 128) * 16,
         top = Math.floor(code / 128) * 16;
@@ -928,8 +980,9 @@
           image.data.set([...palette[pen], 255], offset);
         }
       context.putImageData(image, 0, 0);
-      this.equipmentTiles.set(key, canvas);
-      return canvas;
+      const tile = this.freezeTexture(canvas);
+      this.equipmentTiles.set(key, tile);
+      return tile;
     }
     course(game, e) {
       const c = this.ctx,

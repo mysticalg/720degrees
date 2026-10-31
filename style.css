@@ -436,3 +436,38 @@ footer small {
 #medals-panel {
   z-index: 4;
 }
+
+.brand {
+  white-space: nowrap;
+}
+.build-version {
+  display: inline-block;
+  margin-left: 8px;
+  font:
+    700 11px/1 Consolas,
+    monospace;
+  letter-spacing: 0;
+  vertical-align: middle;
+  color: var(--muted);
+}
+@media (max-width: 450px) {
+  header {
+    gap: 8px;
+  }
+  .brand {
+    font-size: 28px;
+    letter-spacing: -3px;
+  }
+  .build-version {
+    font-size: 9px;
+    margin-left: 5px;
+  }
+  nav {
+    gap: 3px;
+  }
+  nav button {
+    font-size: 8px;
+    padding: 7px 4px;
+    letter-spacing: 0.4px;
+  }
+}

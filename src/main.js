@@ -260,6 +260,8 @@
     else if (!game.paused && ["city", "event"].includes(game.mode)) {
       if (input.pressed("map") && game.mode === "city") game.showMap();
       if (input.pressed("jump")) game.jump();
+      else if (input.pressed("pivotLeft")) game.requestGroundPivot(-1);
+      else if (input.pressed("pivotRight")) game.requestGroundPivot(1);
       if (input.pressed("enter")) game.interact();
     }
   }

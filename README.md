@@ -1,3 +1,11 @@
+## v0.85: trigger tricks, audible free wheels and Facebook drawing
+
+- Visible v0.85 label beside the title, with matching package/config/cache markers.
+- LT/RT now request opposite grounded180-degree turns; a second press of the same trigger within0.32s extends the turn to a360-degree skid. Facing rotates while travel stays independent; a180 finishes fakie, a360 returns to the initial stance. Original sharp-turn body/board frames supply poses. A remains kick; the old RT throttle/LT brake mapping is replaced. Shoulder/right-stick aerial spins remain.
+- Airborne wheel loops now rise to an audible mix faster (roughly5dB higher sustained gain), including stationary ordinary jumps. Landing/pause/mute still fades or stops them. Actual A53/Facebook playback state was verified during a normal jump.
+- Offscreen GPU textures are frozen as small ImageBitmaps with bounded region caches and explicit eviction close. One-time city/palette uploads happen while loading; course images prime on load. Canvas fallback remains. Optional8px material hints from original city art remove runtime sound-material canvas readback. No scenery/sprite pixel changes:18 browser comparisons against v0.84 were identical.
+- Actual SM-A536B in Facebook: old cold-region drawing produced100-240ms stalls. Fresh v0.85 USB-local test,16seconds including two regions, measured113-120FPS after startup,99th-percentile16.7ms frame,maximum41.7ms,maximum drawing15.3ms. This is a measured session, not a guarantee against browser/OS scheduling. Earlier SM-A528B measurements are a different connected phone.
+
 ## Build84: skate sound variety, curb grinds and fence plants
 
 - 95 bundled skate keys now include surface-specific slow/fast push samples, ollies, landings, deck/body bail variants and two water splashes. Coping uses the user's selected THPS media537994694 (`SFX_Skateboard_Metal_Grind_Pole_4`); city curbs use the concrete truck grind. Cues read the material at the event position, and suppress false landing sounds on a bail. Older imported packs still override their legacy action names.

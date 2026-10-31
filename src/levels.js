@@ -56,6 +56,7 @@
           // Build static contours during scenery loading, before movement.
           S.TerrainCollision.contours(this);
           S.TerrainCollision.contours(this, true);
+          if (this.kind !== "city") S.app?.renderer.primeImage?.(this.image);
           this.ready = true;
           resolve(this);
         };

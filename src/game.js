@@ -442,6 +442,7 @@
     /** Jump velocity sets height; horizontal momentum is retained in the air. */
     jump() {
       const p = this.player;
+      p.groundPivot = p.groundPivotPose = null;
       p.fenceJumpWindow = S.CONFIG.fencePlantWindow;
       if (
         p.fencePlantAir &&
@@ -1510,6 +1511,7 @@
     crash(reason) {
       const p = this.player;
       p.skid = p.skidPose = null;
+      p.groundPivot = p.groundPivotPose = null;
       if (p.curbGrind) this.releaseCurbGrind();
       if (p.vehicleTow) this.releaseVehicleTow();
       if (p.invulnerable > 0 || p.fallen > 0) return;
@@ -1882,6 +1884,105 @@
         return;
       }
     }
+    /** Native trigger turns rotate facing while wheel momentum stays separate. */
+    requestGroundPivot(side) {
+      const p = this.player;
+      if (
+        p.air ||
+        p.bail ||
+        p.fallen > 0 ||
+        p.jumpSequence ||
+        p.jumpRecovery ||
+        p.vehicleTow ||
+        p.curbGrind ||
+        p.halfpipeWall ||
+        p.halfpipeFlight ||
+        p.copingReturn
+      )
+        return false;
+      const last = p.lastTriggerPivot;
+      const double =
+        last &&
+        last.side === side &&
+        !last.doubleUsed &&
+        this.elapsed - last.time <= 0.32;
+      if (p.groundPivot) {
+        if (!double) return false;
+        p.groundPivot.total = Math.PI * 2;
+        p.groundPivot.skid = true;
+        last.doubleUsed = true;
+        this.audio.effect("skid");
+        return true;
+      }
+      p.groundPivot = {
+        side,
+        start: p.angle,
+        total: Math.PI,
+        elapsed: 0,
+        skid: !!double,
+        vx: p.vx,
+        vy: p.vy,
+        travel: p.romMovementDirection ?? p.romDirection ?? 4,
+      };
+      if (double) last.doubleUsed = true;
+      else p.lastTriggerPivot = { side, time: this.elapsed, doubleUsed: false };
+      p.skid = p.skidPose = null;
+      p.kickAnimation = null;
+      if (double) this.audio.effect("skid");
+      return true;
+    }
+    updateGroundPivot(dt) {
+      const p = this.player,
+        state = p.groundPivot;
+      if (!state) return false;
+      state.elapsed += dt;
+      const angle = Math.min(state.total, (state.elapsed * Math.PI) / 0.28);
+      p.angle = state.start + state.side * angle;
+      const drag = state.skid ? Math.exp(-dt * 0.65) : 1;
+      state.vx *= drag;
+      state.vy *= drag;
+      p.romSpeed = Math.round((p.romSpeed || 0) * drag);
+      p.vx = state.vx;
+      p.vy = state.vy;
+      p.romFacingDirection = S.OriginalContact.playerDirection(
+        { air: true, angle: p.angle },
+        S.OriginalGround.tables,
+      );
+      p.groundPivotPose = S.OriginalRoutines.sharpTurnAnimationEntries(
+        p.romFacingDirection,
+        state.side,
+      );
+      p.terrainStepOrigin = { x: p.x, y: p.y };
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      this.collideWithRecoveredTerrain();
+      if (!p.groundPivot) return true;
+      state.vx = p.vx;
+      state.vy = p.vy;
+      if (angle >= state.total) {
+        const difference = (p.romFacingDirection - state.travel + 16) & 15;
+        p.fakie = difference >= 6 && difference <= 10;
+        p.romDirection = p.romMovementDirection = state.travel;
+        p.romFacingDirection = p.fakie ? (state.travel + 8) & 15 : undefined;
+        const direction = this.input.direction();
+        p.fakieSteeringTarget =
+          p.fakie && direction.active
+            ? (this.pointHeading(direction) + 8) & 15
+            : null;
+        p.fakieTurnLatch = p.fakie ? this.input.stick.x : null;
+        p.romDialAngle = Math.atan2(
+          -S.OriginalGround.tables.y[state.travel] * 2,
+          S.OriginalGround.tables.x[state.travel],
+        );
+        p.groundPivot = p.groundPivotPose = null;
+      }
+      if (this.mode === "city") this.updateCity(dt);
+      else this.updateEvent(dt);
+      this.camera.x += (p.x - this.camera.x) * Math.min(1, dt * 7);
+      this.camera.y +=
+        (this.cameraTargetY(p) - this.camera.y) * Math.min(1, dt * 7);
+      return true;
+    }
     /** Grind-button assist follows existing curb contours, never new walls. */
     tryCurbGrind() {
       const p = this.player;
@@ -2102,6 +2203,7 @@
       if (this.updateVehicleTow(dt)) return;
       this.tryCurbGrind();
       if (this.updateCurbGrind(dt)) return;
+      if (this.updateGroundPivot(dt)) return;
       // Course ramp fronts have profile low bits7: their coefficients describe
       // a vertical face, not a surface to skate along. Sampling that artwork
       // as ground reverses screen-Y velocity and traps the rider at the lip.
@@ -3155,7 +3257,8 @@
           angleDegrees: +((p.angle * 180) / Math.PI).toFixed(1),
           towing: p.vehicleTow?.sprite ?? null,
           fakie: !!p.fakie,
-          skidding: !!p.skid,
+          skidding: !!p.skid || !!p.groundPivot?.skid,
+          triggerTurning: !!p.groundPivot,
           curbGrinding: !!p.curbGrind,
           facingDirection: p.romFacingDirection ?? p.romDirection,
           travelDirection: p.romMovementDirection ?? p.romDirection,

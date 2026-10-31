@@ -130,33 +130,11 @@
       const sample = level.contactSample(p.x, p.y);
       if (sample.terrainLayer === "raised") return "wood";
       if (game.mode === "event") return "wood";
-      // Sample the original map art once per tile; no collision data is altered.
-      try {
-        if (this.mapLevel !== level && level.image.complete) {
-          this.mapLevel = level;
-          this.mapPixels = null;
-          const c = document.createElement("canvas");
-          c.width = Math.ceil(level.image.width / 8);
-          c.height = Math.ceil(level.image.height / 8);
-          const ctx = c.getContext("2d", { willReadFrequently: true });
-          ctx.drawImage(level.image, 0, 0, c.width, c.height);
-          this.mapPixels = ctx.getImageData(0, 0, c.width, c.height);
-          this.mapLevel = level;
-        }
-        const image = this.mapPixels;
-        if (image) {
-          const x = Math.max(0, Math.min(image.width - 1, Math.floor(p.x / 8)));
-          const y = Math.max(
-            0,
-            Math.min(image.height - 1, Math.floor(p.y / 8)),
-          );
-          const i = (y * image.width + x) * 4,
-            [r, g, b] = image.data.slice(i, i + 3);
-          if (g > r * 1.35 && g > b * 1.2) return null;
-          if ((r + g + b) / 3 < 100) return "asphalt";
-        }
-      } catch {
-        /* file:// map canvas can be origin-tainted; concrete is safe. */
+      const map = window.Skate720.CITY_MATERIAL;
+      if (level.name === "city" && map) {
+        const x = Math.max(0, Math.min(map.width - 1, Math.floor(p.x / 8)));
+        const y = Math.max(0, Math.min(map.height - 1, Math.floor(p.y / 8)));
+        return [null, "concrete", "asphalt"][map.cells[y * map.width + x]];
       }
       return "concrete";
     }
@@ -242,11 +220,13 @@
           key === desired
             ? this.volume *
               (wheel
-                ? Math.min(0.32, 0.18 + spinSpeed / 1800)
+                ? Math.min(0.55, 0.38 + spinSpeed / 1400)
                 : Math.min(0.65, speed / 500))
             : 0;
         const nextVolume =
-          audio.volume + (target - audio.volume) * Math.min(1, dt * 10);
+          audio.volume +
+          (target - audio.volume) *
+            Math.min(1, dt * (wheel && target > 0 ? 24 : 10));
         if (Math.abs(target - audio.volume) > 0.00001)
           audio.volume =
             Math.abs(target - audio.volume) < 0.001 ? target : nextVolume;
