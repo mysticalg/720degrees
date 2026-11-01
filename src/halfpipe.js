@@ -65,7 +65,12 @@
       const northLipX = x + q - 96;
       // Full art-aligned far wall: its left panel runs from636,590 on the
       // floor to712,452 at the white coping; other lanes translate32,16.
-      if (q >= 96 && q <= 272 && northLipX >= 812 && northLipX <= 1028) {
+      if (
+        q >= 96 &&
+        q <= 272 &&
+        northLipX >= 812 &&
+        northLipX <= 1028 + (level.halfpipeExtraWidth || 0)
+      ) {
         const progress = (272 - q) / 176;
         return {
           rawProfile: 1,
@@ -83,7 +88,12 @@
       const lipX = x + q - 448;
       // The original front railing overwrites the last riding tiles. Admit
       // the complete finite art-derived surface, including its right corner.
-      if (q >= 400 && q <= 448 && lipX >= 424 && lipX <= 640) {
+      if (
+        q >= 400 &&
+        q <= 448 &&
+        lipX >= 424 &&
+        lipX <= 640 + (level.halfpipeExtraWidth || 0)
+      ) {
         const progress = (q - 400) / 48;
         return {
           rawProfile: 17,
@@ -168,7 +178,10 @@
         toLip = (lipQ - q) / rate;
       if (
         profile === 17 &&
-        (q < 400 || q > 448 || x + dx * toLip < 424 || x + dx * toLip > 640)
+        (q < 400 ||
+          q > 448 ||
+          x + dx * toLip < 424 ||
+          x + dx * toLip > 640 + (level.halfpipeExtraWidth || 0))
       )
         return null;
       progress = Math.max(0, Math.min(1, (q - floorQ) / (lipQ - floorQ)));
@@ -260,7 +273,7 @@
     const weight =
       smooth((q - 320) / 80) *
       smooth((lipX - 408) / 16) *
-      smooth((656 - lipX) / 16);
+      smooth((656 + (level.halfpipeExtraWidth || 0) - lipX) / 16);
     // A flat-floor correction may move across the pipe, never along it.
     return { x: 16 * weight, y: -8 * weight };
   }
@@ -341,7 +354,9 @@
     const sourceQ = point.y - point.x * 0.5,
       clippedQ = Math.max(400, Math.min(448, sourceQ)),
       lipX = point.x + sourceQ - 448,
-      along = Math.max(424, Math.min(640, lipX)) - lipX,
+      along =
+        Math.max(424, Math.min(640 + (level.halfpipeExtraWidth || 0), lipX)) -
+        lipX,
       across = clippedQ - sourceQ;
     point = {
       ...point,
@@ -376,7 +391,8 @@
     if (level.name === "ramp-1")
       return {
         minX: wall.rawProfile === 1 ? 712 : 424,
-        maxX: wall.rawProfile === 1 ? 928 : 640,
+        maxX:
+          (wall.rawProfile === 1 ? 928 : 640) + (level.halfpipeExtraWidth || 0),
         q: y - x * 0.5,
       };
     const end = (sign) => {

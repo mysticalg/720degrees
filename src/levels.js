@@ -50,6 +50,17 @@
         this.originalMap.rows !== info.rows
       )
         throw new Error(`Original map dimensions disagree: ${info.name}`);
+      if (info.name === "ramp-1") {
+        this.halfpipeExtraWidth = S.HalfpipeWidth.extra;
+        this.width += this.halfpipeExtraWidth;
+        this.height += this.halfpipeExtraWidth / 2;
+        this.columns = Math.ceil(this.width / 8);
+        this.rows = Math.ceil(this.height / 8);
+        this.start = {
+          x: this.start.x + this.halfpipeExtraWidth / 2,
+          y: this.start.y + this.halfpipeExtraWidth / 4,
+        };
+      }
       this.image = new Image();
       this.ready = false;
       this.loaded = new Promise((resolve, reject) => {
@@ -70,14 +81,18 @@
           S.app?.renderer.primeImage?.(this.targetPaletteImage);
         this.targetPaletteImage.src = `assets/levels/${info.name}-target-cycle.png`;
       }
-      this.image.src = `assets/levels/${info.name}.png`;
+      this.image.src = `assets/levels/${info.name}${this.halfpipeExtraWidth ? "-wide" : ""}.png`;
     }
     sample(x, y) {
+      if (this.halfpipeExtraWidth)
+        ({ x, y } = S.HalfpipeWidth.sourcePoint(x, y));
+      const sourceColumns = this.originalMap.columns,
+        sourceRows = this.originalMap.rows;
       const col = Math.floor(x / 8),
         row = Math.floor(y / 8);
-      if (col < 0 || row < 0 || col >= this.columns || row >= this.rows)
+      if (col < 0 || row < 0 || col >= sourceColumns || row >= sourceRows)
         return { blocked: true, profile: 120, type: 19, tile: 0 };
-      const index = row * this.columns + col,
+      const index = row * sourceColumns + col,
         rawWord = this.originalMap.raw[index],
         tile = this.cells[index] & 8191,
         profile = profiles[tile],

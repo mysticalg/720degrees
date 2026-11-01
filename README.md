@@ -302,3 +302,6 @@ Halfpipe landing points now translate CPU7E98-7F50 with the original bank2000 ti
 
 
 v0.99.1 fixes a traffic-scanner lockup: BDCA/BDDC/BDEE/BE00 coordinate addresses now wrap to16 bits before table lookup. In particular aFFFF directory sentinel must read557E/4ABE rather than an unbounded JavaScript address. The real record packed358 and top/bottom boundary cases are regression-tested, along with a ten-class whole-city scanner pass and subsequent live simulation ticks.
+
+
+v0.99.2 doubles the native halfpipe width along the coping (216 to432 units on each side). A central strip of the original map image is repeated along(1,.5), with matching collision sampling, expanded wall/rail bounds and a centered spawn. The across-pipe coordinates, wall gradients and ramp physics remain unchanged. Original ramp-1.png is preserved; tools/widen_halfpipe.py produces ramp-1-wide.png without generated or replacement artwork. This is a user-requested level extension, separate from ROM translation.
