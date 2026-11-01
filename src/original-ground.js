@@ -227,8 +227,16 @@
     equipment &= 3;
     const terrain = profile & 7;
     speed = s16(speed + s16(slope));
+    //4EC2-4EDC: action0A/0B loses16 signed speed units per tick before
+    //the same original terrain/equipment friction branch used below.
     let delta =
-      action === 3 ? Math.max(0, Math.min(80, s16(target - speed))) : 0;
+      action === 10 || action === 11
+        ? speed > 0
+          ? -16
+          : 16
+        : action === 3
+          ? Math.max(0, Math.min(80, s16(target - speed)))
+          : 0;
     if (speed !== 0) {
       let friction;
       if (

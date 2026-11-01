@@ -2558,11 +2558,9 @@
       const stick = this.input.stick,
         rotating = this.input.controlMode === "rotate";
       const beforeSteering = {
-        vx: p.vx,
-        vy: p.vy,
         direction: p.romDirection ?? 4,
+        dial: p.romDialCounter ?? (p.romDirection ?? 4) * 9,
       };
-      p.skidRequest = null;
       if (p.jumpSequence?.action === 4) {
         S.OriginalRoutines.jumpActionTransition(p.jumpSequence);
         if (p.jumpSequence.action === 5) this.launchJump();
@@ -2623,9 +2621,6 @@
           const turn = S.OriginalRoutines.steeringDifference(
             latched ? 0 : target - current,
           );
-          if (turn.distance >= 4 && rawTarget !== p.skidInputTarget)
-            p.skidRequest = { direction: target, side: turn.step };
-          p.skidInputTarget = rawTarget;
           p.romDirection = (current + turn.step + 16) & 15;
           p.romDialCounter = dial;
           p.romDialAngle = Math.atan2(direction.y, direction.x);
@@ -2669,6 +2664,54 @@
         if (p.halfpipeReturning && !p.halfpipeWall) p.halfpipeReturning = false;
         if (p.halfpipeWall)
           surface = { ...surface, profile: p.halfpipeWall.profile };
+        const skidSurface =
+          !surface.blocked &&
+          !p.halfpipeReturning &&
+          !p.copingReturn &&
+          ((surface.profile & 7) === 0 ||
+            (e?.kind === "downhill" &&
+              (surface.profile & 7) < 5 &&
+              [0, 9, 10, 15, 16].includes(surface.type)));
+        const desired = S.OriginalGround.dialDirection(
+          p.romDialCounter ?? beforeSteering.dial,
+        );
+        const dialDelta =
+          (((p.romDialCounter ?? beforeSteering.dial) -
+            beforeSteering.dial +
+            216) %
+            144) -
+          72;
+        if (
+          !p.skid &&
+          !p.fakie &&
+          skidSurface &&
+          (direction.active || rotating)
+        ) {
+          p.skid = S.OriginalSlide.begin(
+            desired,
+            beforeSteering.direction,
+            dialDelta,
+            p.romSpeed || 0,
+          );
+          if (p.skid) this.audio.effect("skid");
+        }
+        if (p.skid?.original) {
+          const slide = p.skid;
+          const result = S.OriginalSlide.steer(slide, desired, p.romSpeed || 0);
+          p.romSpeed = result.speed;
+          p.romDirection = slide.travel;
+          p.romFacingDirection = slide.facing;
+          p.angle = isoAngle(slide.facing);
+          if (!skidSurface || result.done) {
+            const travel = slide.travel ^ (result.speed < 0 ? 8 : 0);
+            p.romSpeed = Math.abs(result.speed);
+            p.romDirection = p.romMovementDirection = travel;
+            p.fakie = ((slide.facing - travel + 16) & 15) === 8;
+            p.romFacingDirection = p.fakie ? slide.facing : undefined;
+            p.skid = p.skidPose = null;
+            this.latchFakieSteering(travel);
+          }
+        }
         // Recovered surface coefficients and grounded arithmetic apply to flag0.
         // The input adapter still supplies turning and kick state timing.
         if (
@@ -2724,7 +2767,7 @@
           );
           scalar = rom.terrainSpeed(
             scalar,
-            kick ? 3 : 0,
+            p.skid?.original ? p.skid.action : kick ? 3 : 0,
             gear,
             p.romFrame,
             p.romKickEnvelope.target,
@@ -2735,7 +2778,7 @@
           );
           // The original flat kick target can sit below downhill momentum.
           // A fresh push still adds a small amount; holding A does not repeat it.
-          if (kind === 2 && kickPressed && scalar > 0) {
+          if (kind === 2 && kickPressed && scalar > 0 && !p.skid) {
             const limit =
               (S.CONFIG.downhillKickLimit + gear * 128) *
               (p.fakie ? S.CONFIG.fakieTopSpeed : 1);
@@ -2764,6 +2807,7 @@
               direction = i;
             }
           }
+          if (p.skid?.original) direction = p.skid.travel;
           const coefficient = rom.surfaceCoefficients(
             direction,
             surface.profile,
@@ -2833,58 +2877,10 @@
           p.vx *= drag;
           p.vy *= drag;
         }
-        // Native traction adapter: original steering changes headings in
-        // steps, which previously redirected all momentum on each step.
-        // A fast, fresh quarter turn now retains wheel-side momentum briefly.
-        // Original E458 pose tables supply the graphics; traction duration is
-        // a deliberate gameplay enhancement, not a claimed ROM constant.
-        //E458's low-three-bit test selects flat-ground ART, not whether
-        //the steering path4BA8-4DBE may retain momentum on an inclined road.
-        //Use the existing traction adapter on downhill slopes too; coping
-        //and unsupported/solid cells still have their dedicated controllers.
-        const skidSurface =
-          !surface.blocked &&
-          ((surface.profile & 7) === 0 ||
-            (e?.kind === "downhill" &&
-              (surface.profile & 7) < 7 &&
-              [0, 9, 10, 15, 16].includes(surface.type)));
-        if (
-          p.skidRequest &&
-          !p.skid &&
-          !p.fakie &&
-          !p.halfpipeReturning &&
-          !p.copingReturn &&
-          skidSurface &&
-          Math.abs(p.romSpeed || 0) >= 0x500
-        ) {
-          p.skid = {
-            ...beforeSteering,
-            side: p.skidRequest.side,
-            remaining: 0.38,
-          };
-          p.romDirection = p.skidRequest.direction;
-          p.angle = isoAngle(p.romDirection);
-          this.audio.effect("skid");
-        }
-        if (p.skid) {
-          const skid = p.skid;
-          if (!skidSurface || p.copingReturn || p.halfpipeReturning)
-            skid.remaining = 0;
-          if (skid.remaining > 0) {
-            const grip = 1 - Math.exp(-dt * 5);
-            skid.vx += (p.vx - skid.vx) * grip;
-            skid.vy += (p.vy - skid.vy) * grip;
-            p.vx = skid.vx;
-            p.vy = skid.vy;
-            skid.remaining -= dt;
-            p.skidPose = S.OriginalRoutines.sharpTurnAnimationEntries(
-              p.romDirection,
-              skid.side,
-            );
-          } else {
-            p.skid = null;
-            p.skidPose = null;
-          }
+        if (p.skid?.original) {
+          p.skidPose = S.OriginalSlide.tick(p.skid);
+          p.romMovementDirection =
+            p.skid.travel ^ ((p.romSpeed || 0) < 0 ? 8 : 0);
         }
         if (kickPressed && !p.kickAnimation) {
           const rate = S.OriginalRoutines.kickAnimationRate(kickAnimationSpeed);
