@@ -2838,13 +2838,23 @@
         // A fast, fresh quarter turn now retains wheel-side momentum briefly.
         // Original E458 pose tables supply the graphics; traction duration is
         // a deliberate gameplay enhancement, not a claimed ROM constant.
+        //E458's low-three-bit test selects flat-ground ART, not whether
+        //the steering path4BA8-4DBE may retain momentum on an inclined road.
+        //Use the existing traction adapter on downhill slopes too; coping
+        //and unsupported/solid cells still have their dedicated controllers.
+        const skidSurface =
+          !surface.blocked &&
+          ((surface.profile & 7) === 0 ||
+            (e?.kind === "downhill" &&
+              (surface.profile & 7) < 7 &&
+              [0, 9, 10, 15, 16].includes(surface.type)));
         if (
           p.skidRequest &&
           !p.skid &&
           !p.fakie &&
           !p.halfpipeReturning &&
           !p.copingReturn &&
-          (surface.profile & 7) === 0 &&
+          skidSurface &&
           Math.abs(p.romSpeed || 0) >= 0x500
         ) {
           p.skid = {
@@ -2858,11 +2868,7 @@
         }
         if (p.skid) {
           const skid = p.skid;
-          if (
-            (surface.profile & 7) !== 0 ||
-            p.copingReturn ||
-            p.halfpipeReturning
-          )
+          if (!skidSurface || p.copingReturn || p.halfpipeReturning)
             skid.remaining = 0;
           if (skid.remaining > 0) {
             const grip = 1 - Math.exp(-dt * 5);
