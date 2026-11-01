@@ -305,3 +305,6 @@ v0.99.1 fixes a traffic-scanner lockup: BDCA/BDDC/BDEE/BE00 coordinate addresses
 
 
 v0.99.2 doubles the native halfpipe width along the coping (216 to432 units on each side). A central strip of the original map image is repeated along(1,.5), with matching collision sampling, expanded wall/rail bounds and a centered spawn. The across-pipe coordinates, wall gradients and ramp physics remain unchanged. Original ramp-1.png is preserved; tools/widen_halfpipe.py produces ramp-1-wide.png without generated or replacement artwork. This is a user-requested level extension, separate from ROM translation.
+
+
+v0.99.3 derives the swarm world image from its current16-bit pursuit coordinates each tick, rather than accumulating a separate unwrapped position. This prevents a stale swarm position remaining1024/2048px away after native recovery/camera corrections. Pursuit velocities, sprites and the original grounded120-tick warning delay are unchanged. Diagnostic state now includes the warning countdown and its airborne/recovery wait reason. Repeated warning/park-return cycles cover all six appearances and deliberately stale world-image recovery; these tests do not identify every possible cause of a reported missing swarm.

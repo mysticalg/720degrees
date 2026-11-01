@@ -133,3 +133,29 @@ assert.equal(spawnClock.speedClock, 249);
 console.log(
   "PASS original bee8way bias/wrap boundaries,56 ROM velocity combinations, inherited motion, cooldown, speed stage and spawn edges",
 );
+
+//Native world-image selection must be derived from current ROM words even
+//after a recovery changes the player/camera's unwrapped1024px world image.
+for (const x of [0, 512, 1024, 3072, 6144])
+  for (const y of [0, 512, 1500, 3000])
+    for (const dx of [-400, -1, 0, 1, 400])
+      for (const dy of [-200, 0, 200]) {
+        const state = {
+          x: ((x - 40 + dx) * 64) & 65535,
+          y: (0xa000 - (y + 11 + dy) * 64) & 65535,
+        };
+        const first = E.beeWorldPosition(state, { x, y });
+        assert.equal(first.x, x + dx);
+        assert.equal(first.y, y + dy);
+        for (const shift of [-2048, -1024, 1024, 2048]) {
+          const next = E.beeWorldPosition(state, {
+            x: x + shift,
+            y: y + shift,
+          });
+          assert.equal(next.x, first.x + shift);
+          assert.equal(next.y, first.y + shift);
+        }
+      }
+console.log(
+  "PASS bee world-image rebasing across1024/2048px player corrections without changing pursuit words",
+);

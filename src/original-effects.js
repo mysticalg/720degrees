@@ -124,6 +124,18 @@
       firstTick: true,
     };
   }
+  /** Native display adapter: place the16-bit bee coordinate in the same
+   *1024px world image as the player. Never accumulate a separate unwrapped
+   *position: recovery/camera corrections can otherwise strand it a wrap away.
+   */
+  function beeWorldPosition(state, player) {
+    const x = beeWord(Math.round((player.x - 40) * 64));
+    const y = beeWord(Math.round(0xa000 - (player.y + 11) * 64));
+    return {
+      x: player.x + beeSigned(beeWord(state.x - x)) / 64,
+      y: player.y - beeSigned(beeWord(state.y - y)) / 64,
+    };
+  }
   /** Bank3800:4F98-5016: biased eight-way pursuit, not an atan2 aim.
    * All additions wrap before signed tests;01C4 contributes nine frame bits.
    */
@@ -303,6 +315,7 @@
     chasingBeeEntry,
     beeStage,
     beginBeePursuit,
+    beeWorldPosition,
     beeHeading,
     tickBeePursuit,
     beginBeeCapture,

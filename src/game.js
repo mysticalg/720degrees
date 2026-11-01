@@ -3295,22 +3295,14 @@
             Math.round((-p.vy * 64) / 60),
             this.bees.appearance,
           );
-          const word = (n) => n & 65535,
-            signed = (n) => (n << 16) >> 16;
-          this.bees.x =
-            p.x +
-            signed(this.bees.originalPursuit.x - word((p.x - 40) * 64)) / 64;
-          this.bees.y =
-            p.y -
-            signed(
-              this.bees.originalPursuit.y - word(0xa000 - (p.y + 11) * 64),
-            ) /
-              64;
+          Object.assign(
+            this.bees,
+            S.OriginalEffects.beeWorldPosition(this.bees.originalPursuit, p),
+          );
         }
       }
       if (this.bees) {
-        const word = (n) => n & 65535,
-          signed = (n) => (n << 16) >> 16;
+        const word = (n) => n & 65535;
         const pursuit = this.bees.originalPursuit;
         if (pursuit) {
           const player = {
@@ -3322,7 +3314,6 @@
             dz: Math.round(((p.vz || 0) * 64) / 60),
           };
           const runtime = this.trafficRuntime;
-          const before = { x: pursuit.x, y: pursuit.y };
           S.OriginalEffects.tickBeePursuit(
             pursuit,
             player,
@@ -3332,8 +3323,10 @@
             runtime.memory.readMotionWord,
             () => S.OriginalPopulation.nextBufferedRandom(runtime.entropy),
           );
-          this.bees.x += signed(pursuit.x - before.x) / 64;
-          this.bees.y -= signed(pursuit.y - before.y) / 64;
+          Object.assign(
+            this.bees,
+            S.OriginalEffects.beeWorldPosition(pursuit, p),
+          );
           this.bees.stage = pursuit.stage;
           this.bees.direction = pursuit.direction;
           this.bees.enraged = pursuit.form !== 0;
@@ -3914,6 +3907,18 @@
         originalCityClock: this.originalCityClock,
         bees: this.bees,
         beeCapture: this.beeCapture,
+        beeWarning: {
+          active: this.warned,
+          frames: this.beeWarningFrames,
+          waiting:
+            this.warned && !this.bees
+              ? p.air
+                ? "airborne"
+                : p.bail || p.fallen > 0
+                  ? "recovery"
+                  : "countdown"
+              : null,
+        },
         beeContinue: this.beeContinue,
         cityActors:
           this.mode === "city"
