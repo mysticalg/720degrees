@@ -56,9 +56,11 @@
   }
   /** 1C00:5BDC-5C3A palette writes. No substitute equipment artwork. */
   function palettes(gear, clock, data, skater = "lester") {
-    const body = (data.skaters?.[skater] || data.palette.slice(0, 16)).map(
-        (c) => c.slice(),
-      ),
+    const body = (
+        data.skaters?.[skater] ||
+        data.skaters?.lester ||
+        data.palette.slice(0, 16)
+      ).map((c) => c.slice()),
       board = data.palette.slice(16, 32).map((c) => c.slice());
     const phase = ((clock - 1) >> 3) & 1,
       padPhase = ((clock - 2) >> 3) & 1,

@@ -373,3 +373,8 @@ The top skater selector remembers Lester, Natas, Lance or Barbie. The original i
 Original sound-ROM clips for commands5A/5B and rank-dependent63..66 now play for eligible crashes and medal awards. Commands54/56 adjust a running sound rather than starting a standalone clip; those live sound parameters remain unfinished. Original sound captures are static audio files, not a runtime emulator.
 
 The result sequence now tallies original race/pending counters and automatically returns to Skate City. Its full original skateboard/medal showcase animation is still unfinished; the existing result dialog remains the presentation. Bee continue now restores the captured hit location. Original slide exit scoring is wired to the recovered frame thresholds.
+
+
+## Build0.99.8
+
+Lance now uses the exact original Player2 palette recovered from DB8C-DBC0 (words13F2C..13F4A). Lester retains original Player1 colours (21F2C..21F4A). Barbie keeps her brown skin with a requested orange T-shirt. Natas is unchanged. The palette extractor verifies the original selection instructions before reading the tables.

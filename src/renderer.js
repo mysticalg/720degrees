@@ -760,10 +760,9 @@
         S.EQUIPMENT_DATA,
         this.skaterPalette || "lester",
       );
+      // Lester matches the original atlas; recolour only alternate palettes or gear.
       const bodyPalette =
-        gear.pads ||
-        gear.shoes ||
-        (this.skaterPalette && this.skaterPalette !== "lester")
+        gear.pads || gear.shoes || (this.skaterPalette || "lester") !== "lester"
           ? equipment.body
           : null;
       const boardPalette = gear.board ? equipment.board : null;

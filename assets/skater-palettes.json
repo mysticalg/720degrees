@@ -1,5 +1,5 @@
 {
-  "source": "Lester: current captured body palette; Natas and Lance: original captured palette banks 3 and 0; Barbie: custom skin pens 6..8. Names are user-selected, not ROM character identities.",
+  "source": "Lance: exact Player2 DB8C-DBC0 palette, reversed words13F2C..13F4A; Lester: exact Player1 reversed words21F2C..21F4A; Natas: original captured palette bank3. Barbie: original Player1 with requested custom brown skin pens6..8 and orange shirt pens9..10. Names supplied by user.",
   "palettes": {
     "lester": [
       [
@@ -172,79 +172,79 @@
         240
       ],
       [
-        240,
         128,
-        128
+        224,
+        240
       ],
       [
         240,
-        0,
+        224,
         0
       ],
       [
+        240,
         192,
-        0,
         0
       ],
       [
-        128,
-        240,
-        128
+        0,
+        0,
+        240
       ],
       [
         0,
-        224,
-        0
-      ],
-      [
-        240,
-        224,
+        0,
         160
+      ],
+      [
+        240,
+        208,
+        176
       ],
       [
         240,
         160,
-        80
+        112
+      ],
+      [
+        192,
+        128,
+        112
+      ],
+      [
+        240,
+        128,
+        208
       ],
       [
         208,
-        144,
-        64
-      ],
-      [
-        224,
-        224,
-        240
-      ],
-      [
-        224,
-        224,
-        240
-      ],
-      [
-        128,
-        128,
-        160
-      ],
-      [
         0,
-        224,
-        0
-      ],
-      [
-        96,
-        112,
-        160
-      ],
-      [
-        0,
-        128,
-        0
+        144
       ],
       [
         240,
-        240,
-        112
+        128,
+        208
+      ],
+      [
+        0,
+        0,
+        240
+      ],
+      [
+        0,
+        0,
+        144
+      ],
+      [
+        208,
+        0,
+        144
+      ],
+      [
+        176,
+        160,
+        160
       ]
     ],
     "barbie": [
@@ -294,13 +294,13 @@
         30
       ],
       [
-        0,
         240,
+        144,
         0
       ],
       [
-        0,
         208,
+        96,
         0
       ],
       [
