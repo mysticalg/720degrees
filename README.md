@@ -362,3 +362,14 @@ Bounded browser checks cover40 class/park admissions and original start cells,
 waiting/penalty/start/music transitions, original medal graphics and all four
 bar palette states. Existing physics, map, actor, scoring and traffic regression
 suites remain in `npm test`. NativeArchimedes files are unaffected.
+
+
+## Build0.99.7
+
+Shop price mats now select all ten original EC20/ECD0 tile variants using the same FE7C stage table as purchases ($25 through $250). The previous initial-class image was fixed at $25. Price patches retain original artwork and are cropped/cached for mobile.
+
+The top skater selector remembers Lester, Natas, Lance or Barbie. The original indexed sprites remain; three palettes use captured original colours and Barbie adds the requested brown skin tones. Equipment colours still apply. Fence zaps are a user-requested native enhancement (procedural overlay and short sound), separately identified from ROM assets.
+
+Original sound-ROM clips for commands5A/5B and rank-dependent63..66 now play for eligible crashes and medal awards. Commands54/56 adjust a running sound rather than starting a standalone clip; those live sound parameters remain unfinished. Original sound captures are static audio files, not a runtime emulator.
+
+The result sequence now tallies original race/pending counters and automatically returns to Skate City. Its full original skateboard/medal showcase animation is still unfinished; the existing result dialog remains the presentation. Bee continue now restores the captured hit location. Original slide exit scoring is wired to the recovered frame thresholds.

@@ -3,8 +3,12 @@
  */
 (() => {
   const kinds = ["board", "helmet", "pads", "shoes"];
+  /** ECD8-ECE4 and5270 share FE7C: the mat uses price-stage minus one. */
+  function priceVariant(stage, data) {
+    return data.priceStages[Math.max(0, Math.min(15, stage))] - 1;
+  }
   function price(stage, data) {
-    return data.prices[data.priceStages[Math.max(0, Math.min(15, stage))]];
+    return data.prices[priceVariant(stage, data) + 1];
   }
   function stockMask(gear, limit) {
     return kinds.reduce(
@@ -51,8 +55,10 @@
     );
   }
   /** 1C00:5BDC-5C3A palette writes. No substitute equipment artwork. */
-  function palettes(gear, clock, data) {
-    const body = data.palette.slice(0, 16).map((c) => c.slice()),
+  function palettes(gear, clock, data, skater = "lester") {
+    const body = (data.skaters?.[skater] || data.palette.slice(0, 16)).map(
+        (c) => c.slice(),
+      ),
       board = data.palette.slice(16, 32).map((c) => c.slice());
     const phase = ((clock - 1) >> 3) & 1,
       padPhase = ((clock - 2) >> 3) & 1,
@@ -69,6 +75,7 @@
   const api = Object.freeze({
     kinds,
     price,
+    priceVariant,
     airTurnRate,
     stockMask,
     purchase,

@@ -45,6 +45,11 @@ data = {"priceStages": list(program[0xfe7c:0xfe8c]),
 for name, address in [("shoes", 0x7a4c), ("shoeTrim", 0x7a58),
                       ("board", 0x7a64), ("pads", 0x7a70)]:
     data["colors"][name] = list(struct.unpack_from("<8H", program, 0x12000 + address - 0x6000))
+# Preserve the cosmetic selector when rebuilding extracted equipment tables.
+# Captured original variants plus the explicitly requested custom skin palette.
+skaters = json.loads((root / "assets/skater-palettes.json").read_text(encoding="utf-8"))
+data["skaters"] = skaters["palettes"]
+data["skaterPaletteSource"] = skaters["source"]
 (root / "src/equipment-data.js").write_text(
     "/** Recovered shop price and equipment colour tables. */\nwindow.Skate720.EQUIPMENT_DATA="
     + json.dumps(data) + ";\n", encoding="utf-8")

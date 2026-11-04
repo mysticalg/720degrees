@@ -54,9 +54,10 @@ for i in range(48*24):
    selector,group,x,y=[read(0x7800,0x4b58+index*4+j) for j in range(4)]
    height=read(0x7800,0x4bc0+group);width=read(0x7800,0x4bcb+group)
    table=bw(0x7800,0x4be2+group*2);dataBase=0x6000 if read(0x7800,0x4bd6+group) else 0x4000
-   # Selector0..3 chooses one of ten classes; other groups have three variants.
+   # EC9A:0..3 class; ECB8:4..7 equipment; ECD0:8..11 price-stage.
+   # Prices have ten variants too, selected by FE7C[stage]-1.
    variants=[]
-   for variant in range(10 if selector<4 else 3):
+   for variant in range(3 if 4 <= selector < 8 else 10):
     pointer=bw(0x7800,0x4000+table+variant*2)
     variants.append([bw(dataBase,pointer+n*2) for n in range(width*height)])
    overlays.append({'id':index,'selector':selector,'x':(i%48)*16+x,'y':(i//48)*16+y,'width':width,'height':height,'variants':variants})

@@ -75,8 +75,13 @@
     } else state.direction = downhillDirections[(profile & 255) >> 3] & 255;
     return state;
   }
+  /** A3C0-A42C / FCF6. 54/56 are live sound-parameter writes, not clips. */
+  function soundCommand(state, randomByte = 0) {
+    return state.rate === 6 ? [0x56, 0x5a, 0x5b, 0x56][randomByte & 3] : 0x54;
+  }
   const api = Object.freeze({
     beginBail,
+    soundCommand,
     tickBail,
     recoveryFrames,
     helmetLimits,

@@ -50,3 +50,21 @@ for (const [level, degrees] of [900, 975, 1200, 1425].entries())
 console.log(
   "PASS original helmet025D turn-step table and native angle conversion",
 );
+
+// Cosmetic palettes preserve upgrades and do not mutate captured source pens.
+const before = JSON.stringify(d.skaters);
+for (const skater of ["lester", "natas", "lance", "barbie"]) {
+  const plain = e.palettes({ shoes: 0, pads: 0, board: 0 }, 0, d, skater);
+  const upgraded = e.palettes({ shoes: 1, pads: 1, board: 1 }, 0, d, skater);
+  assert.equal(plain.body.length, 16);
+  assert.deepEqual(plain.body.slice(6, 9), upgraded.body.slice(6, 9));
+  assert.notDeepEqual(plain.body[11], upgraded.body[11]);
+}
+assert.equal(JSON.stringify(d.skaters), before);
+assert.deepEqual(
+  e.palettes({}, 0, d, "invalid"),
+  e.palettes({}, 0, d, "lester"),
+);
+console.log(
+  "PASS four skater palettes, skin-preserving upgrades, immutable sources and invalid-selection fallback",
+);

@@ -514,3 +514,29 @@ footer small {
   max-height: 95%;
   overflow: auto;
 }
+
+/* Keep palette choice accessible with the other top-level options. */
+.skater-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font:
+    700 11px Consolas,
+    monospace;
+}
+#skater-select {
+  background: #152130;
+  color: var(--paper);
+  border: 1px solid #536172;
+  padding: 8px;
+  font: inherit;
+}
+/* The extra skater option must wrap instead of widening phone viewports. */
+header { height: auto; min-height: 68px; flex-wrap: wrap; padding-bottom: 10px; }
+nav { flex-wrap: wrap; }
+@media (max-width: 650px) {
+  header { height: auto; min-height: 52px; gap: 8px; }
+  nav { width: 100%; margin-left: 0; gap: 6px; }
+  nav button { flex: 1 0 auto; }
+  .skater-control { font-size: 10px; }
+}

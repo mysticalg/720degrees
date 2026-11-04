@@ -1,0 +1,2 @@
+/** EC20/ECD0 original price-mat placement; rows FE7C[stage]-1. */
+window.Skate720.SHOP_PRICE_DATA=[{"id":23,"selector":10,"x":4496,"y":0,"width":64,"height":32,"atlasX":0},{"id":22,"selector":9,"x":2824,"y":336,"width":56,"height":32,"atlasX":64},{"id":21,"selector":8,"x":552,"y":1456,"width":56,"height":32,"atlasX":128},{"id":24,"selector":11,"x":5656,"y":1504,"width":64,"height":32,"atlasX":192}];

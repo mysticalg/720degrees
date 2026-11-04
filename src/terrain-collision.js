@@ -436,7 +436,8 @@
     let start = { x: from.x, y: from.y },
       end = { x: to.x, y: to.y },
       v = { ...velocity },
-      hits = 0;
+      hits = 0,
+      fenceHit = false;
     if (blocked(level, start.x, start.y, barriersOnly))
       return { x: end.x, y: end.y, vx: v.x, vy: v.y, hits };
     for (let pass = 0; pass < 3; pass++) {
@@ -480,6 +481,17 @@
       }
       if (!first) break;
       hits++;
+      // Only tagged vertical fence faces spark; curbs, voids and the
+      // halfpipe's untagged enclosure do not become electrical obstacles.
+      if (dot(v, first.normal) < -12) {
+        for (const depth of [2, 6, 10]) {
+          const sample = level.sample(
+            first.hit.x - first.normal.x * depth,
+            first.hit.y - first.normal.y * depth,
+          );
+          if ((sample.profile & 0x47) === 0x47) fenceHit = true;
+        }
+      }
       const n = first.normal,
         remaining = {
           x: movement.x * (1 - first.t),
@@ -518,7 +530,7 @@
         }
       }
     }
-    return { x: end.x, y: end.y, vx: v.x, vy: v.y, hits };
+    return { x: end.x, y: end.y, vx: v.x, vy: v.y, hits, fenceHit };
   }
   /** Separate the recovered inclined faces inside a slope region. These
    * marching-cell boundaries are diagnostic only and never create walls.

@@ -125,6 +125,8 @@
     start(practice = false) {
       this.practice = practice;
       this.courseInstructionsSeen = 0;
+      this.eventAward = null;
+      this.beeContinuePosition = null;
       this.cityActors = S.CITY_ACTOR_DATA.objects.map((object) => ({
         ...object,
         parkSign: object.kind === 93,
@@ -1761,6 +1763,10 @@
       p.fallen = p.bail.timer / 60;
       p.invulnerable = 2;
       this.audio.effect("crash", {
+        originalCommand: S.OriginalBail.soundCommand(
+          p.bail,
+          Math.floor(Math.random() * 256),
+        ),
         water: level.name === "city" && surface.type === 18,
       });
       this.popup(reason, p.x, p.y - 45, "#ff967b");
@@ -1891,7 +1897,12 @@
       S.OriginalParks.returnToCity(this.parkState);
       this.trafficRuntime.setEnteredParks(this.parkState.entered);
       this.mode = "city";
-      this.resetPlayer(this.city.spawn.x, this.city.spawn.y);
+      // Preserve the captured world location when accepting a cabinet credit.
+      // Clear transient bail/air states without restarting the city scene.
+      const position = this.beeContinuePosition || this.city.spawn;
+      this.resetPlayer(position.x, position.y);
+      this.player.invulnerable = 2;
+      this.beeContinuePosition = null;
       this.resetCityClock();
       this.tell("BACK TO SKATE CITY", 3);
       this.changed?.();
@@ -1912,6 +1923,7 @@
         );
         p.romDirection = p.romMovementDirection = side ? 4 : 12;
       }
+      this.beeContinuePosition = { x: p.x, y: p.y };
       p.romSpeed = 0x514;
       this.crash("THE BEES GOT YOU", { force: true });
       this.bees = null;
@@ -1939,35 +1951,22 @@
         cash = originalResult.cash;
       // CPU6902 counts one unit down per award. D052 leaves0E95 nonzero
       // for slalom flags (50 points/unit); downhill takes100 points/unit.
-      let raceBonus = 0;
-      if (race) {
-        let counter = e.originalRaceCounter;
-        for (;;) {
-          const tally = S.OriginalRoutines.tallyRaceCounter(
-            counter,
-            e.kind === "slalom",
-          );
-          counter = tally.counter;
-          if (tally.done) break;
-          this.addScore(tally.award, undefined, false);
-          raceBonus += tally.award;
-        }
-        e.originalRaceCounter = counter;
-        e.originalRaceBonus = raceBonus;
-      }
-      // Pending ramp/jump points use the separate original0258 tally.
-      let pending = e.originalPendingPoints || 0,
-        bonus = raceBonus;
-      while (pending > 0) {
-        const tally = S.OriginalRoutines.tallyPendingScore(pending);
-        for (const award of tally.awards) {
-          this.addScore(award, undefined, false);
-          bonus += award;
-        }
-        pending = tally.pending;
-        if (tally.done) break; // Signed overflow/nonpositive source words stop tallying.
-      }
-      e.originalPendingPoints = 0;
+      // Preserve the source counters for the phase6 animated tally. Result
+      // totals are reported now, but EF24 awards are emitted one tick at a time.
+      const raceBonus = race
+        ? Math.max(0, e.originalRaceCounter) * (e.kind === "slalom" ? 50 : 100)
+        : 0;
+      const pending = e.originalPendingPoints || 0;
+      const bonus = raceBonus + pending;
+      e.originalRaceBonus = raceBonus;
+      this.eventAward = {
+        phase: "medal",
+        delay: originalResult.rank ? 192 : 104,
+        race,
+        counter: e.originalRaceCounter || 0,
+        pending,
+        awarded: 0,
+      };
       this.cash = (this.cash + cash) & 65535;
       this.medals.push({
         park: e.kind,
@@ -2002,8 +2001,53 @@
         original: originalResult,
       };
       this.mode = "result";
-      this.audio.effect("medal");
+      this.audio.effect("medal", { rank: originalResult.rank });
       this.changed?.();
+    }
+    /** Bank16000:68BC-697A result lead, per-tick EF24 tally and tail.
+     * Pausing freezes this scene just as it freezes gameplay.
+     */
+    tickEventAward() {
+      const state = this.eventAward,
+        e = this.event;
+      if (!state || !e) return;
+      if (state.phase === "medal" || state.phase === "tail") {
+        if (--state.delay > 0) return;
+        if (state.phase === "tail") {
+          this.eventAward = null;
+          this.continueAfterEvent();
+          return;
+        }
+        state.phase = "tally";
+      }
+      if (state.race) {
+        const t = S.OriginalRoutines.tallyRaceCounter(
+          state.counter,
+          e.kind === "slalom",
+        );
+        state.counter = t.counter;
+        e.originalRaceCounter = t.counter;
+        if (t.award) {
+          this.addScore(t.award, undefined, false);
+          state.awarded += t.award;
+        }
+        if (t.done) {
+          state.phase = "tail";
+          state.delay = 96;
+        }
+      } else {
+        const t = S.OriginalRoutines.tallyPendingScore(state.pending);
+        state.pending = t.pending;
+        e.originalPendingPoints = t.pending;
+        for (const award of t.awards) {
+          this.addScore(award, undefined, false);
+          state.awarded += award;
+        }
+        if (t.done) {
+          state.phase = "tail";
+          state.delay = 64;
+        }
+      }
     }
     /** Find clear pavement connected to the actual entrance, not an offset
      * that can land behind its fence. Keep a board-sized clearance around it.
@@ -2053,6 +2097,7 @@
       return best || { ...this.city.spawn };
     }
     continueAfterEvent() {
+      if (this.eventAward) return;
       if (!this.practice && S.OriginalParks.runFinished(this.parkState)) {
         this.mode = "victory";
         this.beginCashTally();
@@ -2459,6 +2504,10 @@
         }
         return;
       }
+      if (this.mode === "result" && this.eventAward) {
+        if (!this.paused) this.tickEventAward();
+        return;
+      }
       if (this.paused || !["city", "event"].includes(this.mode)) return;
       if (!(this.event?.level || this.city.level).ready) return;
       const p = this.player,
@@ -2494,6 +2543,7 @@
       this.floats = this.floats.filter((f) => f.life > 0);
       p.cooldown = Math.max(0, p.cooldown - dt);
       p.crackJumpWindow = Math.max(0, (p.crackJumpWindow || 0) - 1);
+      p.fenceZap = Math.max(0, (p.fenceZap || 0) - dt);
       p.fenceJumpWindow = Math.max(0, (p.fenceJumpWindow || 0) - 1);
       if (p.fencePlantAir) p.fencePlantAge = (p.fencePlantAge || 0) + dt;
       if (p.crackSpringAge !== undefined) {
@@ -2705,7 +2755,11 @@
             dialDelta,
             p.romSpeed || 0,
           );
-          if (p.skid) this.audio.effect("skid");
+          if (p.skid) {
+            // A45A calls7AD2, saving the global16-bit slide-start clock.
+            p.skid.startFrame = Math.round(this.elapsed * 60) & 65535;
+            this.audio.effect("skid");
+          }
         }
         if (p.skid?.original) {
           const slide = p.skid;
@@ -2715,6 +2769,35 @@
           p.romFacingDirection = slide.facing;
           p.angle = isoAngle(slide.facing);
           if (!skidSurface || result.done) {
+            //4D80-4DBC calls7E44 only on its ordinary slide exit.
+            // Interrupted terrain transitions do not invent a completion award.
+            if (skidSurface && result.done) {
+              const kind =
+                { slalom: 1, downhill: 2, ramp: 3, jump: 4 }[
+                  this.event?.kind
+                ] || 0;
+              const frames =
+                (Math.round(this.elapsed * 60) - (slide.startFrame || 0)) &
+                65535;
+              const award = S.OriginalRoutines.airtimeAward(frames, kind);
+              if (award.points) {
+                if (award.deferred && this.event) {
+                  this.event.originalPendingPoints =
+                    ((this.event.originalPendingPoints || 0) + award.points) &
+                    65535;
+                  this.event.points += award.points;
+                } else this.addScore(award.points);
+                const effect = S.OriginalEffects.beginLandingEffect(
+                  award.index,
+                  p.x,
+                  p.y,
+                  surface.profile,
+                );
+                S.OriginalEffects.tickLandingEffect(effect, p.x, p.y);
+                this.floats = this.floats.filter((f) => !f.originalLanding);
+                this.floats.push(effect);
+              }
+            }
             const travel = slide.travel ^ (result.speed < 0 ? 8 : 0);
             p.romSpeed = Math.abs(result.speed);
             p.romDirection = p.romMovementDirection = travel;
@@ -3643,6 +3726,14 @@
           p.vx = slide.vx;
           p.vy = slide.vy;
           p.diagonalContacts = slide.hits;
+          if (
+            slide.fenceHit &&
+            this.elapsed - (p.lastFenceZap ?? -Infinity) > 0.55
+          ) {
+            p.lastFenceZap = this.elapsed;
+            p.fenceZap = 0.24;
+            this.audio.effect("fence-zap");
+          }
           if (p.air && !p.bail && !p.halfpipeFlight) this.fencePlant();
           // Retain native drive speed: repeatedly projecting that scalar too
           // would compound friction on each tick and recreate edge sticking.

@@ -197,5 +197,53 @@
     "processing": "Trim capture lead-in and trailing silence, loudness normalized to -20 LUFS, true-peak target -2 dBTP,44100Hz MP3",
     "measuredLUFS": "-20.00",
     "measuredTruePeak": "-8.98"
+  },
+  "rom-sfx/5a.mp3": {
+    "source": "User-provided720.zip original6502soundROM",
+    "command": "0x5a",
+    "sourceRoutine": "A3C0-A3CE / FCF6 high-speed bail selection",
+    "capture": "work\\original-cmd-5a-0997.webm",
+    "processing": "Trim 0.34373..0.50166s; fixed gain 15.307dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 0.15793
+  },
+  "rom-sfx/5b.mp3": {
+    "source": "User-provided720.zip original6502soundROM",
+    "command": "0x5b",
+    "sourceRoutine": "A3C0-A3CE / FCF6 high-speed bail selection",
+    "capture": "work\\original-cmd-5b-0997.webm",
+    "processing": "Trim 0.32666..5.00474s; fixed gain 17.845dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 4.67808
+  },
+  "rom-sfx/63.mp3": {
+    "source": "User-provided720.zip original6502soundROM",
+    "command": "0x63",
+    "sourceRoutine": "bank16000 CPU6FDA medal display FE9A+rank",
+    "capture": "work\\original-cmd-63-0997.webm",
+    "processing": "Trim 0.35065..0.50236s; fixed gain 15.265dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 0.15171
+  },
+  "rom-sfx/64.mp3": {
+    "source": "User-provided720.zip original6502soundROM",
+    "command": "0x64",
+    "sourceRoutine": "bank16000 CPU6FDA medal display FE9A+rank",
+    "capture": "work\\original-cmd-64-0997.webm",
+    "processing": "Trim 0.32223..0.67864s; fixed gain 9.287dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 0.35641
+  },
+  "rom-sfx/65.mp3": {
+    "source": "User-provided720.zip original6502soundROM",
+    "command": "0x65",
+    "sourceRoutine": "bank16000 CPU6FDA medal display FE9A+rank",
+    "capture": "work\\original-cmd-65-0997.webm",
+    "processing": "Trim 0.35230..1.44458s; fixed gain 14.264dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 1.09228
+  },
+  "rom-sfx/66.mp3": {
+    "source": "User-provided720.zip original6502soundROM",
+    "command": "0x66",
+    "sourceRoutine": "bank16000 CPU6FDA medal display FE9A+rank",
+    "capture": "work\\original-cmd-66-0997.webm",
+    "processing": "Trim 0.33797..1.53741s; fixed gain 21.556dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
+    "durationSeconds": 1.19944
   }
 }

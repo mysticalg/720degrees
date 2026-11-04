@@ -16,10 +16,10 @@
       { kind: "slalom", x: 5224, y: 2230 },
     ],
     shops: [
-      { kind: "helmet", x: 2750, y: 350, label: "HELMETS", price: 100 },
-      { kind: "shoes", x: 5560, y: 1500, label: "SHOES", price: 100 },
-      { kind: "board", x: 650, y: 1510, label: "BOARDS", price: 100 },
-      { kind: "pads", x: 3330, y: 2990, label: "PADS", price: 100 },
+      { kind: "helmet", x: 2750, y: 350, label: "HELMETS" },
+      { kind: "shoes", x: 5560, y: 1500, label: "SHOES" },
+      { kind: "board", x: 650, y: 1510, label: "BOARDS" },
+      { kind: "pads", x: 3330, y: 2990, label: "PADS" },
     ],
     ramps: [],
     // Solid actor contact uses recovered masks in the game contact stage.

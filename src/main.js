@@ -6,6 +6,21 @@
     audio = new S.AudioSystem(),
     renderer = new S.Renderer(canvas),
     game = new S.Game(input, audio);
+  // Cosmetic palette selection is independent of score, gear and game resets.
+  const skaterSelect = document.querySelector("#skater-select");
+  try {
+    const saved = localStorage.getItem("720-skater");
+    if (Object.hasOwn(S.EQUIPMENT_DATA.skaters, saved))
+      skaterSelect.value = saved;
+  } catch {}
+  renderer.skaterPalette = skaterSelect.value;
+  skaterSelect.onchange = () => {
+    renderer.skaterPalette = skaterSelect.value;
+    try {
+      localStorage.setItem("720-skater", skaterSelect.value);
+    } catch {}
+    skaterSelect.blur();
+  };
   document.querySelector("#skate-status").textContent =
     `${Object.keys(audio.foley.urls).length} SOUNDS READY`;
   const foleyInput = document.querySelector("#skate-pack");
@@ -66,7 +81,8 @@
         r.medal === "PARTICIPATION" ? "KEEP PRACTISING" : `${r.medal} MEDAL!`;
       document.querySelector("#result-copy").textContent =
         `${r.kind.toUpperCase()} PARK · CLASS ${game.event.difficulty}\n${S.format(r.points)} points · $${r.cash} prize\n${S.format(r.bonus)} points added to total`;
-      button.textContent = "BACK TO SKATE CITY";
+      button.textContent = "RETURNING TO SKATE CITY…";
+      button.disabled = !!game.eventAward;
     } else if (game.mode === "gameover" || game.mode === "victory") {
       document.querySelector("#result-title").textContent =
         game.mode === "victory" ? "YOU OWN SKATE CITY!" : "SKATE OR DIE.";
@@ -373,6 +389,7 @@
   window.render_game_to_text = () =>
     JSON.stringify({
       ...game.toJSON(),
+      skater: renderer.skaterPalette,
       debug: { collisionOverlay: !!renderer.showCollisions },
     });
   window.Skate720.app = {

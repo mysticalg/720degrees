@@ -38,6 +38,12 @@
         takedown: new Audio("assets/takedown.mp3?v=skate-library-84"),
         springboard: new Audio("assets/springboard.mp3?v=skate-library-84"),
       };
+      // Captured command clips are inert audio assets, never a sound emulator.
+      for (const command of [0x5a, 0x5b, 0x63, 0x64, 0x65, 0x66]) {
+        const clip = new Audio(`assets/rom-sfx/${command.toString(16)}.mp3`);
+        clip.preload = "none";
+        this.clips[`rom-${command}`] = clip;
+      }
       for (const audio of Object.values(this.clips)) audio.volume = 0.55;
       // The selected credit arrangement plays once, under music controls.
       this.clips.start.volume = this.musicVolume;
@@ -222,8 +228,79 @@
      * Optional imported skate cues are routed separately from ROM captures.
      * Credit still supplies the provisional shared ticket/park-entry cue.
      */
+    /** Small native fence enhancement, not a claimed sound-ROM recording.
+     * A cached noise buffer and swept pulse make a brief electrical crackle.
+     * Uses the saved skate SFX controls, independently of music volume.
+     */
+    fenceZap() {
+      if (
+        this.muted ||
+        !this.foley.enabled ||
+        !this.foley.volume ||
+        !this.context
+      )
+        return false;
+      const ctx = this.context;
+      if (ctx.state !== "running") return false;
+      this.zapBuffer ||= (() => {
+        const buffer = ctx.createBuffer(
+          1,
+          Math.ceil(ctx.sampleRate * 0.16),
+          ctx.sampleRate,
+        );
+        const data = buffer.getChannelData(0);
+        let seed = 720;
+        for (let i = 0; i < data.length; i++) {
+          seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+          data[i] = seed / 2147483648 - 1;
+        }
+        return buffer;
+      })();
+      const now = ctx.currentTime,
+        gain = ctx.createGain(),
+        filter = ctx.createBiquadFilter();
+      const noise = ctx.createBufferSource(),
+        pulse = ctx.createOscillator();
+      noise.buffer = this.zapBuffer;
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(3200, now);
+      filter.frequency.exponentialRampToValueAtTime(380, now + 0.16);
+      pulse.type = "sawtooth";
+      pulse.frequency.setValueAtTime(190, now);
+      pulse.frequency.exponentialRampToValueAtTime(48, now + 0.16);
+      gain.gain.setValueAtTime(this.foley.volume * 0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      noise.connect(filter);
+      pulse.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(now);
+      pulse.start(now);
+      pulse.stop(now + 0.16);
+      pulse.onended = () => {
+        noise.disconnect();
+        pulse.disconnect();
+        filter.disconnect();
+        gain.disconnect();
+      };
+      return true;
+    }
     effect(name, details) {
+      if (name === "fence-zap") return this.fenceZap();
       const enhanced = this.foley.effect(name, details);
+      const command =
+        name === "medal" &&
+        Number.isInteger(details?.rank) &&
+        details.rank >= 0 &&
+        details.rank <= 3
+          ? 0x63 + details.rank
+          : name === "crash" && [0x5a, 0x5b].includes(details?.originalCommand)
+            ? details.originalCommand
+            : null;
+      if (command !== null && !this.muted) {
+        this.clip(`rom-${command}`);
+        return true;
+      }
       if (
         !["coin", "purchase", "takedown", "springboard"].includes(name) ||
         this.muted

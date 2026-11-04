@@ -28,6 +28,7 @@
           "shadow",
           "pavement",
           "city-background",
+          "shop-prices",
           "ramp",
           "slalom",
           "jump",
@@ -533,6 +534,32 @@
         // Original map plus unchanged EC20 decorations, composited offline.
         // The opaque image avoids a costly full-map alpha blend on mobile.
         this.worldImage(this.assets["city-background"]);
+        // ECD0 selects FE7C[stage]-1, the same table as the actual charge.
+        // Tiny opaque ROM patches replace the baked first-stage mat digits.
+        const variant = S.OriginalEquipment.priceVariant(
+          Math.min(15, game.medals.length),
+          S.EQUIPMENT_DATA,
+        );
+        for (const patch of S.SHOP_PRICE_DATA) {
+          if (
+            patch.x + patch.width + this.offset.x < 0 ||
+            patch.x + this.offset.x > 512 ||
+            patch.y + patch.height + this.offset.y < 0 ||
+            patch.y + this.offset.y > 384
+          )
+            continue;
+          c.drawImage(
+            this.assets["shop-prices"],
+            patch.atlasX,
+            variant * 32,
+            patch.width,
+            patch.height,
+            patch.x,
+            patch.y,
+            patch.width,
+            patch.height,
+          );
+        }
       }
       const objects = [
         ...game.cracks.map((crack) => ({
@@ -731,8 +758,14 @@
         gear,
         Math.floor(time * 60),
         S.EQUIPMENT_DATA,
+        this.skaterPalette || "lester",
       );
-      const bodyPalette = gear.pads || gear.shoes ? equipment.body : null;
+      const bodyPalette =
+        gear.pads ||
+        gear.shoes ||
+        (this.skaterPalette && this.skaterPalette !== "lester")
+          ? equipment.body
+          : null;
       const boardPalette = gear.board ? equipment.board : null;
       const kicking =
         !p.air &&
@@ -824,6 +857,7 @@
           bodyPalette,
         );
       c.globalAlpha = 1;
+      if (p.fenceZap > 0) this.fenceZap(x, y, p.fenceZap);
       if (p.air && Math.abs(p.spin) > Math.PI)
         this.text(
           `${Math.floor((Math.abs(p.spin) * 180) / Math.PI)}\u00b0`,
@@ -833,6 +867,28 @@
           9,
           "center",
         );
+    }
+    /** Native electrical overlay; original skater pixels remain untouched.
+     * Deterministic short strokes avoid random allocations and glow filters.
+     */
+    fenceZap(x, y, remaining) {
+      const c = this.ctx,
+        phase = Math.floor(remaining * 60);
+      c.save();
+      c.lineWidth = 1;
+      c.globalAlpha = Math.min(1, remaining * 12);
+      c.strokeStyle = phase & 1 ? "#eaffff" : "#68dfff";
+      c.beginPath();
+      for (let side of [-1, 1]) {
+        c.moveTo(x + side * 8, y - 52);
+        for (let i = 1; i <= 7; i++)
+          c.lineTo(x + side * (i % 2 ? 15 + (phase % 3) : 6), y - 52 + i * 7);
+        c.moveTo(x + side * 19, y - 25);
+        c.lineTo(x + side * 26, y - 29);
+        c.lineTo(x + side * 23, y - 20);
+      }
+      c.stroke();
+      c.restore();
     }
     /** Draw the original column records produced by B266-B328's translation.
      * Bank data is inert graphics data; no ROM instructions execute here.
