@@ -503,3 +503,14 @@ footer small {
   width: 80px;
   text-transform: uppercase;
 }
+
+#medals-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+.medals-box {
+  max-height: 95%;
+  overflow: auto;
+}

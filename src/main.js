@@ -135,6 +135,7 @@
     }
     document.querySelector("#medals-total").textContent =
       `${game.medals.filter((m) => m.medal !== "PARTICIPATION").length} MEDALS · ${game.medals.length}/16 EVENTS COMPLETED`;
+    renderer.medalBoard(document.querySelector("#medals-canvas"), game);
     medalsPanel.hidden = false;
     document.querySelector("#medals-close").focus();
   };
@@ -390,5 +391,6 @@
       document.querySelector(".subtitle").textContent = error.message;
       document.querySelector("#start").disabled = true;
     });
+  syncScreen();
   requestAnimationFrame(frame);
 })();

@@ -314,3 +314,51 @@ v0.99.4 fixes the native traction adapter incorrectly banning and cancelling ski
 
 
 v0.99.5 replaces the provisional0.38-second traction blend with a translated slide controller. Fixed A2BE's original32-byte angle mask and a fast dial change (at least8 of144 counts/turn) admit the slide, rather than the native1280-speed threshold. A45A selects original body poses and a direction-specific board sequence; E51A advances its three-tick-rate sequence through phase6, then action0B holds it. Bank1A000 steering4CD8/4D80 preserves travel separately from facing, normalizes signed reverse motion and exits when aligned or below128 speed units.4EC2-4EDC contributes16 units of slide deceleration before existing terrain/equipment friction. Actual keyboard pushes from rest reached542, then a sharp turn entered and held the slide on a downhill slope, completing the original board sequence and exiting on alignment. All six layouts pass left/right input tests at600; the same ported state also admits300. Native input-dial conversion, collision/slope adapters, jump entry and enhanced recorded skid sound remain separate from this numeric translation. tools/extract_slide_tables.py reproduces the inert mask/sequence arrays from main.bin.
+
+
+## Course starts, original HUD and durable score retry (0.99.6)
+
+The course controller now translates bank16000 CPU66BA-6746 and7A3A-7A9C.
+Type9 raw terrain sets the original start latch; swept4px samples are a native
+contact adapter so fast movement cannot skip that strip. Course music waits
+for the start transition. Original0F22 allows600ticks for first-time training
+instructions, otherwise360; expiry calls65D6(-5), costing5seconds in ramp/jump
+or20 race units. It retries after300ticks and ends a depleted attempt. Waiting
+does not consume the active race clock. The previous extra1.5-second bail
+penalty was removed; the original running clock already includes bail time.
+
+Live timed-park seconds come from physical1F5F4+(park*10+class)*2, not the
+separate0F38 briefing duration. Ramp classes1..10 receive21..30seconds; jump
+receives25/28/24/32/28/40/36/52/48/55. Seconds use the original60-frame clock;
+races retain their global16-frame gate and airborne pause.
+
+The HUD now draws78BE's original two-row96..A7 alpha cells and its eight
+partial states, at original coordinates and1:1 pixel size. DD5C's original
+red/bronze/silver/gold palette words follow each class's medal thresholds.
+Race bars display remaining counter units; ramp/jump bars display deferred
+score shifted6/5, as the ROM does, alongside their numeric seconds. City time
+uses its original127-unit counter (rather than converted seconds), shorter bar and7C3C red/yellow low-time palette flash.
+No replacement progress-bar artwork is used.
+
+MEDALS now includes the original16 medal descriptors, ED B2/DC24 results
+palette,6FDA packed rank/park/class selection and ROM slot positions. The modal
+heading, class-number labels, summary and accessible table remain browser
+presentation; the complete cabinet scene/message choreography is not claimed.
+`tools/extract_course_hud.py` verifies source opcodes and reproduces the data
+and PNGs directly from the supplied revision-4 ROM, without emulation.
+
+Community scores now retain pending ordinary-run submissions in local storage,
+including their idempotent run UUID. A server failure, timeout, page reload or
+starting another run no longer discards the score. Save requests allow30seconds
+for a cold function and show the actual API error; refresh responses cannot
+overwrite a newer board selection. Successful retries remove only that saved
+run and preserve any others. Restricted local storage still permits in-session
+retry. The production API was independently checked for POST persistence and
+idempotence; the precise previous user failure was not reproduced. API and
+browser retry tests cover503 failures, full reload, same-UUID retry and a single
+SQL row. Test submissions are removed by exact-ID migration.
+
+Bounded browser checks cover40 class/park admissions and original start cells,
+waiting/penalty/start/music transitions, original medal graphics and all four
+bar palette states. Existing physics, map, actor, scoring and traffic regression
+suites remain in `npm test`. NativeArchimedes files are unaffected.

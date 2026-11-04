@@ -128,6 +128,18 @@
      * Change the source only at a cue boundary, never on every frame.
      */
     syncMusic(game) {
+      const waiting =
+        game.mode === "event" && game.event?.clock && !game.event.clock.started;
+      this.courseWaiting = waiting;
+      if (waiting) {
+        this.music.pause();
+        this.clips.start.pause();
+        this.introActive = false;
+        this.musicPaused = true;
+        this.musicContext = null;
+        return;
+      }
+
       const cue = ["continue", "gameover", "victory"].includes(game.mode)
         ? "scores"
         : game.event && ["event", "result"].includes(game.mode)
@@ -154,7 +166,7 @@
     playMusic() {
       this.musicPaused = false;
       const track = this.introActive ? this.clips.start : this.music;
-      if (!this.muted) track.play().catch(() => {});
+      if (!this.muted && !this.courseWaiting) track.play().catch(() => {});
     }
     pauseMusic() {
       this.foley.stop();

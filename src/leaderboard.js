@@ -17,19 +17,73 @@
       section.scrollIntoView({ block: "start", behavior: "smooth" });
       initials.focus({ preventScroll: true });
     };
-    let run = null,
-      saving = false;
+    const pendingKey = "720-pending-scores";
+    let pending = [],
+      run = null,
+      saving = false,
+      captured = false,
+      refreshSerial = 0;
+    try {
+      const saved = JSON.parse(localStorage.getItem(pendingKey) || "[]");
+      pending = Array.isArray(saved)
+        ? saved.filter(
+            (r) =>
+              r &&
+              /^[0-9a-f-]{36}$/i.test(r.id) &&
+              Number.isSafeInteger(r.score) &&
+              r.score > 0 &&
+              r.practice === false &&
+              r.assisted === false,
+          )
+        : [];
+      run = pending[0] || null;
+    } catch {}
+    const persist = () => {
+      try {
+        localStorage.setItem(pendingKey, JSON.stringify(pending));
+      } catch {}
+    };
+    const runId = () => {
+      if (crypto.randomUUID) return crypto.randomUUID();
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      const hex = Array.from(bytes, (b) =>
+        b.toString(16).padStart(2, "0"),
+      ).join("");
+      return [
+        hex.slice(0, 8),
+        hex.slice(8, 12),
+        hex.slice(12, 16),
+        hex.slice(16, 20),
+        hex.slice(20),
+      ].join("-");
+    };
+    async function scoreRequest(url, options = {}) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok)
+          throw Error(data.error || `Score server returned ${response.status}`);
+        return data;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
     try {
       initials.value = localStorage.getItem("720-initials") || "";
     } catch {}
     async function refresh() {
+      const serial = ++refreshSerial;
       status.textContent = "Loading scores…";
       try {
-        const response = await fetch(endpoint + "?skill=" + skill.value, {
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!response.ok) throw Error();
-        const data = await response.json();
+        const data = await scoreRequest(endpoint + "?skill=" + skill.value);
+        if (serial !== refreshSerial) return;
         body.replaceChildren();
         for (const [i, score] of data.scores.entries()) {
           const tr = document.createElement("tr");
@@ -48,8 +102,9 @@
           ? "Community high scores"
           : "No scores yet. Be the first!";
       } catch {
+        if (serial !== refreshSerial) return;
         status.textContent =
-          "Score server unavailable. Your local best is still saved.";
+          "Score server unavailable. Your local best and pending scores are still saved.";
       }
     }
     document.querySelector("#scores-open").onclick = () => {
@@ -71,19 +126,22 @@
         return;
       }
       const attempt = run;
+      attempt.initials = name;
+      persist();
       saving = true;
       submit.disabled = true;
       status.textContent = "Saving score…";
       try {
-        const response = await fetch(endpoint, {
+        await scoreRequest(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...run, initials: name }),
-          signal: AbortSignal.timeout(10000),
+          body: JSON.stringify({ ...attempt, initials: name }),
         });
-        if (!response.ok) throw Error();
         attempt.saved = true;
+        pending = pending.filter((r) => r.id !== attempt.id);
+        persist();
         if (attempt !== run) return;
+        run = pending[0] || null;
         form.hidden = true;
         enter.hidden = true;
         try {
@@ -91,8 +149,15 @@
         } catch {}
         await refresh();
         status.textContent = "Score saved to the server.";
-      } catch {
-        status.textContent = "Could not save. Press Save score to retry.";
+        if (run) game.changed?.();
+      } catch (error) {
+        status.textContent =
+          (error.name === "AbortError"
+            ? "Score server timed out."
+            : error.message === "Failed to fetch"
+              ? "Could not reach the score server."
+              : error.message) +
+          " Score kept on this device—press Save score to retry.";
       } finally {
         saving = false;
         submit.disabled = false;
@@ -100,8 +165,8 @@
     };
     return {
       start() {
-        run = null;
-        form.hidden = true;
+        captured = false;
+        form.hidden = !run;
       },
       sync() {
         const eligible =
@@ -110,25 +175,30 @@
           game.score > 0 &&
           ["gameover", "victory"].includes(game.mode) &&
           (!game.cashTally || game.cashTally.phase === "done");
-        enter.hidden = !eligible || !!run?.saved;
-        if (!eligible) {
-          form.hidden = true;
-          return;
-        }
-        if (!run) {
-          run = {
-            id: crypto.randomUUID(),
+        if (eligible && !captured) {
+          captured = true;
+          const finished = {
+            id: runId(),
             score: game.score,
             skill: game.experienced ? "experienced" : "training",
             version: S.CONFIG.version,
             practice: false,
             assisted: false,
           };
-          section.hidden = false;
+          pending.push(finished);
+          persist();
+          run ||= finished;
+        }
+        enter.hidden = !run;
+        form.hidden = !run;
+        if (!run) return;
+        if (run.initials && document.activeElement !== initials)
+          initials.value = run.initials;
+        section.hidden = false;
+        if (skill.value !== run.skill) {
           skill.value = run.skill;
           refresh();
         }
-        form.hidden = !!run.saved;
         document.querySelector("#score-final").textContent = Number(
           run.score,
         ).toLocaleString();

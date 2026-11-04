@@ -124,6 +124,7 @@
     }
     start(practice = false) {
       this.practice = practice;
+      this.courseInstructionsSeen = 0;
       this.cityActors = S.CITY_ACTOR_DATA.objects.map((object) => ({
         ...object,
         parkSign: object.kind === 93,
@@ -467,6 +468,16 @@
           ? null
           : S.OriginalParks.courseClass(this.parkState, parkIndex),
       );
+      const parkBit = 1 << parkIndex;
+      this.event.clock = S.OriginalCourseClock.begin(
+        target.kind,
+        this.event.difficulty,
+        S.COURSE_CLOCK_DATA,
+        !!this.parkState.advancedSkill,
+        !!(this.courseInstructionsSeen & parkBit),
+      );
+      this.courseInstructionsSeen |= parkBit;
+      this.event.startProbe = null;
       //6AF0 resets landing count;6AFE resets repetitions except the ramp's
       //separate7F80 path.0FE2 fatigue survives scene changes.
       this.landingScore.landings = 0;
@@ -1755,7 +1766,7 @@
       this.popup(reason, p.x, p.y - 45, "#ff967b");
       if (this.event) {
         this.event.crashes++;
-        this.event.timer = Math.max(0, this.event.timer - 1.5);
+        // The ROM clock runs through bails; no extra native time fine.
       }
     }
     /** Original bail state1 with native map/collision adapters. */
@@ -1964,6 +1975,7 @@
         medal,
         points: e.points,
         packedMedal: originalResult?.packedMedal ?? null,
+        classIndex: e.difficulty,
       });
       this.clears[e.kind] = Math.min(4, this.clears[e.kind] + 1);
       if (!this.practice) {
@@ -3710,17 +3722,43 @@
       }
       if (e.actors) e.actors = activeActors;
       e.elapsed += dt;
-      if (e.kind === "slalom" || e.kind === "downhill") {
-        // CPU7A74: every16th global frame, active phase3 only. Original
-        // action5 is airborne: jumping pauses this counter; bailing does not.
-        e.originalRaceCounter = S.OriginalRoutines.tickRaceCounter(
-          e.originalRaceCounter,
-          Math.round(this.elapsed * 60),
-          3,
-          p.air ? 5 : 1,
+      // Type9 sets0F27 at bank1E000:547E. Sweep original raw terrain.
+      const oldStart = e.startProbe || { x: p.x, y: p.y };
+      if (!e.clock.started && e.clock.phase === 2) {
+        const steps = Math.max(
+          1,
+          Math.ceil(Math.hypot(p.x - oldStart.x, p.y - oldStart.y) / 4),
         );
-        e.timer = e.originalRaceCounter;
-      } else e.timer -= dt;
+        for (let i = 0; i <= steps; i++) {
+          const sample = e.level.sample(
+            oldStart.x + ((p.x - oldStart.x) * i) / steps,
+            oldStart.y + ((p.y - oldStart.y) * i) / steps,
+          );
+          if (sample.type === 9) {
+            S.OriginalCourseClock.start(e.clock);
+            break;
+          }
+        }
+      }
+      e.startProbe = { x: p.x, y: p.y };
+      const clockStep = S.OriginalCourseClock.tick(
+        e.clock,
+        e.kind,
+        e.originalRaceCounter || 0,
+        Math.round(this.elapsed * 60),
+        p.air,
+      );
+      if (clockStep.penalty)
+        this.popup("START PENALTY", p.x, p.y - 45, "#ff6655");
+      if (e.kind === "slalom" || e.kind === "downhill") {
+        e.originalRaceCounter = clockStep.counter;
+        e.timer = clockStep.counter;
+      } else e.timer = e.clock.seconds;
+      if (e.clock.expired) {
+        this.finishEvent();
+        return;
+      }
+      if (!e.clock.started) return;
       if (e.kind === "ramp") {
         // The decoded surface profiles supply wall travel. Do not clamp the
         // pipe to a guessed rotated rectangle or reflect against an invisible
@@ -3975,6 +4013,10 @@
               kind: this.event.kind,
               round: this.event.round,
               time: +this.event.timer.toFixed(1),
+              phase: this.event.clock?.phase,
+              started: !!this.event.clock?.started,
+              startDelay: this.event.clock?.delay,
+              startPenalties: this.event.clock?.penalties,
               points: this.event.points,
               gatesHit: this.event.gatesHit,
               jumpsLanded: this.event.jumpsLanded,

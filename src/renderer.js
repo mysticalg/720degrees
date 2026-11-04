@@ -15,6 +15,9 @@
       this.ready = false;
       this.loadPromise = Promise.all(
         [
+          "rom-bar",
+          "rom-alpha",
+          "rom-medals",
           "motion-indices",
           "motion-tiles",
           "motion-tiles-1",
@@ -1088,6 +1091,67 @@
         effects.beeColumns,
       );
     }
+    /** Original alpha cells (no replacement font or drawn bar geometry). */
+    alphaCell(context, code, bank, x, y) {
+      context.drawImage(
+        this.assets["rom-alpha"],
+        (code & 63) * 8,
+        ((code & 1023) >> 6) * 8 + bank * 128,
+        8,
+        8,
+        x,
+        y,
+        8,
+        8,
+      );
+    }
+    medalBoard(canvas, game) {
+      const c = canvas.getContext("2d");
+      c.imageSmoothingEnabled = false;
+      c.fillStyle = "#071e27";
+      c.fillRect(0, 0, 512, 384);
+      c.fillStyle = "#fff038";
+      c.font = "bold 16px monospace";
+      c.textAlign = "center";
+      c.fillText("MEDALS", 256, 30);
+      // 6FDA-70E2: packed0262 result chooses rank/park descriptor and
+      // (stage&~3)+park position. Coordinates retain original64-unit words.
+      const records = game.practice
+        ? game.medals.map(
+            (m) =>
+              ((m.packedMedal || 0) & 192) |
+              (S.OriginalParks.kinds.indexOf(m.park) << 4) |
+              (m.classIndex || 1),
+          )
+        : game.parkState.results;
+      let weighted = 0;
+      records.slice(0, 16).forEach((packed, stage) => {
+        const rank = (packed >> 6) & 3,
+          park = (packed >> 4) & 3,
+          cls = packed & 15;
+        const slot = (stage & ~3) + park;
+        const x = S.COURSE_CLOCK_DATA.medalX[slot] / 64;
+        const y = (-S.COURSE_CLOCK_DATA.medalY[slot] / 64 - 48) & 511;
+        c.drawImage(
+          this.assets["rom-medals"],
+          (park * 4 + rank) * 32,
+          0,
+          32,
+          48,
+          x,
+          y,
+          32,
+          48,
+        );
+        c.fillStyle = "#fff";
+        c.font = "10px monospace";
+        c.fillText(String(cls), x + 16, y + 52);
+        weighted += rank * cls;
+      });
+      c.fillStyle = "#fff038";
+      c.font = "bold 12px monospace";
+      c.fillText("TOTAL " + weighted, 256, 365);
+    }
     hud(game, event) {
       const c = this.ctx;
       c.fillStyle = "#03232be8";
@@ -1113,13 +1177,48 @@
         : game.practice
           ? "FREE"
           : Math.max(0, Math.ceil(game.cityTimer));
-      this.text(
-        `TIME ${seconds}`,
-        496,
-        31,
-        Number(seconds) < 10 && !game.practice ? "#ff6655" : "#fff",
-        13,
-        "right",
+      if (!event || event.kind === "ramp" || event.kind === "jump")
+        this.text(
+          `TIME ${seconds}`,
+          496,
+          55,
+          Number(seconds) < 10 ? "#ff6655" : "#fff",
+          10,
+          "right",
+        );
+      const bar = S.OriginalCourseClock.bar(
+        event?.kind || null,
+        event?.originalRaceCounter || 0,
+        event?.originalPendingPoints || 0,
+        Math.max(0, game.originalCityClock.value),
+      );
+      // DD5C uses the original medal thresholds to choose the bar colour.
+      let variant = 4;
+      if (event) {
+        const metric =
+          event.kind === "slalom" || event.kind === "downhill"
+            ? event.originalRaceCounter
+            : event.originalPendingPoints || 0;
+        const limits = S.OriginalEventResult.thresholds(
+          event.kind,
+          event.difficulty,
+          S.EVENT_RESULT_DATA,
+        );
+        variant = S.OriginalEventResult.medal(metric, limits);
+      } else if (game.originalCityClock.value < 8)
+        variant = 5 + ((Math.floor(game.elapsed * 60) >> 3) & 1);
+      bar.tiles.forEach((tile, i) =>
+        c.drawImage(
+          this.assets["rom-bar"],
+          (tile - 0x96) * 8,
+          variant * 16,
+          8,
+          16,
+          bar.x + i * 8,
+          bar.y,
+          8,
+          16,
+        ),
       );
       if (event) {
         this.text(

@@ -56,7 +56,12 @@
       );
       course.timer = course.originalRaceCounter;
     }
-    if (kind === "ramp") course.timer = 45;
+    course.clock = S.OriginalCourseClock.begin(
+      kind,
+      difficulty,
+      S.COURSE_CLOCK_DATA,
+    );
+    if (kind === "ramp" || kind === "jump") course.timer = course.clock.seconds;
     const start = level.start.y + 170,
       end = level.finish?.y - 100 || start + 1000;
     course.gates = Array.from({ length: 10 }, (_, index) => {
