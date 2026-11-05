@@ -270,7 +270,7 @@
       );
       this.tell("SKATE CITY \u00b7 JUMP + C TO SPIN \u00b7 E AT A PARK", 7);
       this.audio.unlock();
-      this.audio.playStartCue();
+      this.audio.playStartCue(this);
       this.changed?.();
     }
     /** Original banner types93/94/95, using E6FE's played/rotation mask

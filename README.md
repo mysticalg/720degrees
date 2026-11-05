@@ -401,3 +401,7 @@ Kick acceleration now follows the translated original admission and animation co
 A numeric reference fixture records103 consecutive unmodified original-ROM frames. Both the portable translation and the actual browser Game with physical keyboard input match all103 frames: admission, phase/countdown, target/impulse, signed speed and recovery. This establishes the sampled flat-ground kick case, not complete original movement. The ramp-ground0ED0 lifecycle and other input/terrain adapters remain unfinished. Existing requested downhill tap boosts and fakie assistance remain separate enhancements.
 
 The current skater sound assets, cue mappings, volumes and controls are retained unchanged. No new sound, emulator or replacement graphics are included in this update.
+
+## Build0.100.2
+
+New games and practice begin directly on Skate City music. The separate opening credit arrangement is excluded from startup in both soundtrack modes. Course music still waits for the start line. Updated skater samples, foley mappings and music/SFX controls are retained; original audio files remain on disk.

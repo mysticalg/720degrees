@@ -87,11 +87,12 @@
         this.context = new (window.AudioContext || window.webkitAudioContext)();
       this.context.resume().catch(() => {});
     }
-    playStartCue() {
+    playStartCue(game) {
       this.stop();
       this.musicContext = null;
-      this.introActive = true;
-      this.playMusic();
+      // Start on the city's selected track. The separate credit arrangement
+      // is deliberately excluded from new games and practice sessions.
+      this.syncMusic(game);
     }
     musicPath(cue) {
       if (this.soundtrack === "original") return "assets/skate-city.mp3";
