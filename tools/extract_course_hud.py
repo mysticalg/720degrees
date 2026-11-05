@@ -22,8 +22,8 @@ assert b[0x16706:0x1670a]==bytes.fromhex('ce15fbff')
 assert b[0x165f0:0x165f6]==bytes.fromhex('c00cc00cc067')
 palette=json.loads((root/'assets/extraction-data.json').read_text())['palette']
 # Keep all palette banks in a small alpha atlas: x=tile column, y=bank*128+tile row.
-im=Image.new('RGBA',(512,128*4))
-for bank in range(4):
+im=Image.new('RGBA',(512,128*8))
+for bank in range(8):
  for t in range(1024):
   for y in range(8):
    for x in range(8):

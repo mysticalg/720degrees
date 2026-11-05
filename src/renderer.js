@@ -18,6 +18,7 @@
           "rom-bar",
           "rom-alpha",
           "rom-medals",
+          "award-scene",
           "motion-indices",
           "motion-tiles",
           "motion-tiles-1",
@@ -45,7 +46,7 @@
                 resolve();
               };
               image.onerror = () => reject(new Error(`Missing asset: ${name}`));
-              image.src = `assets/${name}.png`;
+              image.src = `assets/${name}.png?v=release-0999`;
             }),
         ),
       ).then(() => {
@@ -110,6 +111,10 @@
       c.fillRect(0, 0, 512, 384);
       if (!this.ready) {
         this.text("DECODING SKATE CITY...", 256, 180, "#d7ff35", 13, "center");
+        return;
+      }
+      if (game.mode === "result" && game.eventAward?.phase === "showcase") {
+        this.awardScene(c, game, game.eventAward.showcase);
         return;
       }
       const event =
@@ -1160,33 +1165,119 @@
         8,
       );
     }
-    medalBoard(canvas, game) {
-      const c = canvas.getContext("2d");
+    /** Source4D30 frame cells,8B04/8B52 glyphs and EDB2 scenery. */
+    awardScene(c, game, state = null) {
+      const data = S.AWARD_SCENE_DATA;
       c.imageSmoothingEnabled = false;
-      c.fillStyle = "#071e27";
-      c.fillRect(0, 0, 512, 384);
-      c.fillStyle = "#fff038";
-      c.font = "bold 16px monospace";
-      c.textAlign = "center";
-      c.fillText("MEDALS", 256, 30);
-      // 6FDA-70E2: packed0262 result chooses rank/park descriptor and
-      // (stage&~3)+park position. Coordinates retain original64-unit words.
-      const records = game.practice
-        ? game.medals.map(
-            (m) =>
-              ((m.packedMedal || 0) & 192) |
-              (S.OriginalParks.kinds.indexOf(m.park) << 4) |
-              (m.classIndex || 1),
-          )
-        : game.parkState.results;
+      c.drawImage(
+        this.assets["award-scene"],
+        128,
+        128,
+        512,
+        384,
+        0,
+        0,
+        512,
+        384,
+      );
+      const position = (address) => ({
+        x: ((address - 0x2000) & 127) * 4,
+        y: ((address - 0x2000) >> 7) * 8,
+      });
+      const text = (value, address, large = false) => {
+        const p = position(address);
+        for (const char of String(value)) {
+          if (large) {
+            const codes = data.largeGlyphs[char] || data.largeGlyphs[" "];
+            codes.forEach((code, i) =>
+              this.alphaCell(c, code, 7, p.x + (i & 1) * 8, p.y + (i >> 1) * 8),
+            );
+            p.x += 16;
+          } else {
+            this.alphaCell(c, data.smallGlyphs[char] ?? 0x87, 7, p.x, p.y);
+            p.x += 8;
+          }
+        }
+        return 0x2000 + (p.y / 8) * 128 + p.x / 4;
+      };
+      // Cache the unchanged frame/label layer: one image submission on phones.
+      if (!this.awardLabels) {
+        const image = document.createElement("canvas");
+        image.width = 512;
+        image.height = 384;
+        const prior = c;
+        c = image.getContext("2d");
+        for (const frame of data.frames) {
+          const p = position(frame.position);
+          for (let y = 0; y < frame.height; y++)
+            for (let x = 0; x < frame.width; x++) {
+              const code =
+                y === 0
+                  ? x === 0
+                    ? 0x110
+                    : x === frame.width - 1
+                      ? 0x112
+                      : 0x111
+                  : y === frame.height - 1
+                    ? x === 0
+                      ? 0x115
+                      : x === frame.width - 1
+                        ? 0x117
+                        : 0x116
+                    : x === 0
+                      ? 0x113
+                      : x === frame.width - 1
+                        ? 0x114
+                        : 0x87;
+              this.alphaCell(c, code, 7, p.x + x * 8, p.y + y * 8);
+            }
+        }
+        for (let index = 0x18; index <= 0x1f; index++) {
+          const message = data.messages[index];
+          text(message.text, message.position, index === 0x1d);
+        }
+        this.awardLabels = image;
+        c = prior;
+      }
+      // Original100 wheel actors:57 1A directory, three-tick divider, palette0.
+      const priorContext = this.ctx,
+        priorOffset = this.offset;
+      this.ctx = c;
+      this.offset = { x: 0, y: 0 };
+      const readWord = (a) =>
+        this.motionBanks[0][a - 0x4000] |
+        (this.motionBanks[0][a - 0x4000 + 1] << 8);
+      let wheel = { pointer: 0x571a, rate: 3, countdown: 3, phase: 0 };
+      for (let tick = 0; tick < (state?.frame || 0) % 12; tick++)
+        S.OriginalRoutines.tickMotionAnimation(wheel, readWord);
+      for (const w of data.wheels)
+        this.descriptorSkater(
+          w.xWord / 64 - 128 + 40,
+          ((512 - w.yWord / 64) & 511) - 11,
+          0,
+          false,
+          "body",
+          null,
+          0,
+          wheel.pointer,
+          4,
+          data.wheelPalette,
+        );
+      this.ctx = priorContext;
+      this.offset = priorOffset;
+      c.drawImage(this.awardLabels, 0, 0);
+      text(1, 0x2000 + 0x28a + 28, true); // PLAYER glyphs end at228A+24;888C adds4.
+      text(game.score, 0x2000 + 0x40c + 14);
+      const records = state?.records || game.medalRecords(),
+        count = state?.revealed ?? records.length;
       let weighted = 0;
-      records.slice(0, 16).forEach((packed, stage) => {
-        const rank = (packed >> 6) & 3,
-          park = (packed >> 4) & 3,
-          cls = packed & 15;
-        const slot = (stage & ~3) + park;
-        const x = S.COURSE_CLOCK_DATA.medalX[slot] / 64;
-        const y = (-S.COURSE_CLOCK_DATA.medalY[slot] / 64 - 48) & 511;
+      records.slice(0, count).forEach((packed, index) => {
+        const rank = packed >>> 6,
+          park = (packed >>> 4) & 3,
+          cls = packed & 15,
+          slot = (index & ~3) + park;
+        const x = S.COURSE_CLOCK_DATA.medalX[slot] / 64,
+          y = (-S.COURSE_CLOCK_DATA.medalY[slot] / 64 - 48) & 511;
         c.drawImage(
           this.assets["rom-medals"],
           (park * 4 + rank) * 32,
@@ -1198,14 +1289,24 @@
           32,
           48,
         );
-        c.fillStyle = "#fff";
-        c.font = "10px monospace";
-        c.fillText(String(cls), x + 16, y + 52);
+        const p = position(data.classPositions[slot]);
+        this.alphaCell(c, 0x116 + cls * 2, 5, p.x, p.y);
+        this.alphaCell(c, 0x117 + cls * 2, 5, p.x, p.y + 8);
         weighted += rank * cls;
       });
-      c.fillStyle = "#fff038";
-      c.font = "bold 12px monospace";
-      c.fillText("TOTAL " + weighted, 256, 365);
+      text(weighted, 0x2524);
+      for (const [index, kind] of [
+        [0x19, "board"],
+        [0x1a, "shoes"],
+        [0x1b, "pads"],
+        [0x1c, "helmet"],
+      ]) {
+        const message = data.messages[index];
+        text(game.gear[kind], message.position + message.text.length * 2);
+      }
+    }
+    medalBoard(canvas, game) {
+      this.awardScene(canvas.getContext("2d"), game);
     }
     hud(game, event) {
       const c = this.ctx;

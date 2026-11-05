@@ -378,3 +378,10 @@ The result sequence now tallies original race/pending counters and automatically
 ## Build0.99.8
 
 Lance now uses the exact original Player2 palette recovered from DB8C-DBC0 (words13F2C..13F4A). Lester retains original Player1 colours (21F2C..21F4A). Barbie keeps her brown skin with a requested orange T-shirt. Natas is unchanged. The palette extractor verifies the original selection instructions before reading the tables.
+
+
+## Build0.99.9
+
+The automatic sequence after every course now shows the original skateboard scene recovered from EDB2/EE40's scene5 loader. It uses original scenery pixels, DABA palette words, four animated wheel actors, original frame/font cells and the packed medal descriptors/class digits. Medals reveal with the original63..66 sound captures and weighted medal score; the sequence returns automatically without adding any extra gameplay score. The MEDALS review button uses the same scene.
+
+The reveal logic translates6FDA..7110's10/40-tick row waits and120+10-per-stage tail. The ordinary one-player adapter supplies the completed-stage comparison word. Full cabinet fades and two-player handoffs remain unfinished. Source extraction uses no instruction execution; an isolated original-ROM reference capture verified the viewport and wheel placement. Nothing from that reference emulator is used by the delivered game.

@@ -67,6 +67,7 @@
     result.hidden = !["result", "continue", "gameover", "victory"].includes(
       game.mode,
     );
+    if (game.eventAward?.phase === "showcase") result.hidden = true;
     button.disabled = false;
     document.querySelector("#end-run").hidden = game.mode !== "continue";
     if (game.mode === "continue") {
@@ -390,6 +391,13 @@
     JSON.stringify({
       ...game.toJSON(),
       skater: renderer.skaterPalette,
+      award: game.eventAward
+        ? {
+            phase: game.eventAward.phase,
+            revealed: game.eventAward.showcase?.revealed,
+            weighted: game.eventAward.showcase?.weighted,
+          }
+        : null,
       debug: { collisionOverlay: !!renderer.showCollisions },
     });
   window.Skate720.app = {

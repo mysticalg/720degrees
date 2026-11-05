@@ -2001,21 +2001,46 @@
         original: originalResult,
       };
       this.mode = "result";
-      this.audio.effect("medal", { rank: originalResult.rank });
       this.changed?.();
     }
     /** Bank16000:68BC-697A result lead, per-tick EF24 tally and tail.
      * Pausing freezes this scene just as it freezes gameplay.
      */
+    medalRecords() {
+      return this.practice
+        ? this.medals
+            .map(
+              (m) =>
+                ((m.packedMedal || 0) & 192) |
+                (S.OriginalParks.kinds.indexOf(m.park) << 4) |
+                (m.classIndex || 1),
+            )
+            .slice(0, 16)
+        : this.parkState.results.slice(0, 16);
+    }
     tickEventAward() {
       const state = this.eventAward,
         e = this.event;
       if (!state || !e) return;
+      if (state.phase === "showcase") {
+        const reveal = S.OriginalMedalShowcase.tick(state.showcase);
+        if (reveal) this.audio.effect("medal", { rank: reveal.rank });
+        if (state.showcase.done) {
+          this.eventAward = null;
+          this.continueAfterEvent();
+        }
+        return;
+      }
       if (state.phase === "medal" || state.phase === "tail") {
         if (--state.delay > 0) return;
         if (state.phase === "tail") {
-          this.eventAward = null;
-          this.continueAfterEvent();
+          state.phase = "showcase";
+          const records = this.medalRecords();
+          state.showcase = S.OriginalMedalShowcase.begin(
+            records,
+            records.length,
+          );
+          this.changed?.();
           return;
         }
         state.phase = "tally";
