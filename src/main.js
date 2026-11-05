@@ -359,6 +359,7 @@
       }
     }
     audio.syncMusic(game);
+    audio.syncOriginalMotion(game);
     audio.foley.update(game, delta);
     const padLabel = input.padName
       ? `${input.padName} · ${input.controlMode.toUpperCase()} MODE`
@@ -385,6 +386,7 @@
     const steps = Math.max(1, Math.round(ms / (1000 / 60)));
     for (let i = 0; i < steps; i++) game.update(S.CONFIG.step);
     audio.syncMusic(game);
+    audio.syncOriginalMotion(game);
     renderer.draw(game);
   };
   window.render_game_to_text = () =>

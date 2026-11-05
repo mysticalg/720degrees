@@ -2783,7 +2783,7 @@
           if (p.skid) {
             // A45A calls7AD2, saving the global16-bit slide-start clock.
             p.skid.startFrame = Math.round(this.elapsed * 60) & 65535;
-            this.audio.effect("skid");
+            this.audio.effect("skid", { originalCommand: 0x57 });
           }
         }
         if (p.skid?.original) {

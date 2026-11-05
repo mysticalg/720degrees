@@ -385,3 +385,10 @@ Lance now uses the exact original Player2 palette recovered from DB8C-DBC0 (word
 The automatic sequence after every course now shows the original skateboard scene recovered from EDB2/EE40's scene5 loader. It uses original scenery pixels, DABA palette words, four animated wheel actors, original frame/font cells and the packed medal descriptors/class digits. Medals reveal with the original63..66 sound captures and weighted medal score; the sequence returns automatically without adding any extra gameplay score. The MEDALS review button uses the same scene.
 
 The reveal logic translates6FDA..7110's10/40-tick row waits and120+10-per-stage tail. The ordinary one-player adapter supplies the completed-stage comparison word. Full cabinet fades and two-player handoffs remain unfinished. Source extraction uses no instruction execution; an isolated original-ROM reference capture verified the viewport and wheel placement. Nothing from that reference emulator is used by the delivered game.
+
+
+## Build0.100.0
+
+Original bail commands54/56 and slide command57 now play static captures of their initialized sound-sequence states. The existing ROM-derived bail selection chooses the impact; entering the translated original slide starts the slide recording. Recovery, slide alignment/cancellation and leaving gameplay stop the corresponding cue. Pause and master mute retain its position for resuming. These cues remain available when the optional enhanced skate pack is disabled.
+
+The sound-ROM dispatcher4333/4351 writes variables for these commands rather than starting independent sequences. The recordings were captured after initializing the original sequence46, with provenance and fixed-gain processing in assets/sound-sources.json. Browser sample looping and lifetime handling are adapters: the continuous original sound sequencer, speed-request controller5B46..5BD0 and its dynamic pitch are still unfinished. No runtime emulator or synthesized replacement is added.

@@ -245,5 +245,35 @@
     "capture": "work\\original-cmd-66-0997.webm",
     "processing": "Trim 0.33797..1.53741s; fixed gain 21.556dB;44.1kHz stereo128k MP3; no synthesis or pitch change",
     "durationSeconds": 1.19944
+  },
+  "rom-sfx/54.mp3": {
+    "source": "User-provided720.zip original6502soundROM; unmodified sound program",
+    "command": "0x54",
+    "sourceRoutine": "A428 / A3C0-FCF6 bail state",
+    "capture": "work\\parameter-54-1000.webm",
+    "initialization": "Original commands05,53,7C,47;46 starts skate sequence12; three repeated48 commands; target parameter at0.30s. Original main command writer muted only in isolated extractor to prevent unrelated music/voices. No runtime emulator.",
+    "processing": "Trim 0.30000..3.27000s; fixed gain 13.547dB;44.1kHz stereo128k MP3; no synthesis/pitch change",
+    "durationSeconds": 2.97,
+    "playback": "Stop at bail recovery55"
+  },
+  "rom-sfx/56.mp3": {
+    "source": "User-provided720.zip original6502soundROM; unmodified sound program",
+    "command": "0x56",
+    "sourceRoutine": "A428 / A3C0-FCF6 bail state",
+    "capture": "work\\parameter-56-1000.webm",
+    "initialization": "Original commands05,53,7C,47;46 starts skate sequence12; three repeated48 commands; target parameter at0.30s. Original main command writer muted only in isolated extractor to prevent unrelated music/voices. No runtime emulator.",
+    "processing": "Trim 0.30000..1.01424s; fixed gain 13.660dB;44.1kHz stereo128k MP3; no synthesis/pitch change",
+    "durationSeconds": 0.71424,
+    "playback": "One shot"
+  },
+  "rom-sfx/57.mp3": {
+    "source": "User-provided720.zip original6502soundROM; unmodified sound program",
+    "command": "0x57",
+    "sourceRoutine": "A45A/A4F0 slide setup;4DA4 exit58",
+    "capture": "work\\parameter-57-1000.webm",
+    "initialization": "Original commands05,53,7C,47;46 starts skate sequence12; three repeated48 commands; target parameter at0.30s. Original main command writer muted only in isolated extractor to prevent unrelated music/voices. No runtime emulator.",
+    "processing": "Trim 0.30000..3.27000s; fixed gain 21.415dB;44.1kHz stereo128k MP3; no synthesis/pitch change",
+    "durationSeconds": 2.97,
+    "playback": "Loop while original slide active; stop at58/cancel. Sample-loop phase is a native audio adapter."
   }
 }

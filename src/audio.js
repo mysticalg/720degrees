@@ -19,6 +19,7 @@
           this.soundtrack = "original";
       } catch {}
       this.shopVoice = null;
+      this.motionClips = {};
       this.context = null;
       this.introActive = false;
       this.musicPaused = true;
@@ -39,9 +40,11 @@
         springboard: new Audio("assets/springboard.mp3?v=skate-library-84"),
       };
       // Captured command clips are inert audio assets, never a sound emulator.
-      for (const command of [0x5a, 0x5b, 0x63, 0x64, 0x65, 0x66]) {
+      for (const command of [
+        0x54, 0x56, 0x57, 0x5a, 0x5b, 0x63, 0x64, 0x65, 0x66,
+      ]) {
         const clip = new Audio(`assets/rom-sfx/${command.toString(16)}.mp3`);
-        clip.preload = "none";
+        clip.preload = command <= 0x57 ? "auto" : "none";
         this.clips[`rom-${command}`] = clip;
       }
       for (const audio of Object.values(this.clips)) audio.volume = 0.55;
@@ -186,9 +189,61 @@
       this.pauseMusic();
       this.introActive = false;
       this.music.currentTime = 0;
+      this.motionClips = {};
       for (const a of Object.values(this.clips)) {
         a.pause();
         a.currentTime = 0;
+      }
+    }
+    stopMotionCue(kind) {
+      const cue = this.motionClips[kind];
+      if (!cue) return;
+      cue.audio.pause();
+      cue.audio.currentTime = 0;
+      delete this.motionClips[kind];
+    }
+    /** Static captures of the initialized original sound-sequence states.
+     * Source55/58 end the bail/slide state. Browser samples adapt that lifetime;
+     * no sound CPU, instruction interpreter or synthesized replacement is used.
+     */
+    playMotionCue(kind, command, loop = false) {
+      this.stopMotionCue(kind);
+      if (kind === "impact") this.stopMotionCue("slide");
+      const audio = this.clips[`rom-${command}`];
+      if (this.muted || !audio) return false;
+      const cue = { audio, paused: false };
+      this.motionClips[kind] = cue;
+      audio.loop = loop;
+      audio.currentTime = 0;
+      audio.onended = () => {
+        if (!loop && this.motionClips[kind] === cue)
+          delete this.motionClips[kind];
+      };
+      audio.play().catch(() => {});
+      return true;
+    }
+    /** Follow actual simulation state, including cancelled jumps and courses.
+     * A paused game retains sample position; recovery/cancellation clears it.
+     */
+    syncOriginalMotion(game) {
+      for (const [kind, cue] of Object.entries(this.motionClips)) {
+        const playing = ["city", "event"].includes(game.mode);
+        const active =
+          playing &&
+          (kind === "impact"
+            ? !!game.player.bail
+            : !!game.player.skid?.original);
+        if (!active) {
+          this.stopMotionCue(kind);
+          continue;
+        }
+        if (game.paused || this.muted) {
+          cue.audio.pause();
+          cue.paused = true;
+        } else if (cue.paused) {
+          cue.paused = false;
+          cue.audio.play().catch(() => {});
+        }
       }
     }
     clip(name) {
@@ -288,6 +343,12 @@
     effect(name, details) {
       if (name === "fence-zap") return this.fenceZap();
       const enhanced = this.foley.effect(name, details);
+      if (name === "crash" && [0x54, 0x56].includes(details?.originalCommand))
+        return (
+          this.playMotionCue("impact", details.originalCommand) || enhanced
+        );
+      if (name === "skid" && details?.originalCommand === 0x57)
+        return this.playMotionCue("slide", 0x57, true) || enhanced;
       const command =
         name === "medal" &&
         Number.isInteger(details?.rank) &&
