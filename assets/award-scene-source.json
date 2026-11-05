@@ -1,5 +1,5 @@
 {
-  "source": "EDB2/EE40 ->bank1800:4000; high3C00:7F8C; E908-EA5C; DABA palette",
+  "source": "EDB2/EE40 ->bank1800:4000; high3C00:7F8C; E908-EA5C; DABA base plus EE12/DC3C group15 variant1",
   "kind": 5,
   "width": 768,
   "height": 640,
@@ -42,6 +42,24 @@
   "crop": [
     128,
     128
+  ],
+  "panelPaletteWords": [
+    5081,
+    8779,
+    17515,
+    26251,
+    34987,
+    65293,
+    65293,
+    65293,
+    65293,
+    18683,
+    61995,
+    9479,
+    65293,
+    65293,
+    333,
+    61179
   ],
   "frames": [
     {

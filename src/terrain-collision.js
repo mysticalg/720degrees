@@ -322,6 +322,8 @@
     return (entry[key] = { segments, buckets, outside, paths });
   }
   function blocked(level, x, y, barriersOnly = false) {
+    const loop = globalThis.window?.Skate720?.CityLoop;
+    if (level.kind === "city" && loop) ({ x, y } = loop.point(x, y));
     const mesh = geometry(level, barriersOnly);
     if (mesh) {
       let crossings = 0;
@@ -447,7 +449,13 @@
         maxX = Math.floor(Math.max(start.x, end.x) / TILE - 0.5) + 1;
       const minY = Math.floor(Math.min(start.y, end.y) / TILE - 0.5) - 1,
         maxY = Math.floor(Math.max(start.y, end.y) / TILE - 0.5) + 1;
-      const mesh = geometry(level, barriersOnly);
+      // Cached finite-map contours close at the image border. At the city
+      // join, build the small local sweep from wrapped samples instead.
+      const atCityJoin =
+        level.kind === "city" &&
+        (Math.min(start.y, end.y) < 16 ||
+          Math.max(start.y, end.y) > level.height - 16);
+      const mesh = atCityJoin ? null : geometry(level, barriersOnly);
       const candidates = mesh
         ? mesh.segments.filter(
             (s) =>

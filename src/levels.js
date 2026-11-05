@@ -84,6 +84,8 @@
       this.image.src = `assets/levels/${info.name}${this.halfpipeExtraWidth ? "-wide" : ""}.png`;
     }
     sample(x, y) {
+      if (this.kind === "city" && S.CityLoop)
+        ({ x, y } = S.CityLoop.point(x, y));
       if (this.halfpipeExtraWidth)
         ({ x, y } = S.HalfpipeWidth.sourcePoint(x, y));
       const sourceColumns = this.originalMap.columns,

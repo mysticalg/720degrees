@@ -3146,7 +3146,7 @@
       // Let ROM terrain checks handle those cells rather than cutting off
       // 45/75 pixels of valid scenery with the course camera margin.
       p.x = S.clamp(p.x, e ? 35 : 4, width - (e ? 35 : 4));
-      p.y = S.clamp(p.y, e ? 75 : 4, height - (e ? 45 : 4));
+      if (e) p.y = S.clamp(p.y, 75, height - 45);
       this.updateCopingTravel();
       if (p.copingReturn?.t >= 1) {
         p.x = p.copingReturn.floor.x;
@@ -3158,6 +3158,32 @@
       if (e?.kind === "jump" && p.air) this.updateCourseShadow(dt);
       if (p.dropFall) this.updateDropContact();
       this.collideWithRecoveredTerrain();
+      if (!e) {
+        // Rebase only after the short collision sweep; sweeping across the
+        // whole map would manufacture collisions and sideways deflections.
+        const point = S.CityLoop.point(p.x, p.y);
+        const dx = point.x - p.x,
+          dy = point.y - p.y;
+        if (dx || dy) {
+          p.x = point.x;
+          p.y = point.y;
+          this.camera.x += dx;
+          this.camera.y += dy;
+          if (p.lastSafe)
+            p.lastSafe = S.CityLoop.point(p.lastSafe.x, p.lastSafe.y);
+          // Pursuit uses packed T11 coordinates, whose Y polarity is reversed.
+          // Keep its relative position when changing the native map image.
+          const pursuit = this.bees?.originalPursuit;
+          if (pursuit) {
+            pursuit.x = (pursuit.x + Math.round(dx * 64)) & 65535;
+            pursuit.y = (pursuit.y - Math.round(dy * 64)) & 65535;
+          }
+          if (p.terrainStepOrigin) {
+            p.terrainStepOrigin.x += dx;
+            p.terrainStepOrigin.y += dy;
+          }
+        }
+      }
       if (this.mode === "city") this.updateCity(dt);
       else this.updateEvent(dt);
       this.camera.x +=

@@ -52,13 +52,17 @@ def rgb(v):
  intensity=[0,124,132,141,152,161,169,178,193,202,210,219,230,239,247,256][v&15]
  levels=[0,3,4,5,6,7,8,9,10,11,12,13,14,14,15,15]
  return [(levels[(v>>s)&15]*intensity)>>4 for s in [12,8,4]]
-# DABA's predecrement loop copies7DAC..7EAA into playfield palette128..255.
+# DABA supplies the base. EDB2's ordinary single-player branch EE12-EE24
+# then selects DC3C group15/variant1. The base alone intentionally hides
+# the course panels by giving pens5..14 the board's yellow colour.
 palette=np.array([rgb(word(0x13dac+i*2)) for i in range(128)],dtype=np.uint8)
+assert rom[0xee12:0xee1e]==bytes.fromhex('df150f00ac0edf150100ae0e')
+palette[112:128]=[rgb(word(0x13ecc+i*2)) for i in range(16)]
 tiles=np.array([list(t) for t in decode(scenery,8,[0,4,len(scenery)*4,len(scenery)*4+4],8192)],np.uint8).reshape(8192,8,8)
 pixels=tiles[actual]+((raw>>11)&7)[:,:,None,None]*16
 image=palette[pixels].transpose(0,2,1,3,4).reshape(rows*128,columns*128,3)
 Image.fromarray(image).save(root/'assets/award-scene.png',optimize=True)
-metadata={'source':'EDB2/EE40 ->bank1800:4000; high3C00:7F8C; E908-EA5C; DABA palette', 'kind':kind,'width':columns*128,'height':rows*128,'offset':offset,'macroColumns':columns,'macroRows':rows,'aliasLow':alias_low,'aliasHigh':alias_high,'wheels':[],'viewportVerified':True,'crop':[128,128]}
+metadata={'source':'EDB2/EE40 ->bank1800:4000; high3C00:7F8C; E908-EA5C; DABA base plus EE12/DC3C group15 variant1', 'kind':kind,'width':columns*128,'height':rows*128,'offset':offset,'macroColumns':columns,'macroRows':rows,'aliasLow':alias_low,'aliasHigh':alias_high,'wheels':[],'viewportVerified':True,'crop':[128,128],'panelPaletteWords':[word(0x13ecc+i*2) for i in range(16)]}
 for i in range(4):
  metadata['wheels'].append({'kind':rom[0x21d94+i],'entry':word(0x21d9a+i*2),'xWord':word(0x21da4+i*2),'yWord':word(0x21dae+i*2),'rate':3})
 # A9FC769E/76B0 and dictionary5AC8 retain the original title/gear layout.

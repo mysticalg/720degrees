@@ -3,6 +3,17 @@
  */
 (() => {
   const S = window.Skate720;
+  // Original scrolling directory: 1A000:42E6-42FA /4358-4364.
+  // South wraps from 0A80 to0194, ten 128px blocks into the first row;
+  // north does the inverse. This is a skewed join, not a rectangular torus.
+  S.CityLoop = {
+    height: 3072,
+    shift: 1280,
+    point(x, y) {
+      const turns = Math.floor(y / this.height);
+      return { x: x + turns * this.shift, y: y - turns * this.height };
+    },
+  };
   S.makeCity = () => ({
     width: 6144,
     height: 3072,

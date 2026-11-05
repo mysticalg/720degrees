@@ -18,6 +18,7 @@
           "rom-bar",
           "rom-alpha",
           "rom-medals",
+          "rom-medal-meter",
           "award-scene",
           "motion-indices",
           "motion-tiles",
@@ -46,7 +47,7 @@
                 resolve();
               };
               image.onerror = () => reject(new Error(`Missing asset: ${name}`));
-              image.src = `assets/${name}.png?v=release-1002`;
+              image.src = `assets/${name}.png?v=release-1003`;
             }),
         ),
       ).then(() => {
@@ -124,39 +125,57 @@
       const width = event ? event.width : game.city.width,
         height = event ? event.height : game.city.height;
       const camX = S.clamp(game.camera.x, 256, width - 256),
-        camY = S.clamp(game.camera.y, 192, height - 192);
+        camY = event
+          ? S.clamp(game.camera.y, 192, height - 192)
+          : game.camera.y;
       this.offset = { x: Math.round(256 - camX), y: Math.round(192 - camY) };
-      c.save();
-      c.translate(this.offset.x, this.offset.y);
-      // Loaded scenery is opaque and already covers the viewport. Avoid a
-      // redundant world-sized pattern fill (and pattern state) underneath it.
-      if (!(event ? event.level.ready : game.city.level.ready)) {
-        c.fillStyle = this.pavement;
-        c.fillRect(-this.offset.x, -this.offset.y, 512, 384);
-      }
-      if (event) this.course(game, event);
-      else this.city(game);
-      if (game.bees && !event) this.swarm(game.bees, game.elapsed);
-      for (const f of game.floats) {
-        c.globalAlpha = Math.min(1, f.life);
-        if (f.originalLanding)
-          this.descriptorSkater(
-            f.x + (f.groundShift || 0),
-            f.y - (f.groundRise || 0),
-            0,
-            false,
-            "body",
-            null,
-            0,
-            f.entry,
-            2,
+      const baseOffset = this.offset;
+      // Draw only the neighbouring world image visible across the skewed
+      // north/south seam. Actors, shadows and scenery share the same offset.
+      const copies = event
+        ? [0]
+        : [-1, 0, 1].filter(
+            (turn) =>
+              turn * height < camY + 192 && (turn + 1) * height > camY - 192,
           );
-        else this.text(f.text, f.x, f.y, f.color, 11, "center");
+      for (const turn of copies) {
+        this.offset = {
+          x: baseOffset.x - turn * S.CityLoop.shift,
+          y: baseOffset.y + turn * height,
+        };
+        c.save();
+        c.translate(this.offset.x, this.offset.y);
+        // Loaded scenery is opaque and already covers the viewport. Avoid a
+        // redundant world-sized pattern fill (and pattern state) underneath it.
+        if (!(event ? event.level.ready : game.city.level.ready)) {
+          c.fillStyle = this.pavement;
+          c.fillRect(-this.offset.x, -this.offset.y, 512, 384);
+        }
+        if (event) this.course(game, event);
+        else this.city(game);
+        if (game.bees && !event) this.swarm(game.bees, game.elapsed);
+        for (const f of game.floats) {
+          c.globalAlpha = Math.min(1, f.life);
+          if (f.originalLanding)
+            this.descriptorSkater(
+              f.x + (f.groundShift || 0),
+              f.y - (f.groundRise || 0),
+              0,
+              false,
+              "body",
+              null,
+              0,
+              f.entry,
+              2,
+            );
+          else this.text(f.text, f.x, f.y, f.color, 11, "center");
+        }
+        c.globalAlpha = 1;
+        if (this.showCollisions)
+          this.collisionOverlay(game, event?.level || game.city.level);
+        c.restore();
       }
-      c.globalAlpha = 1;
-      if (this.showCollisions)
-        this.collisionOverlay(game, event?.level || game.city.level);
-      c.restore();
+      this.offset = baseOffset;
       this.hud(game, event);
       // Original alpha badge at the recovered2130 screen position. Only
       // palette78 flashes; use predecoded phases to avoid per-frame pixels.
@@ -1363,6 +1382,25 @@
         variant = S.OriginalEventResult.medal(metric, limits);
       } else if (game.originalCityClock.value < 8)
         variant = 5 + ((Math.floor(game.elapsed * 60) >> 3) & 1);
+      if (event?.kind === "ramp") {
+        const meter = S.MEDAL_METER_DATA;
+        const frame = meter.classFrames[event.difficulty];
+        // Empty bar glyphs are transparent in the shared atlas. Give the
+        // framed meter its own dark well so the ramp cannot show through.
+        c.fillStyle = "#000";
+        c.fillRect(bar.x, bar.y, 160, 16);
+        c.drawImage(
+          this.assets["rom-medal-meter"],
+          variant * meter.width,
+          frame * meter.height,
+          meter.width,
+          meter.height,
+          meter.x,
+          meter.y,
+          meter.width,
+          meter.height,
+        );
+      }
       bar.tiles.forEach((tile, i) =>
         c.drawImage(
           this.assets["rom-bar"],
