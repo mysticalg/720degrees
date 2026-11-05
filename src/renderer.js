@@ -46,7 +46,7 @@
                 resolve();
               };
               image.onerror = () => reject(new Error(`Missing asset: ${name}`));
-              image.src = `assets/${name}.png?v=release-1000`;
+              image.src = `assets/${name}.png?v=release-1001`;
             }),
         ),
       ).then(() => {

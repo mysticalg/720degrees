@@ -392,3 +392,12 @@ The reveal logic translates6FDA..7110's10/40-tick row waits and120+10-per-stage 
 Original bail commands54/56 and slide command57 now play static captures of their initialized sound-sequence states. The existing ROM-derived bail selection chooses the impact; entering the translated original slide starts the slide recording. Recovery, slide alignment/cancellation and leaving gameplay stop the corresponding cue. Pause and master mute retain its position for resuming. These cues remain available when the optional enhanced skate pack is disabled.
 
 The sound-ROM dispatcher4333/4351 writes variables for these commands rather than starting independent sequences. The recordings were captured after initializing the original sequence46, with provenance and fixed-gain processing in assets/sound-sources.json. Browser sample looping and lifetime handling are adapters: the continuous original sound sequencer, speed-request controller5B46..5BD0 and its dynamic pitch are still unfinished. No runtime emulator or synthesized replacement is added.
+
+
+## Build0.100.1
+
+Kick acceleration now follows the translated original admission and animation controller (92A0-92E4, E2A2/E49C/E4A6 and4EFA-4F32). The skater winds up in action1, enters the push at body phase2, and applies the existing original action3 target-speed arithmetic until body phase3 clears the cycle. Holding the button no longer applies that acceleration outside its animation window. Original held-input polarity after80A4 is also preserved.
+
+A numeric reference fixture records103 consecutive unmodified original-ROM frames. Both the portable translation and the actual browser Game with physical keyboard input match all103 frames: admission, phase/countdown, target/impulse, signed speed and recovery. This establishes the sampled flat-ground kick case, not complete original movement. The ramp-ground0ED0 lifecycle and other input/terrain adapters remain unfinished. Existing requested downhill tap boosts and fakie assistance remain separate enhancements.
+
+The current skater sound assets, cue mappings, volumes and controls are retained unchanged. No new sound, emulator or replacement graphics are included in this update.

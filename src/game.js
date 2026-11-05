@@ -589,7 +589,7 @@
       p.romDialAngle = Math.atan2(-tables.y[facing] * 2, tables.x[facing]);
       p.romSpeed = 0;
       p.vx = p.vy = 0;
-      p.romKickEnvelope = { target: 0, impulse: 0, previousMask: 128 };
+      p.romKickEnvelope = { target: 0, impulse: 0, previousMask: 0 };
       p.fakieSteeringTarget = p.fakieTurnLatch = p.fakieAirInput = null;
       p.exitFakieTarget = direction.active
         ? this.pointHeading(direction)
@@ -1759,7 +1759,7 @@
       p.jumpSequence = null;
       p.jumpAnimation = null;
       p.kickAnimation = null;
-      p.romKickEnvelope = { target: 0, impulse: 0, previousMask: 128 };
+      p.romKickEnvelope = { target: 0, impulse: 0, previousMask: 0 };
       p.fallen = p.bail.timer / 60;
       p.invulnerable = 2;
       this.audio.effect("crash", {
@@ -1786,7 +1786,7 @@
       const kick = this.input.held("kick");
       rom.kickInputTransition(
         p.romKickEnvelope,
-        kick ? 0 : 128,
+        kick ? 128 : 0,
         Math.min(3, this.gear.shoes),
         b.speed,
       );
@@ -2585,7 +2585,7 @@
         }
       }
       p.invulnerable = Math.max(0, p.invulnerable - dt);
-      if (p.kickAnimation) {
+      if (p.kickAnimation && !p.kickAnimation.originalKick) {
         // E254 sees the previous motion-object phase before B378 ticks it.
         if (p.kickAnimation.phase >= 3) p.kickAnimation = null;
         else S.OriginalRoutines.tickAnimationPhase(p.kickAnimation);
@@ -2638,6 +2638,7 @@
         kick = this.input.held("kick");
       const kickAnimationSpeed = p.romSpeed || 0; // Previous frame's0331 speed band.
       const kickPressed = kick && !p.kickWasHeld;
+      const kickCuePressed = kickPressed && !p.kickAnimation;
       if (kickPressed && p.fakie && !p.air) this.exitFakieWithKick(direction);
       if (kickPressed && !p.halfpipeReturning && !p.fakie)
         p.romFacingDirection = undefined;
@@ -2781,6 +2782,8 @@
             p.romSpeed || 0,
           );
           if (p.skid) {
+            // A4F0's E238 resets the kick controller when a slide takes over.
+            p.kickAnimation = p.romKickState = null;
             // A45A calls7AD2, saving the global16-bit slide-start clock.
             p.skid.startFrame = Math.round(this.elapsed * 60) & 65535;
             this.audio.effect("skid", { originalCommand: 0x57 });
@@ -2853,18 +2856,38 @@
           const rom = S.OriginalGround;
           p.romFrame = (p.romFrame || 0) + 1;
           let scalar = p.romSpeed || 0;
-          if (kickPressed && scalar <= 0) scalar = 0x180; // 4F26-4F2C
           const gear = Math.min(3, this.gear.board);
-          p.romKickEnvelope ||= { target: 0, impulse: 0, previousMask: 128 };
+          p.romKickEnvelope ||= { target: 0, impulse: 0, previousMask: 0 };
           // Original physical press/release transitions, with no synthetic
           // hold-to-repeat impulses. Rapid taps can build the target-speed envelope.
           const shoes = Math.min(3, this.gear.shoes);
           rom.kickInputTransition(
             p.romKickEnvelope,
-            kick ? 0 : 128,
+            kick ? 128 : 0,
             shoes,
             scalar,
           );
+          const kind =
+            { slalom: 1, downhill: 2, ramp: 3, jump: 4 }[e?.kind] || 0;
+          // Original kick permission is decided using the previous target;
+          // 92EA updates that target only after the admission comparison.
+          if (!p.kickAnimation && p.romKickState?.action) p.romKickState = null;
+          const kickState = (p.romKickState ||= S.OriginalKick.begin());
+          S.OriginalKick.control(kickState, {
+            held: kick,
+            speed: scalar,
+            target: p.romKickEnvelope.target,
+            cap: rom.tables.kickCeiling[shoes],
+            kind,
+            // 840C initializes0ED0 to2; its full ramp-ground lifecycle
+            // remains a caller adapter, separate from ramp animation actions.
+            rampState: p.romRampGroundState ?? 2,
+            bail: !!p.bail,
+            locked: !!p.jumpRecovery,
+            turning: !!p.skid,
+            profile: surface.profile,
+            rate: S.OriginalRoutines.kickAnimationRate(kickAnimationSpeed),
+          });
           rom.kickEnvelope(
             p.romKickEnvelope,
             scalar,
@@ -2872,9 +2895,8 @@
             p.romFrame,
             kick,
           );
+          scalar = S.OriginalKick.motion(kickState, scalar);
           const reader = rom.terrainTableReader(S.TERRAIN_TABLES);
-          const kind =
-            { slalom: 1, downhill: 2, ramp: 3, jump: 4 }[e?.kind] || 0;
           const coefficients = rom.surfaceCoefficients(
             p.romDirection ?? 4,
             surface.profile,
@@ -2887,7 +2909,7 @@
           );
           scalar = rom.terrainSpeed(
             scalar,
-            p.skid?.original ? p.skid.action : kick ? 3 : 0,
+            p.skid?.original ? p.skid.action : kickState.action === 3 ? 3 : 0,
             gear,
             p.romFrame,
             p.romKickEnvelope.target,
@@ -2979,7 +3001,11 @@
             p.vy = (next.y - p.y) * 60;
           }
           p.romSpeed = scalar;
-          p.romKicking = kick;
+          p.romKicking = kickState.action === 3;
+          if (kickState.action) {
+            S.OriginalRoutines.tickAnimationPhase(kickState);
+            p.kickAnimation = kickState;
+          } else if (p.kickAnimation?.originalKick) p.kickAnimation = null;
           p.romGroundActive = true;
         } else {
           p.romGroundActive = false;
@@ -3002,14 +3028,14 @@
           p.romMovementDirection =
             p.skid.travel ^ ((p.romSpeed || 0) < 0 ? 8 : 0);
         }
-        if (kickPressed && !p.kickAnimation) {
+        if (kickPressed && !p.kickAnimation && !p.romGroundActive) {
           const rate = S.OriginalRoutines.kickAnimationRate(kickAnimationSpeed);
           p.kickAnimation = { rate, countdown: rate, phase: 0 };
           // B786 calls E254 before B7AE calls B378: tick on the setup frame.
           S.OriginalRoutines.tickAnimationPhase(p.kickAnimation);
           p.kickClock = (3 * (rate + 1)) / 60;
-          this.audio.effect("kick");
         }
+        if (kickCuePressed) this.audio.effect("kick");
       } else {
         p.romGroundActive = false;
         let spinDirection = this.input.held("left")
@@ -4031,6 +4057,14 @@
           airborneUpdate:
             "translated gravity/cap; provisional launch and landing",
           originalKickTarget: p.romKickEnvelope?.target || 0,
+          originalKick: p.romKickState
+            ? {
+                action: p.romKickState.action,
+                phase: p.romKickState.phase,
+                countdown: p.romKickState.countdown,
+                inhibit: p.romKickState.inhibit,
+              }
+            : null,
           completeOriginalSimulation: false,
           scoring:
             "original accumulator, landing points, race counter tally and all park medal/cash tables",

@@ -106,7 +106,8 @@
   }
   /** 9242-9276: BOTH changes of input bit 80 add kick impulse.
    * previousMask is original0333, impulse is original02FE. The hardware
-   * input is active-low; no animation-state gate appears in this routine.
+   * hardware port is inverted by80A4 before0193 is read: held is bit128.
+   * No animation-state gate appears in this routine.
    */
   function kickInputTransition(state, mask, equipment, speed) {
     mask &= 128;
